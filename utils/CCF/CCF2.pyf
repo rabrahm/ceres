@@ -1,0 +1,46 @@
+!    -*- f90 -*-
+! Note: the context of this file is case sensitive.
+
+python module CCF2 ! in 
+    interface  ! in :CCF2
+        function ccf(m_l,m_h,wav,spec,weight,sn,v_r,snw,n,m) ! in :CCF2:CCF2.f
+            double precision dimension(n) :: m_l
+            double precision dimension(n),depend(n) :: m_h
+            double precision dimension(m) :: wav
+            double precision dimension(m),depend(m) :: spec
+            double precision dimension(n),depend(n) :: weight
+            double precision dimension(m),depend(m) :: sn
+            double precision :: v_r
+            double precision :: snw
+            integer, optional,check(len(m_l)>=n),depend(m_l) :: n=len(m_l)
+            integer, optional,check(len(wav)>=m),depend(wav) :: m=len(wav)
+            double precision :: ccf
+        end function ccf
+        function ccfpix(m_l,m_h,x,thar,delta,n,m) ! in :CCF2:CCF2.f
+            double precision dimension(n) :: m_l
+            double precision dimension(n),depend(n) :: m_h
+            double precision dimension(m) :: x
+            double precision dimension(m),depend(m) :: thar
+            double precision :: delta
+            integer, optional,check(len(m_l)>=n),depend(m_l) :: n=len(m_l)
+            integer, optional,check(len(x)>=m),depend(x) :: m=len(x)
+            double precision :: ccfpix
+        end function ccfpix
+        function ccfcos(m_l,m_h,wav,spec,weight,sn,v_r,snw,n,m) ! in :CCF2:CCF2.f
+            double precision dimension(n) :: m_l
+            double precision dimension(n),depend(n) :: m_h
+            double precision dimension(m) :: wav
+            double precision dimension(m),depend(m) :: spec
+            double precision dimension(n),depend(n) :: weight
+            double precision dimension(m),depend(m) :: sn
+            double precision :: v_r
+            double precision intent(out) :: snw
+            integer, optional,check(len(m_l)>=n),depend(m_l) :: n=len(m_l)
+            integer, optional,check(len(wav)>=m),depend(wav) :: m=len(wav)
+            double precision intent(out) :: ccfcos
+        end function ccfcos
+    end interface 
+end python module CCF2
+
+! This file was auto-generated with f2py (version:2).
+! See http://cens.ioc.ee/projects/f2py2e/

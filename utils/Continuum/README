@@ -1,0 +1,3 @@
+El modulo continuum.py toma como input el nombre del espectro .fits y retorna dos arreglos. El primero corresponde al flujo con el continuo normalizado para cada orden del espectro echelle. El segundo contiene la longitud de onda de cada pixel por orden.
+Para que esto funcione primero hay que compilar las funciones escritas en C ("python setup.py build"). Luego copiar las funciones compiladas al directorio donde se está trabajando (cp build/lib.linux-i686-2.6/FunNorm.so FunNorm.so).
+Entonces dentro de python podemos importar el modulo (import continuum) y luego usarlo con la funcion NORM (F,L=continuum.NORM('nombredelarchivo.fits')).

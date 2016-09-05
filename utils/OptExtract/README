@@ -1,0 +1,60 @@
+
+------------------------- Marsh's algorithm for the obtention of tilted spectra --------------------
+                  Implementation: Néstor Espinoza (nsespino@uc.cl)
+                                  Departamento de Astronomía y Astrofísica, PUC, 2011
+----------------------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------------------------
+                                        ~ UPDATES ~
+----------------------------------------------------------------------------------------------------
+
+April 13th, 2012 ---> Added special functions SObtainP and SObtainSpectrum. These functions take as a 
+                      second input (after the flux image input) an image of variances. If you don't 
+                      have an image of variances available, just use the functions ObtainP and ObtainSpectrum.
+
+----------------------------------------------------------------------------------------------------
+                               ~ HOW TO INSTALL THE MODULE ~
+----------------------------------------------------------------------------------------------------
+ 1.- On console, as root, do "python setup.py build".
+
+ 2.- A new folder is created called "build". Inside, you'll find another folder called 
+     lib.OS-MOD-PyVer, where OS is your operating system, MOD is the version and PyVer 
+     is your python version. In my case, it looks like this: 
+
+                                    /build/lib.linux-i686-2.6
+    
+     Inside that folder, a module called "Marsh.so" is created. Move that to the directory 
+     where you are going to perform the extraction (i.e. where your Python code is).
+
+ 3.- That's it! Information on how to use it is given on the Test.py file attached to the package.
+
+----------------------------------------------------------------------------------------------------
+                           ~ Frequented Asked Questions (FAQ) ~
+----------------------------------------------------------------------------------------------------
+
+   1.- What is the "Length" argument that I have to input to obtain the light fraction coefficients
+       and the spectrum?
+
+    A: Length is the number of pixels counted from the center (i.e. counting the center pixel as 0),
+       below and above of this pixel, that contains the spectrum. The number of pixels actually
+       taken to model the light fractions depend on the spacing between polynomials. If, for example,
+       a length of 4 pixels and a spacing of S=0.6 pixels is requested, the number of polynomials
+       that we can make from the center is:
+
+                                              Length/S= 6.66 ~ 7
+
+       Then we have a total of 7*2+1=15 polynomials to fit. According to this, we must take 7*S+S
+       pixels above and 7*S+S pixels below the center in order to have our 15 polynomials equally 
+       spaced and with enough pixels to model them. In this case, we must take 7*S+S=4.2+0.6=4.8
+       pixels above and below the center to form the total number of polynomials (i.e. we now take
+       information of 5 pixels, not 4). This increase of aperture in 2 pixels doesn't affect the 
+       final result because the pixels far from the center get less weight anyways.
+
+   2.- Why do I have to give the used spacing S between polynomials used in the ObtainP function
+       to the ObtainSpectrum function?
+
+    A: The reason lies behind Pixel Resampling (H. Hensberge & W. Vershueren,1990). When we resample
+       the pixels that cover our spectrum we use the spacing to find the fraction of pixel we are
+       going to use on our measurements for the light fractions in the ObtainP function. Then, when 
+       we obtain our spectrum, we have to obtain that same fraction of flux from the same pixel in 
+       order to consider only that part of the flux on our weighted sum.
