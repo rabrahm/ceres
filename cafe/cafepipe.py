@@ -611,24 +611,24 @@ for fsim in new_list:
     if ( os.access(dirout+fout ,os.F_OK) == False ) or (force_spectral_file_build):
         spec = np.zeros((11, n_useful, data.shape[1]))
         hdu  = pyfits.PrimaryHDU( spec )
-        hdu.header.update('HIERARCH MJD', mjd)
-        hdu.header.update('HIERARCH MBJD', mbjd)
-        hdu.header.update('HIERARCH SHUTTER START DATE', h[0].header['DATE'][:10] )
-        hdu.header.update('HIERARCH SHUTTER START UT',  h[0].header['DATE'][11:])
-        hdu.header.update('HIERARCH TEXP (s)',h[0].header['EXPTIME'])
-        hdu.header.update('HIERARCH BARYCENTRIC CORRECTION (km/s)', bcvel_baryc)
-        hdu.header.update('HIERARCH (lambda_bary / lambda_topo)', lbary_ltopo)    
-        hdu.header.update('HIERARCH TARGET NAME', obname)
-        hdu.header.update('HIERARCH RA',h[0].header['RA'])
-        hdu.header.update('HIERARCH DEC',h[0].header['DEC'])
-        hdu.header.update('HIERARCH RA BARY',ra)
-        hdu.header.update('HIERARCH DEC BARY',dec)
-        hdu.header.update('HIERARCH EQUINOX',h[0].header['EQUINOX'])
-        hdu.header.update('HIERARCH OBS LATITUDE',h[0].header['HIERARCH CAHA TEL GEOLAT'])
-        hdu.header.update('HIERARCH OBS LONGITUDE',h[0].header['HIERARCH CAHA TEL GEOLON'])
-        hdu.header.update('HIERARCH OBS ALTITUDE',h[0].header['HIERARCH CAHA TEL GEOELEV'])
-        hdu.header.update('HIERARCH TARG AIRMASS START',h[0].header['AIRMASS'])
-	hdu.header.update('HIERARCH MOON VEL',refvel)
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH MJD', mjd)
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH MBJD', mbjd)
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH SHUTTER START DATE', h[0].header['DATE'][:10] )
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH SHUTTER START UT',  h[0].header['DATE'][11:])
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH TEXP (S)',h[0].header['EXPTIME'])
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH BARYCENTRIC CORRECTION (KM/S)', bcvel_baryc)
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH (LAMBDA_BARY / LAMBDA_TOPO)', lbary_ltopo)    
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH TARGET NAME', obname)
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH RA',h[0].header['RA'])
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH DEC',h[0].header['DEC'])
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH RA BARY',ra)
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH DEC BARY',dec)
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH EQUINOX',h[0].header['EQUINOX'])
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH OBS LATITUDE',h[0].header['HIERARCH CAHA TEL GEOLAT'])
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH OBS LONGITUDE',h[0].header['HIERARCH CAHA TEL GEOLON'])
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH OBS ALTITUDE',h[0].header['HIERARCH CAHA TEL GEOELEV'])
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH TARG AIRMASS START',h[0].header['AIRMASS'])
+	hdu = GLOBALutils.update_header(hdu,'HIERARCH MOON VEL',refvel)
 
 	print '\t\tWavelength calibration:'
 	print "\t\t\tInstrumental drift:",(1e-6*p_shift)*299792458.0
@@ -695,7 +695,7 @@ for fsim in new_list:
                     query_success,sp_type_query = GLOBALutils.simbad_query_coords('12:00:00','00:00:00')
                 print "\t\t\tSpectral type returned by SIMBAD query:",sp_type_query
 
-                hdu.header.update('HIERARCH SIMBAD SPTYP', sp_type_query)
+                hdu = GLOBALutils.update_header(hdu,'HIERARCH SIMBAD SPTYP', sp_type_query)
 
                 pars_file = dirout + fsim.split('/')[-1][:-8]+'_stellar_pars.txt'
 
@@ -721,11 +721,11 @@ for fsim in new_list:
 	    Z_epoch     = Z
 	    vsini_epoch = vsini
 	    vel0_epoch  = vel0
-	    hdu.header.update('HIERARCH TEFF', float(T_eff))
-	    hdu.header.update('HIERARCH LOGG', float(logg))
-	    hdu.header.update('HIERARCH Z', Z)
-	    hdu.header.update('HIERARCH VSINI', vsini)
-	    hdu.header.update('HIERARCH VEL0', vel0)
+	    hdu = GLOBALutils.update_header(hdu,'HIERARCH TEFF', float(T_eff))
+	    hdu = GLOBALutils.update_header(hdu,'HIERARCH LOGG', float(logg))
+	    hdu = GLOBALutils.update_header(hdu,'HIERARCH Z', Z)
+	    hdu = GLOBALutils.update_header(hdu,'HIERARCH VSINI', vsini)
+	    hdu = GLOBALutils.update_header(hdu,'HIERARCH VEL0', vel0)
 
             print "\t\tRadial Velocity analysis:"
             # assign mask
@@ -911,18 +911,18 @@ for fsim in new_list:
 	    SNR_5130_R = np.around(SNR_5130*np.sqrt(2.9))
 
 	    disp_epoch = np.around(p1gau_m[2],1)
-            hdu.header.update('RV', RV)
-            hdu.header.update('RV_E', RVerr2)
-            hdu.header.update('BS', BS)
-            hdu.header.update('BS_E', BSerr)
-            hdu.header.update('DISP', disp_epoch)
-            hdu.header.update('SNR', SNR_5130)
-            hdu.header.update('SNR_R', SNR_5130_R)
-	    hdu.header.update('INST', 'CAFE')
-	    hdu.header.update('RESOL', '70000')
-	    hdu.header.update('PIPELINE', 'CERES')
-	    hdu.header.update('XC_MIN', XC_min)
-	    hdu.header.update('BJD_OUT', bjd_out)
+            hdu = GLOBALutils.update_header(hdu,'RV', RV)
+            hdu = GLOBALutils.update_header(hdu,'RV_E', RVerr2)
+            hdu = GLOBALutils.update_header(hdu,'BS', BS)
+            hdu = GLOBALutils.update_header(hdu,'BS_E', BSerr)
+            hdu = GLOBALutils.update_header(hdu,'DISP', disp_epoch)
+            hdu = GLOBALutils.update_header(hdu,'SNR', SNR_5130)
+            hdu = GLOBALutils.update_header(hdu,'SNR_R', SNR_5130_R)
+	    hdu = GLOBALutils.update_header(hdu,'INST', 'CAFE')
+	    hdu = GLOBALutils.update_header(hdu,'RESOL', '70000')
+	    hdu = GLOBALutils.update_header(hdu,'PIPELINE', 'CERES')
+	    hdu = GLOBALutils.update_header(hdu,'XC_MIN', XC_min)
+	    hdu = GLOBALutils.update_header(hdu,'BJD_OUT', bjd_out)
 
             # write to output
             line_out = "%-15s %18.8f %9.4f %7.4f %9.3f %5.3f   cafe   ceres   70000 %6d %5.2f %5.2f %5.1f %4.2f %5.2f %6.1f %4d %s\n"%\
