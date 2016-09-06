@@ -14,9 +14,9 @@ import StringIO
 import string
 import pycurl
 from multiprocessing import Pool
-sys.path.append("/data/echelle/ecpipe/BaryCor")
-sys.path.append("/data/echelle/ecpipe/CCF")
-sys.path.append("/data/echelle/ecpipe/OptExtract")
+sys.path.append("../utils/BaryCor")
+sys.path.append("../utils/CCF")
+sys.path.append("../utils/OptExtract")
 import Marsh
 import BaryCor
 import CCF
