@@ -2559,7 +2559,9 @@ def get_cont_single(W,F,E,nc=3,ll=3,lu=3,span=10,fact=3.,frac=0.3):
 			rw,re,rd = [],[],[]
 			good_w,good_f = [],[]
 			fact +=1
-
+		if fact>20:
+			return np.array([1.])
+		
 	gw,gf = np.array(good_w),np.array(good_f)
 	rw,re,rd = np.array(rw),np.array(re),np.array(rd) 
 	#plot(rw,rd,'ro')
