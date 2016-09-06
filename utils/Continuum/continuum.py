@@ -871,7 +871,6 @@ def NORM_single(L, F, orden = 5):
 	largo_nul = Llimpio.shape[0]
 	
 	while i < largo_nul:
-		print i
 		if i+9 < largo_nul:
 			Lmien[k] = numpy.mean(Llimpio[i:i+5])
 			Fmien[k] = numpy.median(Flimpio[i:i+5])
