@@ -217,11 +217,10 @@ if ( os.access(P_ob_fits,os.F_OK) == False ) or ( os.access(S_flat_ob_fits,os.F_
     print "\t\tNo extracted flat object spectra found or extraction forced, extracting and saving..."
     
     print "\t\t\tWill extract",nord_ob,"orders for object fibre..."
-    for i in range(nord_ob):
-        P_marsh = GLOBALutils.PCoeff( Flat_ob, c_ob[i,:], ext_aperture, RO_ob, GA_ob,\
-                              NSigma_Marsh, S_Marsh, N_Marsh, Marsh_alg ,\
-                              min_extract_col,max_extract_col )
-        P_ob    += P_marsh
+    P_ob = GLOBALutils.obtain_P(Flat_ob,c_ob,ext_aperture,RO_ob,\
+                                    GA_ob,NSigma_Marsh, S_Marsh, \
+                    N_Marsh, Marsh_alg, min_extract_col,\
+                    max_extract_col, npools)
 
     S_flat_ob  = GLOBALutils.optimal_extraction(Flat_ob,P_ob,c_ob,ext_aperture,\
                                                 RO_ob,GA_ob,S_Marsh,NCosmic_Marsh,\
@@ -253,11 +252,10 @@ if ( os.access(P_co_fits,os.F_OK) == False ) or ( os.access(S_flat_co_fits,os.F_
     print "\t\tNo extracted flat comparison spectra found or extraction forced, extracting and saving..."
     
     print "\t\t\tWill extract",nord_co,"orders for comparison fibre"
-    for i in range(nord_co):
-	P_marsh = GLOBALutils.PCoeff( Flat_co, c_co[i,:], ext_aperture, RO_co, GA_co,\
-				              NSigma_Marsh, S_Marsh, N_Marsh, Marsh_alg ,\
-				              min_extract_col,max_extract_col )
-	P_co    += P_marsh
+    P_co = GLOBALutils.obtain_P(Flat_co,c_co,ext_aperture,RO_co,\
+                                    GA_co,NSigma_Marsh, S_Marsh, \
+                    N_Marsh, Marsh_alg, min_extract_col,\
+                    max_extract_col, npools)
     
     S_flat_co  = GLOBALutils.optimal_extraction(Flat_co,P_co,c_co,ext_aperture,RO_co,GA_co,\
                                                 S_Marsh,NCosmic_Marsh,min_extract_col,\
@@ -767,26 +765,26 @@ for nlisti in range(len(new_list)):
         # n_useful should be nord_ob, but we still have not calibrated that bluest order -- TODO
         spec = np.zeros((11, n_useful, data.shape[1]))
         hdu = pyfits.PrimaryHDU( spec )
-        hdu.header.update('HIERARCH MJD', mjd)
-        hdu.header.update('HIERARCH MBJD', mbjd)
-        hdu.header.update('HIERARCH SHUTTER START DATE', h[0].header['HIERARCH ESO CORA SHUTTER START DATE'] )
-        hdu.header.update('HIERARCH SHUTTER START UT',  h[0].header['HIERARCH ESO CORA SHUTTER START HOUR'])
-        hdu.header.update('HIERARCH TEXP (s)',h[0].header['HIERARCH ESO OBS TEXP'])
-        hdu.header.update('HIERARCH FLUX WEIGHTED MEAN F ',h[0].header['HIERARCH ESO CORA PM FLUX TMMEAN'])
-        hdu.header.update('HIERARCH BARYCENTRIC CORRECTION (km/s)', bcvel_baryc)
-        hdu.header.update('HIERARCH (lambda_bary / lambda_topo)', lbary_ltopo)    
-        hdu.header.update('HIERARCH TARGET NAME', obname)
-        hdu.header.update('HIERARCH RA',h[0].header['HIERARCH ESO TEL TARG ALPHA'])
-        hdu.header.update('HIERARCH DEC',h[0].header['HIERARCH ESO TEL TARG DELTA'])
-	hdu.header.update('HIERARCH RA DEG',h[0].header['RA'])
-        hdu.header.update('HIERARCH DEC DEG',h[0].header['DEC'])
-        hdu.header.update('HIERARCH RA BARY',ra)
-        hdu.header.update('HIERARCH DEC BARY',dec)
-        hdu.header.update('HIERARCH EQUINOX',h[0].header['HIERARCH ESO OBS EQUICAT'])
-        hdu.header.update('HIERARCH OBS LATITUDE',h[0].header['HIERARCH ESO OBS GEO LATITU'])
-        hdu.header.update('HIERARCH OBS LONGITUDE',h[0].header['HIERARCH ESO OBS GEO LONGIT'])
-        hdu.header.update('HIERARCH OBS ALTITUDE',h[0].header['HIERARCH ESO OBS GEO ALTITUDE'])
-        hdu.header.update('HIERARCH TARG AIRMASS',h[0].header['HIERARCH ESO OBS TARG AIRMASS'])
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH MJD', mjd)
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH MBJD', mbjd)
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH SHUTTER START DATE', h[0].header['HIERARCH ESO CORA SHUTTER START DATE'] )
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH SHUTTER START UT',  h[0].header['HIERARCH ESO CORA SHUTTER START HOUR'])
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH TEXP (S)',h[0].header['HIERARCH ESO OBS TEXP'])
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH FLUX WEIGHTED MEAN F ',h[0].header['HIERARCH ESO CORA PM FLUX TMMEAN'])
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH BARYCENTRIC CORRECTION (KM/S)', bcvel_baryc)
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH (LAMBDA_BARY / LAMBDA_TOPO)', lbary_ltopo)    
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH TARGET NAME', obname)
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH RA',h[0].header['HIERARCH ESO TEL TARG ALPHA'])
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH DEC',h[0].header['HIERARCH ESO TEL TARG DELTA'])
+	hdu = GLOBALutils.update_header(hdu,'HIERARCH RA DEG',h[0].header['RA'])
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH DEC DEG',h[0].header['DEC'])
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH RA BARY',ra)
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH DEC BARY',dec)
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH EQUINOX',h[0].header['HIERARCH ESO OBS EQUICAT'])
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH OBS LATITUDE',h[0].header['HIERARCH ESO OBS GEO LATITU'])
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH OBS LONGITUDE',h[0].header['HIERARCH ESO OBS GEO LONGIT'])
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH OBS ALTITUDE',h[0].header['HIERARCH ESO OBS GEO ALTITUDE'])
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH TARG AIRMASS',h[0].header['HIERARCH ESO OBS TARG AIRMASS'])
 
 	print '\t\tWavelength calibration:'
 	print '\t\t\tComparision fibre is '+ h[0].header['HIERARCH ESO TPL TYPE']
@@ -976,7 +974,7 @@ for nlisti in range(len(new_list)):
 		        query_success,sp_type_query = GLOBALutils.simbad_query_coords('12:00:00','00:00:00')
 		    print "\t\t\tSpectral type returned by SIMBAD query:",sp_type_query
 
-		    hdu.header.update('HIERARCH SIMBAD SPTYP', sp_type_query)
+		    hdu = GLOBALutils.update_header(hdu,'HIERARCH SIMBAD SPTYP', sp_type_query)
 
                     pars_file = dirout + fsim.split('/')[-1][:-8]+'_stellar_pars.txt'
 
@@ -1002,11 +1000,11 @@ for nlisti in range(len(new_list)):
 	    Z_epoch     = Z
 	    vsini_epoch = vsini
 	    vel0_epoch  = vel0
-	    hdu.header.update('HIERARCH TEFF', float(T_eff))
-	    hdu.header.update('HIERARCH LOGG', float(logg))
-	    hdu.header.update('HIERARCH Z', Z)
-	    hdu.header.update('HIERARCH VSINI', vsini)
-	    hdu.header.update('HIERARCH VEL0', vel0)
+	    hdu = GLOBALutils.update_header(hdu,'HIERARCH TEFF', float(T_eff))
+	    hdu = GLOBALutils.update_header(hdu,'HIERARCH LOGG', float(logg))
+	    hdu = GLOBALutils.update_header(hdu,'HIERARCH Z', Z)
+	    hdu = GLOBALutils.update_header(hdu,'HIERARCH VSINI', vsini)
+	    hdu = GLOBALutils.update_header(hdu,'HIERARCH VEL0', vel0)
 
             print "\t\tRadial Velocity analysis:"
             # assign mask
@@ -1198,18 +1196,18 @@ for nlisti in range(len(new_list)):
 	    SNR_5130_R = np.around(SNR_5130*np.sqrt(2.9))
 
 	    disp_epoch = np.around(p1gau_m[2],1)
-            hdu.header.update('RV', RV)
-            hdu.header.update('RV_E', RVerr2)
-            hdu.header.update('BS', BS)
-            hdu.header.update('BS_E', BSerr)
-            hdu.header.update('DISP', disp_epoch)
-            hdu.header.update('SNR', SNR_5130)
-            hdu.header.update('SNR_R', SNR_5130_R)
-	    hdu.header.update('INST', 'CORALIE')
-	    hdu.header.update('RESOL', '60000')
-	    hdu.header.update('PIPELINE', 'CERES')
-	    hdu.header.update('XC_MIN', XC_min)
-	    hdu.header.update('BJD_OUT', bjd_out)
+            hdu = GLOBALutils.update_header(hdu,'RV', RV)
+            hdu = GLOBALutils.update_header(hdu,'RV_E', RVerr2)
+            hdu = GLOBALutils.update_header(hdu,'BS', BS)
+            hdu = GLOBALutils.update_header(hdu,'BS_E', BSerr)
+            hdu = GLOBALutils.update_header(hdu,'DISP', disp_epoch)
+            hdu = GLOBALutils.update_header(hdu,'SNR', SNR_5130)
+            hdu = GLOBALutils.update_header(hdu,'SNR_R', SNR_5130_R)
+	    hdu = GLOBALutils.update_header(hdu,'INST', 'CORALIE')
+	    hdu = GLOBALutils.update_header(hdu,'RESOL', '60000')
+	    hdu = GLOBALutils.update_header(hdu,'PIPELINE', 'CERES')
+	    hdu = GLOBALutils.update_header(hdu,'XC_MIN', XC_min)
+	    hdu = GLOBALutils.update_header(hdu,'BJD_OUT', bjd_out)
 	    
             line_out = "%-15s %18.8f %9.4f %7.4f %9.3f %5.3f   coralie   ceres   60000 %6d %5.2f %5.2f %5.1f %4.2f %5.2f %6.1f %4d %s\n"%\
                       (obname, bjd_out, RV, RVerr2, BS, BSerr, T_eff_epoch, logg_epoch, Z_epoch, vsini_epoch, XC_min, disp_epoch,\
