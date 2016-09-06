@@ -1,7 +1,6 @@
 import sys
 base = '../'
 sys.path.append(base+"utils/BaryCor")
-import CCF
 import BaryCor
 
 import numpy as np
@@ -106,7 +105,7 @@ def FileClassify(path,log):
 			header = pyfits.getheader(arch)
 			name = header['OBJECT']
 
-			if header['COMMENT'].count('dump')==0 and header['COMMENT'].count('test')==0 and arch!='/media/VERBATIM/data/DuPont/20120627_28/ccd0001.fits':
+			if True:
 				if header['EXPTYPE'] == 'Object':
 			
 					if name.count('sky')>0:
