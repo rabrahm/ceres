@@ -212,7 +212,7 @@ if (pre_process == 1):
 			if (os.access(dirout+nMdark,os.F_OK)):
 				os.remove(dirout+nMdark)
 			hdu = pyfits.PrimaryHDU( Mdark )
-			hdu.header.update('EXPTIME',t)
+			hdu = GLOBALutils.update_header(hdu,'EXPTIME',t)
 			hdu.writeto(dirout+nMdark)
 			MasDarl.append(dirout+nMdark)
 
@@ -837,25 +837,25 @@ for obj in new_list:
 	else:
 		final = np.zeros( [11, nup,np.shape(obj_S)[2]] )
 	hdu = pyfits.PrimaryHDU( final )
-        hdu.header.update('HIERARCH MJD', mjd)
-        hdu.header.update('HIERARCH MBJD', mbjd)
-        hdu.header.update('HIERARCH SHUTTER START DATE', hdth['DATE-OBS'][:10] )
-        hdu.header.update('HIERARCH SHUTTER START UT',  hdth['DATE-OBS'][:11])
-        hdu.header.update('HIERARCH TEXP (s)',hdth['EXPTIME'])
-        hdu.header.update('HIERARCH BARYCENTRIC CORRECTION (km/s)', bcvel_baryc)
-        hdu.header.update('HIERARCH (lambda_bary / lambda_topo)', lbary_ltopo)    
-        hdu.header.update('HIERARCH TARGET NAME', nombre)
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH MJD', mjd)
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH MBJD', mbjd)
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH SHUTTER START DATE', hdth['DATE-OBS'][:10] )
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH SHUTTER START UT',  hdth['DATE-OBS'][:11])
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH TEXP (S)',hdth['EXPTIME'])
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH BARYCENTRIC CORRECTION (KM/S)', bcvel_baryc)
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH (LAMBDA_BARY) / LAMBDA_TOPO)', lbary_ltopo)    
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH TARGET NAME', nombre)
 	try:
-		hdu.header.update('HIERARCH RA',ra)
-		hdu.header.update('HIERARCH DEC',dec)
-		hdu.header.update('HIERARCH RA BARY',ra)
-		hdu.header.update('HIERARCH DEC BARY',dec)
+		hdu = GLOBALutils.update_header(hdu,'HIERARCH RA',ra)
+		hdu = GLOBALutils.update_header(hdu,'HIERARCH DEC',dec)
+		hdu = GLOBALutils.update_header(hdu,'HIERARCH RA BARY',ra)
+		hdu = GLOBALutils.update_header(hdu,'HIERARCH DEC BARY',dec)
 	except:
 		None
-        hdu.header.update('HIERARCH EQUINOX',2000)
-        hdu.header.update('HIERARCH OBS LATITUDE',latitude)
-        hdu.header.update('HIERARCH OBS LONGITUDE',longitude)
-        hdu.header.update('HIERARCH OBS ALTITUDE',altitude)
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH EQUINOX',2000)
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH OBS LATITUDE',latitude)
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH OBS LONGITUDE',longitude)
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH OBS ALTITUDE',altitude)
 
 	equis = np.arange( np.shape(obj_S)[2] ) 
 	order = orwa
@@ -946,7 +946,7 @@ for obj in new_list:
 		        query_success,sp_type_query = GLOBALutils.simbad_query_coords('12:00:00','00:00:00')
 		    print "\t\t\tSpectral type returned by SIMBAD query:",sp_type_query
 
-		    hdu.header.update('HIERARCH SIMBAD SPTYP', sp_type_query)
+		    hdu = GLOBALutils.update_header(hdu,'HIERARCH SIMBAD SPTYP', sp_type_query)
 
                     pars_file = dirout + obj.split('/')[-1][:-4]+'_stellar_pars.txt'
 
@@ -972,11 +972,11 @@ for obj in new_list:
 	    Z_epoch     = Z
 	    vsini_epoch = vsini
 	    vel0_epoch  = vel0
-	    hdu.header.update('HIERARCH TEFF', float(T_eff))
-	    hdu.header.update('HIERARCH LOGG', float(logg))
-	    hdu.header.update('HIERARCH Z', Z)
-	    hdu.header.update('HIERARCH VSINI', vsini)
-	    hdu.header.update('HIERARCH VEL0', vel0)
+	    hdu = GLOBALutils.update_header(hdu,'HIERARCH TEFF', float(T_eff))
+	    hdu = GLOBALutils.update_header(hdu,'HIERARCH LOGG', float(logg))
+	    hdu = GLOBALutils.update_header(hdu,'HIERARCH Z', Z)
+	    hdu = GLOBALutils.update_header(hdu,'HIERARCH VSINI', vsini)
+	    hdu = GLOBALutils.update_header(hdu,'HIERARCH VEL0', vel0)
 
             print "\t\tRadial Velocity analysis:"
             # assign mask
@@ -1169,18 +1169,18 @@ for obj in new_list:
 	    SNR_5130_R = np.around(SNR_5130*np.sqrt(2.9))
 
 	    disp_epoch = np.around(p1gau_m[2],1)
-            hdu.header.update('RV', RV)
-            hdu.header.update('RV_E', RVerr2)
-            hdu.header.update('BS', BS)
-            hdu.header.update('BS_E', BSerr)
-            hdu.header.update('DISP', disp_epoch)
-            hdu.header.update('SNR', SNR_5130)
-            hdu.header.update('SNR_R', SNR_5130_R)
-	    hdu.header.update('INST', 'PUCHEROS')
-	    hdu.header.update('RESOL', '20000')
-	    hdu.header.update('PIPELINE', 'CERES')
-	    hdu.header.update('XC_MIN', XC_min)
-	    hdu.header.update('BJD_OUT', bjd_out)
+            hdu = GLOBALutils.update_header(hdu,'RV', RV)
+            hdu = GLOBALutils.update_header(hdu,'RV_E', RVerr2)
+            hdu = GLOBALutils.update_header(hdu,'BS', BS)
+            hdu = GLOBALutils.update_header(hdu,'BS_E', BSerr)
+            hdu = GLOBALutils.update_header(hdu,'DISP', disp_epoch)
+            hdu = GLOBALutils.update_header(hdu,'SNR', SNR_5130)
+            hdu = GLOBALutils.update_header(hdu,'SNR_R', SNR_5130_R)
+	    hdu = GLOBALutils.update_header(hdu,'INST', 'PUCHEROS')
+	    hdu = GLOBALutils.update_header(hdu,'RESOL', '20000')
+	    hdu = GLOBALutils.update_header(hdu,'PIPELINE', 'CERES')
+	    hdu = GLOBALutils.update_header(hdu,'XC_MIN', XC_min)
+	    hdu = GLOBALutils.update_header(hdu,'BJD_OUT', bjd_out)
 	    
             line_out = "%-15s %18.8f %9.4f %7.4f %9.3f %5.3f  pucheros   ceres   20000 %6d %5.2f %5.2f %5.1f %4.2f %5.2f %6.1f %4d %s\n"%\
                       (obname, bjd_out, RV, RVerr2, BS, BSerr, T_eff_epoch, logg_epoch, Z_epoch, vsini_epoch, XC_min, disp_epoch,\
