@@ -76,7 +76,7 @@ def NORM(L,F,orden=2):
 	laro = numpy.zeros( ordenes,int )
 	
 	#strli,strlf = numpy.loadtxt('/home/rabrahm/Desktop/corr2/strong_lines.dat',dtype=None,usecols=(0,1),unpack=True)
-	strli,strlf = numpy.loadtxt('/data/echelle/ecpipe/Continuum/strong_lines.dat',dtype=None,usecols=(0,1),unpack=True)
+	strli,strlf = numpy.loadtxt('../utils/Continuum/strong_lines.dat',dtype=None,usecols=(0,1),unpack=True)
 
 	esto = numpy.zeros( (2,ordenes),list )
 	ajent = numpy.zeros( (ordenes,pixeles),float )
@@ -474,7 +474,7 @@ def NORM2(L,F):
 	laro = numpy.zeros( ordenes,int )
 	
 	#strli,strlf = numpy.loadtxt('/home/rabrahm/Desktop/corr2/strong_lines.dat',dtype=None,usecols=(0,1),unpack=True)
-	strli,strlf = numpy.loadtxt('/data/echelle/ecpipe/Continuum/strong_lines.dat',dtype=None,usecols=(0,1),unpack=True)
+	strli,strlf = numpy.loadtxt('../utils/Continuum/strong_lines.dat',dtype=None,usecols=(0,1),unpack=True)
 
 	esto = numpy.zeros( (2,ordenes),list )
 	ajent = numpy.zeros( (ordenes,pixeles),float )
