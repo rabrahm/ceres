@@ -605,9 +605,6 @@ for nlisti in range(len(new_list)):
 		hdu.writeto( bkg_obj_fits )
 	    else:
 		bkg = pyfits.getdata(bkg_obj_fits)
-	    plot(data[:,2000])
-	    plot(bkg[:,2000])
-	    show()
 
 	    data -= bkg
 
