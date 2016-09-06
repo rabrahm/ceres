@@ -49,6 +49,14 @@ class Constants:
 	w = 7.2921158554E-5 
 	DaystoYear = 1.0/365.256363004
 
+def update_header(hdu,k,v,c=''):
+	try:
+		hdu.header.update(k,v)
+	except:
+		hdu.header[k] = v
+	return hdu
+
+
 def get_dark_times(darks,key='EXPTIME'):
     """
     Given a list containing the names of all the dark frames,
@@ -2359,7 +2367,7 @@ def simbad_query_coords(ra,dec):
     tf.write("format object fmt1 \"%IDLIST(1) | %OTYPELIST(S) | %SP(S)\"\n")
     tf.write("result full\n")
     tf.write("set radius 5s\n")
-    tf.write("query coo 12:00:00 12:00:00\n")
+    tf.write("query coo " + str(ra)+ " " + str(dec) + "\n")
     tf.close()
     values = [
         ("scriptFIle", (pycurl.FORM_FILE, tfile))
