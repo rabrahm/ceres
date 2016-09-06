@@ -155,7 +155,7 @@ print '\n'
 # file containing the log
 log = dirout+'night.log'
 biases, milkyflats, skyflats, objects, ThAr_ref, darks = dupontutils.FileClassify(dirin,log)
-
+ThAr_ref = ThAr_ref[:2]
 if dark_substraction == True and len(darks)<3:
     dark_substraction = False
 
@@ -205,7 +205,7 @@ else:
     pre_process = 0
 
 if (pre_process == 1):
-    print "\tGenerating Master calibration frames..."
+    print "\n\tGenerating Master calibration frames..."
     MasterBias, RO_bias, GA_bias = dupontutils.MedianCombine(biases, zero_bo=False, dark_bo=False, flat_bo=False)
     hdu = pyfits.PrimaryHDU( MasterBias )
 
@@ -243,7 +243,7 @@ if (pre_process == 1):
         while i < len(dark_times):
             DARK, RON, GAIN = dupontutils.MedianCombine(dark_groups[i], zero_bo=True, zero=dirout+'MasterBias.fits',dark_bo=False)
             hdu = pyfits.PrimaryHDU( DARK )
-            hdu.header.update('EXPTIME',dark_times[i])
+            hdu = GLOBALutils.update_header(hdu,'EXPTIME',dark_times[i])
             if os.access(dirout+'DARK_'+str(int(dark_times[i]))+'s.fits',os.F_OK):
                 os.remove(dirout+'DARK_'+str(int(dark_times[i]))+'s.fits')
             hdu.writeto( dirout+'DARK_'+str(int(dark_times[i]))+'s.fits' )
@@ -255,16 +255,16 @@ if (pre_process == 1):
     if force_flat_comb or os.access(dirout+'Flat.fits',os.F_OK) == False:
         Flat, RON, GAIN = dupontutils.milk_comb(milkyflats, MDARKS, zero=dirout+'MasterBias.fits')
         hdu = pyfits.PrimaryHDU( Flat )
-        hdu.header.update('RON',RON)
-        hdu.header.update('GAIN',GAIN)
+        hdu = GLOBALutils.update_header(hdu,'RON',RON)
+        hdu = GLOBALutils.update_header(hdu,'GAIN',GAIN)
         if (os.access(dirout+'Flat_or.fits',os.F_OK)):
             os.remove(dirout+'Flat_or.fits')
         hdu.writeto(dirout+'Flat_or.fits')
 
         Flat = Flat/scipy.signal.medfilt(Flat,[15,15])
         hdu = pyfits.PrimaryHDU( Flat )
-        hdu.header.update('RON',RON)
-        hdu.header.update('GAIN',GAIN)
+        hdu = GLOBALutils.update_header(hdu,'RON',RON)
+        hdu = GLOBALutils.update_header(hdu,'GAIN',GAIN)
 
         if (os.access(dirout+'Flat.fits',os.F_OK)):
             os.remove(dirout+'Flat.fits')
@@ -276,7 +276,6 @@ if (pre_process == 1):
         GAIN = h[0].header['GAIN']
     print "\t\t-> Masterflat: done!"
 	
-    print 'Finding Traces'
     ftra = True
     median_filter = False
 
@@ -301,7 +300,7 @@ if (pre_process == 1):
             c_all,pshift = GLOBALutils.retrace( d, c_comp )
         else:
             c_all, nord = GLOBALutils.get_them(d,5,trace_degree,mode=1)
-            print nord, 'orders found ...'
+            print '\t\t'+str(nord)+' orders found...'
     else:
         trace_dict = pickle.load( open( dirout+"trace.pkl", 'r' ) )
         c_all = trace_dict['c_all']
@@ -501,7 +500,7 @@ for thar in ThAr_ref:
         p0[0] = (32+oro0) * Global_ZP
 
         p1, G_pix, G_ord, G_wav, II, rms_ms, G_res = \
-			GLOBALutils.Fit_Global_Wav_Solution(All_Pixel_Centers, All_Wavelengths, All_Orders, np.ones(All_Intensities.shape), p0, npix=len(lines_thar[orre,:]), Cheby=use_cheby, maxrms=150, Inv=Inverse_m, minlines=500,order0=oro0,nx=ncoef_x,nm=ncoef_m,ntotal=ntotal)
+			GLOBALutils.Fit_Global_Wav_Solution(All_Pixel_Centers, All_Wavelengths, All_Orders, np.ones(All_Intensities.shape), p0, npix=len(lines_thar[orre,:]), Cheby=use_cheby, maxrms=150, Inv=Inverse_m, minlines=800,order0=oro0,nx=ncoef_x,nm=ncoef_m,ntotal=ntotal)
 
         if rms_ms/np.sqrt(float(len(G_pix))) < 20:
             pdict = {'p1':p1, 'G_pix':G_pix, 'G_ord':G_ord, 'G_wav':G_wav, 'II':II,\
@@ -994,31 +993,31 @@ for obj in objects:
 				orre += 1
 
 			hdu = pyfits.PrimaryHDU( final )
-			hdu.header.update('HIERARCH MJD',scmjd)
-			hdu.header.update('HIERARCH MBJD',scmbjd)
-			hdu.header.update('HIERARCH SHUTTER START DATE',hd['DATE-OBS'])
-			hdu.header.update('HIERARCH SHUTTER START UT',hd['UT-TIME'])
-			hdu.header.update('HIERARCH TEXP (s)',hd['EXPTIME'])
-			hdu.header.update('HIERARCH BARYCENTRIC CORRECTION (km/s)',bcvel_baryc,'[km/s]')
-			hdu.header.update('HIERARCH (lambda_bary / lambda_topo)',lbary_ltopo)
-			hdu.header.update('HIERARCH TARGET NAME',nombre)
-			hdu.header.update('HIERARCH RA',hd['RA'])
-			hdu.header.update('HIERARCH DEC',hd['DEC'])
-			hdu.header.update('HIERARCH RA-D',hd['RA-D'])
-			hdu.header.update('HIERARCH DEC-D',hd['DEC-D'])
-			hdu.header.update('HIERARCH RA BARY',RA)
-			hdu.header.update('HIERARCH DEC BARY',DEC)			
-			hdu.header.update('HIERARCH EQUINOX',hd['EQUINOX'])
-			hdu.header.update('HIERARCH OBS LATITUDE',hd['SITELAT'])
-			hdu.header.update('HIERARCH OBS LONGITUDE',hd['SITELONG'])
-			hdu.header.update('HIERARCH OBS ALTITUDE',hd['SITEALT'])
-			hdu.header.update('HIERARCH TARG AIRMASS',hd['AIRMASS'])
-			hdu.header.update('HIERARCH MOON_VEL',refvel,'[km/s]')
-			hdu.header.update('HIERARCH MOONST',moon_state)
-			hdu.header.update('HIERARCH LUNATION',lunation)
-			hdu.header.update('HIERARCH MOONSEP',moonsep2)
-			hdu.header.update('HIERARCH MOONALT',float(mephem.alt))
-			hdu.header.update('HIERARCH SMOONALT',str(mephem.alt))
+			hdu = GLOBALutils.update_header(hdu,'HIERARCH MJD',scmjd)
+			hdu = GLOBALutils.update_header(hdu,'HIERARCH MBJD',scmbjd)
+			hdu = GLOBALutils.update_header(hdu,'HIERARCH SHUTTER START DATE',hd['DATE-OBS'])
+			hdu = GLOBALutils.update_header(hdu,'HIERARCH SHUTTER START UT',hd['UT-TIME'])
+			hdu = GLOBALutils.update_header(hdu,'HIERARCH TEXP (S)',hd['EXPTIME'])
+			hdu = GLOBALutils.update_header(hdu,'HIERARCH BARYCENTRIC CORRECTION (KM/S)',bcvel_baryc,'[km/s]')
+			hdu = GLOBALutils.update_header(hdu,'HIERARCH (LAMBDA_BARY / LAMBDA_TOPO)',lbary_ltopo)
+			hdu = GLOBALutils.update_header(hdu,'HIERARCH TARGET NAME',nombre)
+			hdu = GLOBALutils.update_header(hdu,'HIERARCH RA',hd['RA'])
+			hdu = GLOBALutils.update_header(hdu,'HIERARCH DEC',hd['DEC'])
+			hdu = GLOBALutils.update_header(hdu,'HIERARCH RA-D',hd['RA-D'])
+			hdu = GLOBALutils.update_header(hdu,'HIERARCH DEC-D',hd['DEC-D'])
+			hdu = GLOBALutils.update_header(hdu,'HIERARCH RA BARY',RA)
+			hdu = GLOBALutils.update_header(hdu,'HIERARCH DEC BARY',DEC)			
+			hdu = GLOBALutils.update_header(hdu,'HIERARCH EQUINOX',hd['EQUINOX'])
+			hdu = GLOBALutils.update_header(hdu,'HIERARCH OBS LATITUDE',hd['SITELAT'])
+			hdu = GLOBALutils.update_header(hdu,'HIERARCH OBS LONGITUDE',hd['SITELONG'])
+			hdu = GLOBALutils.update_header(hdu,'HIERARCH OBS ALTITUDE',hd['SITEALT'])
+			hdu = GLOBALutils.update_header(hdu,'HIERARCH TARG AIRMASS',hd['AIRMASS'])
+			hdu = GLOBALutils.update_header(hdu,'HIERARCH MOON_VEL',refvel,'[km/s]')
+			hdu = GLOBALutils.update_header(hdu,'HIERARCH MOONST',moon_state)
+			hdu = GLOBALutils.update_header(hdu,'HIERARCH LUNATION',lunation)
+			hdu = GLOBALutils.update_header(hdu,'HIERARCH MOONSEP',moonsep2)
+			hdu = GLOBALutils.update_header(hdu,'HIERARCH MOONALT',float(mephem.alt))
+			hdu = GLOBALutils.update_header(hdu,'HIERARCH SMOONALT',str(mephem.alt))
 		
 			if (os.access(dirout+'proc/'+nf,os.F_OK)):
 					os.remove( dirout+'proc/'+nf )
@@ -1067,17 +1066,17 @@ if not JustExtract:
 		spec = pyfits.getdata(fit)
 		hdu  = pyfits.open(fit,'update')
 
-		obname      = hd['HIERARCH TARGET NAME']
-		refvel      = hd['HIERARCH MOON_VEL']
-		lunation    = hd['HIERARCH LUNATION']
-		moon_state  = hd['HIERARCH MOONST']
-		moonsep     = hd['HIERARCH MOONSEP']
-		moon_alt    = hd['HIERARCH MOONALT']
-		smoon_alt   = hd['HIERARCH SMOONALT']
-		lbary_ltopo = hd['HIERARCH (lambda_bary / lambda_topo)']
-		mjd         = hd['HIERARCH MJD']
-		TEXP        = hd['HIERARCH TEXP (s)']
-		mbjd        = hd['HIERARCH MBJD']
+		obname      = hd['TARGET NAME']
+		refvel      = hd['MOON_VEL']
+		lunation    = hd['LUNATION']
+		moon_state  = hd['MOONST']
+		moonsep     = hd['MOONSEP']
+		moon_alt    = hd['MOONALT']
+		smoon_alt   = hd['SMOONALT']
+		lbary_ltopo = hd['(LAMBDA_BARY / LAMBDA_TOPO)']
+		mjd         = hd['MJD']
+		TEXP        = hd['TEXP (S)']
+		mbjd        = hd['MBJD']
 
 		for i in range(spec.shape[1]):
 			if spec[0,i,500] < 5200:
@@ -1096,7 +1095,7 @@ if not JustExtract:
 		        query_success,sp_type_query = GLOBALutils.simbad_query_coords('12:00:00','00:00:00')
 		    print "\t\t\tSpectral type returned by SIMBAD query:",sp_type_query
 
-		    hdu[0].header.update('HIERARCH SIMBAD SPTYP', sp_type_query)
+		    hdu[0] = GLOBALutils.update_header(hdu[0],'HIERARCH SIMBAD SPTYP', sp_type_query)
 
 		    pars_file = dirout + nombre+'_'+hd['HIERARCH SHUTTER START DATE']+'_' \
 				+ hd['HIERARCH SHUTTER START UT'][:2]+'-'+hd['HIERARCH SHUTTER START UT'][3:5]+ \
@@ -1126,11 +1125,11 @@ if not JustExtract:
 		vsini_epoch = vsini
 		vel0_epoch  = vel0
 	
-		hdu[0].header.update('HIERARCH VEL0', vel0)
-		hdu[0].header.update('HIERARCH TEFF', float(T_eff))
-		hdu[0].header.update('HIERARCH LOGG', float(logg))
-		hdu[0].header.update('HIERARCH Z', Z)
-		hdu[0].header.update('HIERARCH VSINI', vsini)
+		hdu[0] = GLOBALutils.update_header(hdu[0],'HIERARCH VEL0', vel0)
+		hdu[0] = GLOBALutils.update_header(hdu[0],'HIERARCH TEFF', float(T_eff))
+		hdu[0] = GLOBALutils.update_header(hdu[0],'HIERARCH LOGG', float(logg))
+		hdu[0] = GLOBALutils.update_header(hdu[0],'HIERARCH Z', Z)
+		hdu[0] = GLOBALutils.update_header(hdu[0],'HIERARCH VSINI', vsini)
 
 		print "\t\tRadial Velocity analysis:"
 		# assign mask
@@ -1267,7 +1266,7 @@ if not JustExtract:
 		if not avoid_plot:
 			GLOBALutils.plot_CCF(xc_dict,moon_dict,path=ccf_pdf)
 
-		airmass  = hdu[0].header['HIERARCH TARG AIRMASS']
+		airmass  = hdu[0].header['TARG AIRMASS']
 		seeing   = -999
 
 		if sp_type == 'G2':
@@ -1303,18 +1302,18 @@ if not JustExtract:
 		SNR_5130_R = np.around(SNR_5130*np.sqrt(2.9))
 
 		disp_epoch = np.around(p1gau_m[2],1)
-		hdu[0].header.update('RV', RV)
-		hdu[0].header.update('RV_E', RVerr2)
-		hdu[0].header.update('BS', BS)
-		hdu[0].header.update('BS_E', BSerr)
-		hdu[0].header.update('DISP', disp_epoch)
-		hdu[0].header.update('SNR', SNR_5130)
-		hdu[0].header.update('SNR_R', SNR_5130_R)
-		hdu[0].header.update('INST', 'DUPONT')
-		hdu[0].header.update('RESOL', '60000')
-		hdu[0].header.update('PIPELINE', 'CERES')
-		hdu[0].header.update('XC_MIN', XC_min)
-		hdu[0].header.update('BJD_OUT', bjd_out)
+		hdu[0] = GLOBALutils.update_header(hdu[0],'RV', RV)
+		hdu[0] = GLOBALutils.update_header(hdu[0],'RV_E', RVerr2)
+		hdu[0] = GLOBALutils.update_header(hdu[0],'BS', BS)
+		hdu[0] = GLOBALutils.update_header(hdu[0],'BS_E', BSerr)
+		hdu[0] = GLOBALutils.update_header(hdu[0],'DISP', disp_epoch)
+		hdu[0] = GLOBALutils.update_header(hdu[0],'SNR', SNR_5130)
+		hdu[0] = GLOBALutils.update_header(hdu[0],'SNR_R', SNR_5130_R)
+		hdu[0] = GLOBALutils.update_header(hdu[0],'INST', 'DUPONT')
+		hdu[0] = GLOBALutils.update_header(hdu[0],'RESOL', '60000')
+		hdu[0] = GLOBALutils.update_header(hdu[0],'PIPELINE', 'CERES')
+		hdu[0] = GLOBALutils.update_header(hdu[0],'XC_MIN', XC_min)
+		hdu[0] = GLOBALutils.update_header(hdu[0],'BJD_OUT', bjd_out)
 
 		line_out = "%-15s %18.8f %9.4f %7.4f %9.3f %5.3f   coralie   ceres   60000 %6d %5.2f %5.2f %5.1f %4.2f %5.2f %6.1f %4d %s\n"%\
                       (obname, bjd_out, RV, RVerr2, BS, BSerr, T_eff_epoch, logg_epoch,\
