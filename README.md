@@ -14,12 +14,20 @@ In order to run one of the pipelines, you have to be in the CERES directory wher
 
 Additionally you can add some options to the command in order to modify some of the processing steps. The allowed options are:
 
-    -avoid_plot     this option will prevent the code to generate a pdf file with the plot of the computed CCF
+    -avoid_plot     if activated, the code will not generate the pdf file with the plot of the computed CCF.
+    -dirout         path to the directory where the reductions will be placed. The default path will be a
+                    new directory with the same name that the input directory but followed by a '_red' suffix.
+    -do_class       this option will allow the code to perform the estimation of the atmospheric parameters.
+    -just_extract   if activated, the code will not compute the CCF and atmospheric parameters.
+    -npools         number of CPU cores to be used by the code.
+    -o2do           if you want to process just one particular science object you have to enter this option
+                    followed by the name of the object.
+    -reffile        name of the auxiliary file that is described below. The default is ./reffile.txt
+    
+For example if you want your output directory to bee foo/, and you don't want to generate the CCF plots, and you want to perform the spectral classification, and you want to use 10 CPU cores, and you want to process only the data of the target called HATS-17, then you have to enter:
 
-    -dirout     path to the directory where the reductions will be placed. The default path will be a
-                new directory with the same name that the input directory but followed by a '_red' suffix.
-                
-    -do_class   this option will allow the code to perform the estimation of the atmospheric parameters.
+    $ python ferospipe.py /path/to/the/raw/data/to/be/processed -dirout foo/ -avoid_plot -do_class -npools 10 -o2do HATS-17
+    
     
     
     
