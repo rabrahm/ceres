@@ -22,9 +22,9 @@ Additionally you can add some options to the command in order to modify some of 
     -npools         number of CPU cores to be used by the code.
     -o2do           if you want to process just one particular science object you have to enter this option
                     followed by the name of the object.
-    -reffile        name of the auxiliary file that is described below. The default is ./reffile.txt
+    -reffile        name of the auxiliary file that is described below. The default is './reffile.txt'
     
-For example if you want your output directory to bee foo/, and you don't want to generate the CCF plots, and you want to perform the spectral classification, and you want to use 10 CPU cores, and you want to process only the data of the target called HATS-17, then you have to enter:
+For example, if you want your output directory to bee foo/, and you don't want to generate the CCF plots, and you want to perform the spectral classification, and you want to use 10 CPU cores, and you want to process only the data of the target called HATS-17, then you have to enter:
 
     $ python ferospipe.py /path/to/the/raw/data/to/be/processed -dirout foo/ -avoid_plot -do_class -npools 10 -o2do HATS-17
     
