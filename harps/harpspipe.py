@@ -7,7 +7,7 @@ sys.path.append(base+"utils/Correlation")
 sys.path.append(base+"utils/OptExtract")
 sys.path.append(base+"utils/GLOBALutils")
 
-baryc_dir= base+'utils/JPLEphemx/'
+baryc_dir= base+'utils/SSEphemx/'
 sys.path.append(baryc_dir)
 ephemeris='DEc403'
 
