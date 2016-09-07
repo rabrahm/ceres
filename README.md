@@ -14,8 +14,15 @@ In order to run one of the pipelines, you have to be in the CERES directory wher
 
 Additionally you can add some options to the command in order to modify some of the processing steps. The allowed options are:
 
-    -dirout     path to the directory where the reductions will be placed. The default path will be a new directory
-                with the same name that the input directory but followed by a '_red' suffix.    
+    -avoid_plot     this option will prevent the code to generate a pdf file with the plot of the computed CCF
+
+    -dirout     path to the directory where the reductions will be placed. The default path will be a
+                new directory with the same name that the input directory but followed by a '_red' suffix.
+                
+    -do_class   this option will allow the code to perform the estimation of the atmospheric parameters.
+    
+    
+    
 
 
 
