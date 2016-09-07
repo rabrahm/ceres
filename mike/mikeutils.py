@@ -8,9 +8,7 @@ import os
 import matplotlib.pyplot as plt
 import sys
 sys.path.append("../utils/BaryCor")
-sys.path.append("../utils/CCF")
 import BaryCor
-import CCF
 from pylab import *
 from rpy2 import robjects
 import rpy2.robjects.numpy2ri
