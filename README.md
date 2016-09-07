@@ -23,12 +23,25 @@ Additionally you can add some options to the command in order to modify some of 
     -o2do           if you want to process just one particular science object you have to enter this option
                     followed by the name of the object.
     -reffile        name of the auxiliary file that is described below. The default is './reffile.txt'
+    -ofind          only in the case of slit spectrographs. Name of the image that will be used to identify
+                    and trace the echelle orders.
     
 For example, if you want your output directory to bee foo/, and you don't want to generate the CCF plots, and you want to perform the spectral classification, and you want to use 10 CPU cores, and you want to process only the data of the target called HATS-17, then you have to enter:
 
     $ python ferospipe.py /path/to/the/raw/data/to/be/processed -dirout foo/ -avoid_plot -do_class -npools 10 -o2do HATS-17
     
-    
+The auxiliary file mentioned above (reffile) corresponds to a plain text file that can be used to give specifications for particular targets that can improve the precision in the radial velocity computation. The file should contain 8 comma-sparated colummns. The colummns should contain the following information:
+
+    1-  name of the target as specified in the image header.
+    2-  right ascension of the target (J2000) with format hh:mm:ss.
+    3-  declination of the target (J2000) with format dd:mm:ss.
+    4-  proper motion in RA [mas/yr].
+    5-  proper motion in DEC [mas/yr].
+    6-  integer (0 or 1). If 0, the code uses the cordinates given in the image header.
+        If 1, the code uses the coordinates given in this file.
+    7-  mask that will be used to compute the CCF. Allowed entries are G2, K5 and M2.
+    8-  velocity width in km/s that is used to broaden the lines of the binary mask.
+        I should be similar to the standard deviation of the gaussian that is fitted to the CCF. 
     
     
 
