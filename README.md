@@ -22,7 +22,8 @@ Additionally you can add some options to the command in order to modify some of 
     -npools         number of CPU cores to be used by the code.
     -o2do           if you want to process just one particular science object you have to enter this option
                     followed by the name of the object.
-    -reffile        name of the auxiliary file that is described below. The default is './reffile.txt'
+    -reffile        name of the auxiliary file that is described below. The default is a '/reffile.txt' file
+                    located inside the directory with the raw data.
     -ofind          only in the case of slit spectrographs. Name of the image that will be used to identify
                     and trace the echelle orders.
     
