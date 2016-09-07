@@ -63,7 +63,40 @@ While the directory specified in the dirout directory will contain several inter
 
 3) a text file (results.txt) that contains a summary of the results of the reduction including the radial velocity measurements and the atmospheric parameters.
 
+The .fits files are data cubes with dimensions (10,nords,npix), where nords are the total number of processed echelle orders, and npix in the number of pixels in the dispersion direction. The ten entrances in the first dimension correspond to:
 
+    0-  Wavelength
+    1-  Extracted Flux
+    2-  Measurment of the error in the extracted flux 1./sqrt(Var)
+    3-  Blaze corrected Flux
+    4-  Measurment of the error in the blaze corrected flux
+    5-  Continuum normalized flux
+    6-  Measurment of the error in the continuum normalized flux
+    7-  Estimated continuum
+    8-  Signal to noise ratio
+    9-  Continumm normalized flux multiplied by the derivative of the wavelength with respect to the pixels
+    10- Corresponding error of the 9th entrance
+
+The colummns in the results.txt file have the following meaning:
+
+    0-  Object name
+    1-  MBJD
+    2-  RV
+    3-  error in RV
+    4-  Bisector span
+    5-  error in bisector span
+    6-  instrument
+    7-  pipeline
+    8-  resolving power
+    9-  Efective Temperture
+    10- log(g)
+    11- [Fe/H]
+    12- v*sin(i)
+    13- value of the continuum normalized CCF at it lowest point
+    14- standard deviation of the gaussian fitted to the CCF
+    15- Exposure time
+    16- Signal to noise ratio at ~5150 \AA
+    17- path to the CCF plot file
     
     
 
