@@ -100,7 +100,11 @@ The colummns in the results.txt file have the following meaning:
 
 # Dependencies
 CERES has been succesfully tested with python2.6 and python2.7 on MAC and Linux.
-Some python packages need to be installed: python-numpy, python-scipy
+
+Some python packages need to be installed: python-numpy, python-scipy, python-matplotlib, python-pyfits, python-pycurl, python-ephem, python-rpy2.
+
+Additionally, SWIG and the gcc, g++, gfortran compilers are required.
+
     
 # Installation
 The python code does not need any previous installation. However, CERES uses some C, C++, and fortran routines that must be compiled in order to be called from python by the pipelines. Before the installation it is necessary to check and modify some variables of the installation files of these codes.
