@@ -39,8 +39,10 @@ from scipy import interpolate
 # interface to R
 from rpy2 import robjects
 import rpy2.robjects.numpy2ri
-rpy2.robjects.numpy2ri.activate()
-
+try:
+	rpy2.robjects.numpy2ri.activate()
+except:
+	None
 import rpy2.robjects.numpy2ri
 r = robjects.r
 r.library("MASS")
