@@ -39,7 +39,10 @@ import jplephem
 from matplotlib.backends.backend_pdf import PdfPages
 
 import rpy2.robjects.numpy2ri
-rpy2.robjects.numpy2ri.activate()
+try:
+	rpy2.robjects.numpy2ri.activate()
+except:
+	None
 from rpy2 import robjects
 robjects.r.library("MASS")
 """
