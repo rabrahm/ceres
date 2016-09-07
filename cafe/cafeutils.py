@@ -9,9 +9,7 @@ import sys
 from pylab import *
 base = "../"
 sys.path.append(base+"utils/BaryCor")
-sys.path.append(base+"utils/CCF")
 import BaryCor
-import CCF
 import warnings
 warnings.filterwarnings("ignore")
 
