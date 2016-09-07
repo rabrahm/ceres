@@ -63,7 +63,7 @@ SOFA_INC_DIR = ./include/
 # of your preferred C compiler (CCOMPC) and compilation flags (CFLAGF
 # for functions, CFLAGX for executables) here.
 
-CCOMPC = gcc
+CCOMPC = gcc -fPIC
 CFLAGF = -c -pedantic -Wall -W -O
 CFLAGX = -pedantic -Wall -W -O
 
