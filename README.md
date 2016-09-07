@@ -58,7 +58,9 @@ Additionally, there are other two auxiliary files that can be placed in the same
 While the directory specified in the dirout directory will contain several intermediate reduction files, the final results will be placed in the directory 'proc/'. This directory should contain three types of files:
 
 1) .fits files with the extracted and wavelength calibrated spectra.
-2) .pdf files that show the CCF plots
+
+2) .pdf files that show the CCF plots.
+
 3) a text file (results.txt) that contains a summary of the results of the reduction including the radial velocity measurements and the atmospheric parameters.
 
 
