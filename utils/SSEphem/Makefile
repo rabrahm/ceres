@@ -7,7 +7,7 @@ SWIG = /usr/local/Cellar/swig/2.0.12/bin/swig
 INUM = /System/Library/Frameworks/Python.framework/Versions/2.7/Extras/lib/python/numpy/core/include/numpy/
 ISOFA = ./SOFA
 LSOFA = ./SOFA/lib
-CPP = g++
+CPP = g++ -fPIC
 
 #INCLUDE = -I. -I$(ISLALIB)
 INCLUDE = -I. -I$(ISOFA)
