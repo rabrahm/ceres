@@ -9,6 +9,7 @@ The principal goal of the CERES routines is the developement of fully automated 
 # Usage
 In order to run one of the pipelines, you have to be in the CERES directory where the pipeline lives and run the correspondig python pipe code followed by the path to the raw data. For example in the case of the FEROS pipeline you have to enter:
 
+    cd ceres/feros
     python ferospipe.py /path/to/the/raw/data/to/be/processed
 
 
