@@ -97,6 +97,10 @@ The colummns in the results.txt file have the following meaning:
     15- Exposure time
     16- Signal to noise ratio at ~5150 \AA
     17- path to the CCF plot file
+
+# Dependencies
+CERES has been succesfully tested with python2.6 and python2.7 on MAC and Linux.
+Some python packages need to be installed: python-numpy, python-scipy
     
 # Installation
 The python code does not need any previous installation. However, CERES uses some C, C++, and fortran routines that must be compiled in order to be called from python by the pipelines. Before the installation it is necessary to check and modify some variables of the installation files of these codes.
