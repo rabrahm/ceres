@@ -42,6 +42,12 @@ The auxiliary file mentioned above (reffile) corresponds to a plain text file th
     7-  mask that will be used to compute the CCF. Allowed entries are G2, K5 and M2.
     8-  velocity width in km/s that is used to broaden the lines of the binary mask.
         I should be similar to the standard deviation of the gaussian that is fitted to the CCF. 
+        
+Here is an example of a reffile:
+
+    HD157347,17:22:51.28809,-02:23:17.4297,49.39,-107.16,1,G2,4.0
+    HD32147,05:00:48.99977,-05:45:13.2303,550.12,-1109.23,1,G2,4.0
+    HD72673,08:32:51.49609,-31:30:03.0717,-1113.37,761.57,1,K5,4.0
     
     
 
