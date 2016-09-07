@@ -53,6 +53,15 @@ Here is an example of a reffile:
 If the pipeline doesn't find any reffile, it uses the coordinates found in the image header to compute the barycentric correction and uses the G2 mask to compute the CCF.
 
 Additionally, there are other two auxiliary files that can be placed in the same directory of the raw images for improving the reductions. A file called 'bad_files.txt' can be used to list all the images of the raw directory that should be ignored by the pipeline. Each line of the bad_files file must have the name of the image without the complete path. Another file named 'moon_corr.txt' can be used to specify the images for which the CCF computation will include a double gaussian fit in order to correct the radial velocity by scattered moonlight contamination.
+
+# Outputs
+While the directory specified in the dirout directory will contain several intermediate reduction files, the final results will be placed in the directory 'proc/'. This directory should contain three types of files:
+
+1) .fits files with the extracted and wavelength calibrated spectra.
+2) .pdf files that show the CCF plots
+3) a text file (results.txt) that contains a summary of the results of the reduction including the radial velocity measurements and the atmospheric parameters.
+
+
     
     
 
