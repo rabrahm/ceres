@@ -1,9 +1,7 @@
 import sys
 base = '../'
-sys.path.append(base+"utils/CCF/")
 sys.path.append(base+"utils/BaryCor")
 import BaryCor
-import CCF
 import numpy as np
 import scipy
 import pyfits
