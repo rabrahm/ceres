@@ -1,5 +1,5 @@
 # ceres
-A set of pipelines and routunes for echelle spectrographs
+A set of pipelines and routines for echelle spectrographs
 
 Authors: Rafael Brahm, Andrés Jordán, Néstor Espinoza
 
