@@ -10,11 +10,14 @@
 
 p_name = "CERES"
 
+
 import glob
 import sys
 import os
 import shutil
 import subprocess
+sys.path.append("utils/SSEphem")
+import update_ssephem
 
 def CheckLibraries():
     print "     ----------------------------------------------------------"
@@ -150,20 +153,22 @@ for dire in dirs:
 dirs = ndirs
 for directory in dirs:
     # To each directory, we apply the build function:
-    if(directory == 'utils/JPLEphemx'):
-       print "     > Installing JPLEPHEM...\n \n"
-       os.chdir('utils/JPLEphemx/SOFA')
-       p = subprocess.Popen('make clean',stdout = subprocess.PIPE, stderr = subprocess.PIPE,shell = True)
-       p.wait()
-       if(p.returncode != 0 and p.returncode != None):
-          print '           Error in JPLEPHEM installation! The error was:'
-          out, err = p.communicate()
-          print spaced(err,"\t \t")
-          sys.exit()
+    if(directory == 'utils/SSEphem'):
+       print "     > Installing SSEphem...\n \n"
+       os.chdir('utils/SSEphem/SOFA')
+       os.system('mkdir lib')
+       os.system('mkdir include')
        p = subprocess.Popen('make',stdout = subprocess.PIPE, stderr = subprocess.PIPE,shell = True)
        p.wait()
        if(p.returncode != 0 and p.returncode != None):
-          print '           Error in JPLEPHEM installation! The error was:'
+          print '           Error in SSEphem installation! The error was:'
+          out, err = p.communicate()
+          print spaced(err,"\t \t")
+          sys.exit()
+       p = subprocess.Popen('make test',stdout = subprocess.PIPE, stderr = subprocess.PIPE,shell = True)
+       p.wait()
+       if(p.returncode != 0 and p.returncode != None):
+          print '           Error in SSEphem installation! The error was:'
           out, err = p.communicate()
           print spaced(err,"\t \t")
           sys.exit()
@@ -171,31 +176,22 @@ for directory in dirs:
        p = subprocess.Popen('make clean',stdout = subprocess.PIPE, stderr = subprocess.PIPE,shell = True)
        p.wait()
        if(p.returncode != 0 and p.returncode != None):
-          print '           Error in JPLEPHEM installation! The error was:'
+          print '           Error in SSEphem installation! The error was:'
           out, err = p.communicate()
           print spaced(err,"\t \t")
           sys.exit()
        p = subprocess.Popen('make',stdout = subprocess.PIPE, stderr = subprocess.PIPE,shell = True)
        p.wait()
        if(p.returncode != 0 and p.returncode != None):
-          print '           Error in JPLEPHEM installation! The error was:'
+          print '           Error in SSEphem installation! The error was:'
           out, err = p.communicate()
           print spaced(err,"\t \t")
           sys.exit()
-       p = subprocess.Popen('cat header.403 asc+1980.403 asc+2000.403 > asc.403.cat',stdout = subprocess.PIPE, stderr = subprocess.PIPE,shell = True)
-       p.wait()
-       if(p.returncode != 0 and p.returncode != None):
-          print '           Error in JPLEPHEM installation! The error was:'
-          out, err = p.communicate()
-          print spaced(err,"\t \t")
-          sys.exit()
-       p = subprocess.Popen('./asc2bin asc.403.cat',stdout = subprocess.PIPE, stderr = subprocess.PIPE,shell = True)
-       p.wait()
-       if(p.returncode != 0 and p.returncode != None):
-          print '           Error in JPLEPHEM installation! The error was:'
-          out, err = p.communicate()
-          print spaced(err,"\t \t")
-          sys.exit()
+       else:
+          update_ssephem.SSEphemDownload()
+          update_ssephem.LeapSecUpdate()
+          update_ssephem.IersUpdate()
+
        os.chdir('../../')
     else:
        Build(directory)
