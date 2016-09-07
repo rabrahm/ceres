@@ -1,5 +1,5 @@
 #include <Python.h>
-#include <numpy/arrayobject.h>
+#include <arrayobject.h>
 #define ARRAYD(p) ((double *) (((PyArrayObject *)p)->data))
 
 
