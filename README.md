@@ -1,37 +1,37 @@
 # ceres
-A set of routines for processing data of echelle spectrographs
+A set of pipelines and routunes for echelle spectrographs
 
-Author: Rafael Brahm (rbrahm@astro.puc.cl)
+Authors: Rafael Brahm, Andrés Jordán, Néstor Espinoza
 
 # About the code
-The principal goal of the CERES routines is the developement of fully automated pipelines for the reduction, extraction and analysis of echelle data. CERES currently counts with dedicated pipelines for eleven different instruments, which are included in the repository: APO3.5m/ARCES, CAHA2.2m/CAFE, Euler1.2m/Coralie, DuPont2.5m/Echelle, MPG2.2m/FEROS, ESO1.0m/FIDEOS, ESO3.6m/HARPS, KECK10m/HIRES, MAGELLAN6.5m/MIKE, MALLEGAN6.5m/PFS, PUC0.5m/PUCHEROS. These processing recipes can be used as reference for developing pipelines for new instruments. A detailed decription of the structure and performance of these pipelines can be found in [Brahm et al 2016](http://adsabs.harvard.edu/abs/2016arXiv160705792B). The standard output of the pipelines is a cube fits with the optimally extracted, wavelength calibrated and instrumetal drift corrected spectrum for each of the science images. Additionally, CERES includes routines for the computation of precise radial velocities and bisector spans via the cross-correlation method, and an automated algorithm to obtain a relatively precise guess of the atmospheric parameters of the observed star.
+The principal goal of CERES is the developement of fully automated pipelines for the reduction, extraction and analysis of echelle spectrograph data. CERES currently counts with dedicated pipelines for eleven different instruments, which are included in the repository: APO3.5m/ARCES, CAHA2.2m/CAFE, Euler1.2m/Coralie, DuPont2.5m/Echelle, MPG2.2m/FEROS, ESO1.0m/FIDEOS, ESO3.6m/HARPS, KECK10m/HIRES, MAGELLAN6.5m/MIKE, MALLEGAN6.5m/PFS, PUC0.5m/PUCHEROS. These processing recipes can be used as a reference for developing pipelines for new instruments. A detailed decription of the structure and performance of these pipelines can be found in [Brahm et al 2016](http://adsabs.harvard.edu/abs/2016arXiv160705792B). The standard output of the pipelines is a fits cube with the optimally extracted, wavelength calibrated and instrumetal drift corrected spectrum for each of the science images. Additionally, CERES includes routines for the computation of precise radial velocities and bisector spans via the cross-correlation method, and an automated algorithm to obtain an estimate of the atmospheric parameters of the observed star.
 
 # Usage
-In order to run one of the pipelines, you have to be in the CERES directory where the pipeline lives and run the correspondig python pipe code followed by the path to the raw data. For example in the case of the FEROS pipeline you have to enter:
+In order to run one of the pipelines, you have to be in the CERES directory where the pipeline for the instrument of interest lies and run the corresponding ```Python''' pipe code followed by the path to the raw data. For example, in the case of the FEROS pipeline you have to enter:
 
     $ cd ceres/feros
     $ python ferospipe.py /path/to/the/raw/data/to/be/processed
 
-Additionally you can add some options to the command in order to modify some of the processing steps. The allowed options are:
+Additionally you can specify some options in order to modify some of the processing steps. The available options are:
 
-    -avoid_plot     if activated, the code will not generate the pdf file with the plot of the computed CCF.
-    -dirout         path to the directory where the reductions will be placed. The default path will be a
+    -avoid_plot     if activated, the code will not generate a pdf file with the plot of the computed CCF.
+    -dirout         path to the directory where the pipeline products will be placed. The default path will be a
                     new directory with the same name that the input directory but followed by a '_red' suffix.
-    -do_class       this option will allow the code to perform the estimation of the atmospheric parameters.
+    -do_class       this option will enable the estimation of atmospheric parameters.
     -just_extract   if activated, the code will not compute the CCF and atmospheric parameters.
     -npools         number of CPU cores to be used by the code.
     -o2do           if you want to process just one particular science object you have to enter this option
                     followed by the name of the object.
-    -reffile        name of the auxiliary file that is described below. The default is a '/reffile.txt' file
-                    located inside the directory with the raw data.
-    -ofind          only in the case of slit spectrographs. Name of the image that will be used to identify
+    -reffile        name of the auxiliary file that is described below. The default is './reffile.txt', a file
+                    located in the directory where the raw data is.
+    -ofind          only valid for slit spectrographs. Name of the image that will be used to identify
                     and trace the echelle orders.
     
-For example, if you want your output directory to bee foo/, and you don't want to generate the CCF plots, and you want to perform the spectral classification, and you want to use 10 CPU cores, and you want to process only the data of the target called HATS-17, then you have to enter:
+For example, if you want your output directory to bee foo/, you don't want to generate the CCF plots, you want to perform the spectral classification, you want to use 10 CPU cores, and you want to process only the data of the target called HATS-17, then you would do:
 
     $ python ferospipe.py /path/to/the/raw/data/to/be/processed -dirout foo/ -avoid_plot -do_class -npools 10 -o2do HATS-17
     
-The auxiliary file mentioned above (reffile) corresponds to a plain text file that can be used to give specifications for particular targets that can improve the precision in the radial velocity computation. The file should contain 8 comma-sparated colummns. The colummns should contain the following information:
+The auxiliary file mentioned above (reffile) corresponds to a plain text file that can be used to give data for particular targets in order to improve the precision in the radial velocity estimation. The file should contain 8 comma-sparated colummns containing the following information:
 
     1-  name of the target as specified in the image header.
     2-  right ascension of the target (J2000) with format hh:mm:ss.
@@ -42,7 +42,7 @@ The auxiliary file mentioned above (reffile) corresponds to a plain text file th
         If 1, the code uses the coordinates given in this file.
     7-  mask that will be used to compute the CCF. Allowed entries are G2, K5 and M2.
     8-  velocity width in km/s that is used to broaden the lines of the binary mask.
-        I should be similar to the standard deviation of the gaussian that is fitted to the CCF. 
+        It should be similar to the standard deviation of the Gaussian that is fitted to the CCF. 
         
 Here is an example of a reffile:
 
@@ -52,10 +52,10 @@ Here is an example of a reffile:
     
 If the pipeline doesn't find any reffile, it uses the coordinates found in the image header to compute the barycentric correction and uses the G2 mask to compute the CCF.
 
-Additionally, there are other two auxiliary files that can be placed in the same directory of the raw images for improving the reductions. A file called 'bad_files.txt' can be used to list all the images of the raw directory that should be ignored by the pipeline. Each line of the bad_files file must have the name of the image without the complete path. Another file named 'moon_corr.txt' can be used to specify the images for which the CCF computation will include a double gaussian fit in order to correct the radial velocity by scattered moonlight contamination.
+Additionally, there are other two auxiliary files that can be placed in the same directory of the raw images for improving the reductions. A file called 'bad_files.txt' can be used to list all the images of the raw directory that should be ignored by the pipeline. Each line of the bad_files file must have the name of the image without the complete path. Another file named 'moon_corr.txt' can be used to specify the images for which the CCF computation will include a double gaussian fit in order to correct the radial velocity for the effects of scattered moonlight contamination.
 
-# Outputs
-While the directory specified in the dirout directory will contain several intermediate reduction files, the final results will be placed in the directory 'proc/'. This directory should contain three types of files:
+# Output
+While the directory specified in the dirout directory will contain several intermediate reduction files, the final results will be placed in the directory 'proc/'. This directory can contain up to three types of files:
 
 1) .fits files with the extracted and wavelength calibrated spectra.
 
@@ -63,21 +63,21 @@ While the directory specified in the dirout directory will contain several inter
 
 3) a text file (results.txt) that contains a summary of the results of the reduction including the radial velocity measurements and the atmospheric parameters.
 
-The .fits files are data cubes with dimensions (10,nords,npix), where nords are the total number of processed echelle orders, and npix in the number of pixels in the dispersion direction. The ten entrances in the first dimension correspond to:
+The .fits files are data cubes with dimensions (10,nords,npix), where nords are the total number of processed echelle orders, and npix in the number of pixels in the dispersion direction. The ten entries in the first dimension correspond to:
 
     0-  Wavelength
     1-  Extracted Flux
-    2-  Measurment of the error in the extracted flux 1./sqrt(Var)
+    2-  Measurement of the error in the extracted flux [1./sqrt(Var)]
     3-  Blaze corrected Flux
-    4-  Measurment of the error in the blaze corrected flux
+    4-  Measurement of the error in the blaze corrected flux
     5-  Continuum normalized flux
-    6-  Measurment of the error in the continuum normalized flux
+    6-  Measurement of the error in the continuum normalized flux
     7-  Estimated continuum
-    8-  Signal to noise ratio
+    8-  Signal-to-noise ratio
     9-  Continumm normalized flux multiplied by the derivative of the wavelength with respect to the pixels
     10- Corresponding error of the 9th entrance
 
-The colummns in the results.txt file have the following meaning:
+The colummns in the results.txt file are the following:
 
     0-  Object name
     1-  MBJD
@@ -99,7 +99,7 @@ The colummns in the results.txt file have the following meaning:
     17- path to the CCF plot file
 
 # Dependencies
-CERES has been succesfully tested with python2.6 and python2.7 on MAC and Linux.
+CERES has been succesfully tested with python2.6 and python2.7 on OS X and Linux systems.
 
 Some python packages need to be installed: python-numpy, python-scipy, python-matplotlib, python-pyfits, python-pycurl, python-ephem, python-rpy2.
 
@@ -107,12 +107,12 @@ Additionally, SWIG and the gcc, g++, gfortran compilers are required.
 
     
 # Installation
-The python code does not need any previous installation. However, CERES uses some C, C++, and fortran routines that must be compiled in order to be called from python by the pipelines. Before the installation it is necessary to check and modify some variables of the installation files of these codes.
+The python code does not need any previous installation. However, CERES uses some C, C++, and fortran routines that must be compiled in order to be called from python by the pipelines. Before installation it is necessary to check and modify some variables of the installation files of these codes.
 
-Firstly, it must be checked if the default f2py version is compatible with the default python version. If that is not the case, the files named "Proceso_f2py" in ceres/utils/CCF and ceres/utils/BaryCor should be modified in order to point to the compatible f2py binary file.
+First, it must be checked if the default f2py version is compatible with the default python version. If that is not the case, the files named "Proceso_f2py" in ceres/utils/CCF and ceres/utils/BaryCor should be modified in order to point to the compatible f2py binary file.
 
 CERES uses the [SSephem](http://www.cv.nrao.edu/~rfisher/Python/py_solar_system.html) package coupled to the [SOFA](http://www.iausofa.org/) C functions for computing the barycentric velocity corrections. A version of this package with minor modifications is included in the CERES repository. In order to install this package, it has to be checked that the ceres/utils/SSephem/Makefile points to the correct Python, SWIG, and numpy paths.
-SSephem requires also three separete files for running: the binary solar system ephemeris, a leap-second table, and a UT1 - UTC offset table. These three files are downloaded during the CERES installation. However, the latter two files should be also periodically updated, which can be easily done by reinstalling CERES.
+SSephem requires also three separete files for running: the binary solar system ephemeris, a leap-second table, and a UT1 - UTC offset table. These three files are downloaded during the CERES installation. However, the latter two files should be periodically updated, which can be easily done by reinstalling CERES.
 
 After checking the C, C++, and fortran installation files, CERES can be istalled with the following command:
 
