@@ -27,6 +27,7 @@ def SeeknDestroy(directory):
        os.system('rm finals2000*')
        os.system('rm iers*tab')
        os.system('rm leap*tab')
+       os.system('*pyc')
        os.system('rm alltimes asc2bin closureT delayT earthT ephemT gbxyz gc_fn_test ierspast jupiterT lst makeiers marsT mdy2mjd mercuryT mjd2mdy moonT moonvelT neptuneT nutT plutoT saturnT ssobject sunT topochk uranusT venusT')
        os.chdir('SOFA')
        p = subprocess.Popen('make clean',stdout = subprocess.PIPE, stderr = subprocess.PIPE,shell = True)
