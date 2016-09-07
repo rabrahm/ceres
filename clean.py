@@ -19,16 +19,21 @@ def getDirs(foldername):
     return os.walk(foldername).next()[1]
 
 def SeeknDestroy(directory):
-    if(directory == 'utils/JPLEphemx'):
-       os.chdir('utils/JPLEphemx')
+    if(directory == 'utils/SSEphem'):
+       os.chdir('utils/SSEphem')
        p = subprocess.Popen('make clean',stdout = subprocess.PIPE, stderr = subprocess.PIPE,shell = True)
        p.wait()
+       os.system('rm *403*')
+       os.system('rm finals2000*')
+       os.system('rm iers*tab')
+       os.system('rm leap*tab')
+       os.system('rm alltimes asc2bin closureT delayT earthT ephemT gbxyz gc_fn_test ierspast jupiterT lst makeiers marsT mdy2mjd mercuryT mjd2mdy moonT moonvelT neptuneT nutT plutoT saturnT ssobject sunT topochk uranusT venusT')
        os.chdir('SOFA')
        p = subprocess.Popen('make clean',stdout = subprocess.PIPE, stderr = subprocess.PIPE,shell = True)
+       os.system('rm -r lib')
+       os.system('rm -r include')
+       os.system('rm t_sofa_c')
        p.wait()
-       os.chdir('lib')
-       if(os.access('libsofa_c.a',os.F_OK)):
-          os.remove('libsofa_c.a')
        os.chdir('../../')
     # We obtain al files and folders of the current directory...
     files_and_folders = glob.glob(directory+'/*')
