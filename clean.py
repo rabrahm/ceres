@@ -34,6 +34,7 @@ def SeeknDestroy(directory):
        os.system('rm -r lib')
        os.system('rm -r include')
        os.system('rm t_sofa_c')
+       os.system('rm libsofa_c.a')
        p.wait()
        os.chdir('../../')
     # We obtain al files and folders of the current directory...
