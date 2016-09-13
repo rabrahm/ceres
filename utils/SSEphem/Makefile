@@ -4,10 +4,10 @@
 
 # Update this line!
 PY_PREFIX := /usr/local
+SWIG = /usr/local/bin/swig
 
 # Do not change below here
 PY  = $(PY_PREFIX)/include/python2.7/
-SWIG = /usr/local/bin/swig
 INUM = $(PY_PREFIX)/lib/python2.7/site-packages/numpy/core/include/numpy/
 ISOFA = ./SOFA
 LSOFA = ./SOFA/lib
