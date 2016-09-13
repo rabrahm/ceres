@@ -137,7 +137,7 @@ are required. All of the above can be install using homebrew on OSX, e.g.:
 # Installation
 The python code does not need any previous installation. However, CERES uses some C, C++, and fortran routines that must be compiled in order to be called from python by the pipelines. Before installation it is necessary to check and modify some variables of the installation files of these codes.
 
-First, it must be checked if the default f2py version is compatible with the default python version. If that is not the case, the files named "Proceso_f2py" in ceres/utils/CCF and ceres/utils/BaryCor should be modified in order to point to the compatible f2py binary file.
+First, it must be checked if the default f2py version is compatible with the default python version. If that is not the case, the file named "Proceso_f2py" in ceres/utils/CCF must be modified in order to point to the compatible f2py binary file.
 
 CERES uses the [SSephem](http://www.cv.nrao.edu/~rfisher/Python/py_solar_system.html) package coupled to the [SOFA](http://www.iausofa.org/) C functions for computing the barycentric velocity corrections. A version of this package with minor modifications is included in the CERES repository. In order to install this package, it has to be checked that the ceres/utils/SSephem/Makefile points to the correct Python, SWIG, and numpy paths. Edit the lines:
 
