@@ -2,13 +2,15 @@
 # Makefile for Python wrapper and test programs associated with the
 # JPL DE403 ephemerides.
 
-# Update this line!
+#Update this line!
 PY_PREFIX := /usr/local
-SWIG = /usr/local/bin/swig
+
+#You might also need to update these other three lines
+SWIG = swig
+INUM = $(PY_PREFIX)/lib/python2.7/site-packages/numpy/core/include/numpy/
+PY   = $(PY_PREFIX)/include/python2.7/
 
 # Do not change below here
-PY  = $(PY_PREFIX)/include/python2.7/
-INUM = $(PY_PREFIX)/lib/python2.7/site-packages/numpy/core/include/numpy/
 ISOFA = ./SOFA
 LSOFA = ./SOFA/lib
 CPP = g++ -fPIC
