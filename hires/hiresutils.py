@@ -1,19 +1,14 @@
 import numpy as np
-from numpy import median,sqrt,array,exp
 import scipy
-from scipy import signal,special,optimize,interpolate
+from scipy import signal,interpolate
 import scipy.special as sp
 import copy
 import glob
 import os
-import matplotlib.pyplot as plt
 import sys
-import tempfile
-import StringIO
-import string
 from pylab import *
-sys.path.append("../utils/BaryCor")
-import BaryCor
+sys.path.append("../utils/GLOBALutils")
+import GLOBALutils
 
 from rpy2 import robjects
 import rpy2.robjects.numpy2ri
@@ -92,7 +87,7 @@ def FileClassify(diri, log):
     ThAr_ref = ThAr_ref[IS]
 
 
-    return array(flats), array(ThAr_ref), sim_sci, array(ThAr_ref_dates), obnames, exptimes
+    return np.array(flats), np.array(ThAr_ref), sim_sci, np.array(ThAr_ref_dates), obnames, exptimes
 
 def mjd_fromheader2(hd):
     """
@@ -106,7 +101,7 @@ def mjd_fromheader2(hd):
     
     datetu = date.replace('-',':')
 
-    mjd0,mjd,i = BaryCor.iau_cal2jd(int(datetu[0:4]),int(datetu[5:7]),int(datetu[8:10]))
+    mjd0,mjd,i = GLOBALutils.iau_cal2jd(int(datetu[0:4]),int(datetu[5:7]),int(datetu[8:10]))
     ut        = (float(ut[:2])*3600. + float(ut[3:5])*60. + float(ut[6:]))
     mjd_start = mjd + ut / secinday
 

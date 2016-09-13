@@ -14,11 +14,9 @@ import StringIO
 import string
 import pycurl
 from multiprocessing import Pool
-sys.path.append("../utils/BaryCor")
 sys.path.append("../utils/CCF")
 sys.path.append("../utils/OptExtract")
 import Marsh
-import BaryCor
 import CCF
 from pylab import *
 from rpy2 import robjects
@@ -3174,3 +3172,29 @@ def get_mask_teff(T_eff,base='../../xc_masks/'):
         sp_type = 'M5'
     return sp_type, mask
 
+
+def iau_cal2jd(IY,IM,ID):
+	IYMIN = -4799.
+	MTAB = np.array([ 31., 28., 31., 30., 31., 30., 31., 31., 30., 31., 30., 31.])
+	J = 0
+	if IY < IYMIN:
+		J = -1
+	else:
+		if IM>=1 and IM <= 12:
+			if IY%4 == 0:
+				MTAB[1] = 29.
+			else:
+				MTAB[1] = 28.
+
+			if IY%100 == 0 and IY%400!=0:
+				MTAB[1] = 28.
+			if ID < 1 or ID > MTAB[IM-1]:
+				J = -3
+			a = ( 14 - IM ) / 12
+			y = IY + 4800 - a
+			m = IM + 12*a -3
+			DJM0 = 2400000.5
+			DJM = ID + (153*m + 2)/5 + 365*y + y/4 - y/100 + y/400 - 32045 - 2400001.
+		else:
+			J = -2
+	return DJM0, DJM, J

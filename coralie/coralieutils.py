@@ -1,19 +1,18 @@
 import pyfits
 import numpy as np
 import scipy
-from scipy import optimize,interpolate
+from scipy import optimize
 import copy
 import glob
 import os
 import matplotlib.pyplot as plt
 import sys
-sys.path.append("../utils/BaryCor")
-import BaryCor
+sys.path.append("../utils/GLOBALutils")
+import GLOBALutils
 
 from rpy2 import robjects
 import rpy2.robjects.numpy2ri
 r = robjects.r
-#r.library("MASS")
 
 import pycurl
 
@@ -116,88 +115,6 @@ def getObName(h):
 
     return obname
 
-def fp_base(f,n=3):
-    of = f.copy()
-    x = np.arange(len(f))
-    I = np.where(f==0)[0]
-    x = np.delete(x,I)
-    f = np.delete(f,I)
-    f1 = np.hstack((f[1:],f[0]))
-    f2 = np.hstack((f[-1],f[:-1]))
-    I = np.where((f<f1)&(f<f2))[0]
-    xmin = x[I]
-    fmin = f[I]
-    
-    coef = np.polyfit(xmin,fmin,n)
-    res = fmin - np.polyval(coef,xmin)
-    rms = np.sqrt(np.mean(res**2))
-    I = np.where(np.absolute(res)>3*rms)[0]
-    cond = True
-    if len(I)==0:
-	cond = False
-    while cond:
-	iw = np.argmax(res**2)
-	xmin = np.delete(xmin,iw)
-	fmin = np.delete(fmin,iw)
-	coef = np.polyfit(xmin,fmin,n)
-	res = fmin - np.polyval(coef,xmin)
-	rms = np.sqrt(np.mean(res**2))
-	I = np.where(res>3*rms)[0]
-	if len(I)==0:
-	    cond = False
-
-    ox = np.arange(len(of))
-    base = np.polyval(coef,ox)
-    I = np.where(base<0)[0]
-    base[I] = 0.
-    ret = of - base
-    I = np.where(of==0)[0]
-    ret[I] = 0.
-    return ret
-
-def ccf_fp(fp,fpr,p1,order,order0=89,Inv=True):
-    def gaufp(p,v):
-	retval = np.exp(-((v-p[0])**2)/(2*p[1]**2))
-        return retval
-    errgaufp = lambda p,c,v: np.ravel( (gaufp(p,v)-c) )
-
-    pix_centers = np.arange(len(fp))
-    chebs = Calculate_chebs(pix_centers, np.zeros(len(fp))+order+order0, Inverse=Inv)
-    wav = (1.0/float(order+order0)) * Joint_Polynomial_Cheby(p1,chebs)
-    #plt.plot(wav,fpr)
-    #plt.show()
-    vels = np.arange(-10000.,10000.,30.)
-    ccf = []
-    for v in vels:
-	twav = wav*(1+v/299792458.)
-	tck = interpolate.splrep(twav,fp,k=3)
-	tfp = interpolate.splev(wav,tck)[500:-500]
-	tfp /= np.sum(tfp) 
-	tfpr = fpr[500:-500]
-	tfpr /= np.sum(tfpr)
-	ccf.append(np.sum(tfpr*tfp))
-    ccf = np.array(ccf)
-    try:
-	am = np.argmax(ccf)
-	imin = np.argmin(ccf[:am])
-	rmin = am + np.argmin(ccf[am:])
-	vels = vels[imin:rmin+1]
-	ccf  = ccf[imin:rmin+1]
-	ccf -= .5*(ccf[0]+ccf[-1])
-	ccf /= ccf.max()
-    
-    	pg, success = scipy.optimize.leastsq(errgaufp, [0.,10.], args=(ccf, vels))
-
-    	#plt.plot(vels,ccf)
-    	#plt.plot(vels,gaufp(pg,vels))
-    	#plt.show()
-	return pg[0]
-    except:
-    	return -999.
-	
-    
-	
-
 def FileClassify(dir, log):
     """
     
@@ -285,7 +202,7 @@ def mjd_fromheader(h):
     
     datetu = h[0].header['HIERARCH ESO CORA SHUTTER START DATE'] 
     ut     = h[0].header['HIERARCH ESO CORA SHUTTER START HOUR']
-    mjd0,mjd,i = BaryCor.iau_cal2jd(int(datetu[0:4]),int(datetu[4:6]),int(datetu[6:8]))
+    mjd0,mjd,i = GLOBALutils.iau_cal2jd(int(datetu[0:4]),int(datetu[4:6]),int(datetu[6:8]))
 
     mjd_start = mjd + ut/24.0
 

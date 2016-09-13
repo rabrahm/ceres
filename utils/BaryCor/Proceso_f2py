@@ -1,1 +1,0 @@
-f2py -c --fcompiler=gnu95 --f77flags="-ffixed-line-length-none" BaryCor.pyf BaryCor.f

@@ -7,8 +7,9 @@ import glob
 import os
 import matplotlib.pyplot as plt
 import sys
-sys.path.append("../utils/BaryCor")
-import BaryCor
+sys.path.append("../utils/GLOBALutils")
+import GLOBALutils
+
 from pylab import *
 from rpy2 import robjects
 import rpy2.robjects.numpy2ri
@@ -158,7 +159,7 @@ def mjd_fromheader(h):
 	ih = 1
     datetu = h[ih].header['UT-DATE'] 
     ut     = h[ih].header['UT-TIME']
-    mjd0,mjd,i = BaryCor.iau_cal2jd(int(datetu[0:4]),int(datetu[5:7]),int(datetu[8:]))
+    mjd0,mjd,i = GLOBALutils.iau_cal2jd(int(datetu[0:4]),int(datetu[5:7]),int(datetu[8:]))
     ut = ut/3600.
     mjd_start = mjd + ut/24.0
     secinday = 24*3600.0

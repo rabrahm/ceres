@@ -10,8 +10,8 @@ import os
 from pylab import *
 import sys
 base = '../'
-sys.path.append(base+"utils/BaryCor")
-import BaryCor
+sys.path.append(base+"utils/GLOBALutils")
+import GLOBALutils
 
 from rpy2 import robjects
 import rpy2.robjects.numpy2ri
@@ -269,7 +269,7 @@ def mjd_fromheader(h):
 	mjd0 = 2400000.5
     else:
 	    #print datetu
-	    mjd0,mjd,i = BaryCor.iau_cal2jd(int(datetu[:4]),int(datetu[5:7]),int(datetu[8:10]))
+	    mjd0,mjd,i = GLOBALutils.iau_cal2jd(int(datetu[:4]),int(datetu[5:7]),int(datetu[8:10]))
 	    ho = int(datetu[11:13])
 	    mi = int(datetu[14:16])
 	    se = float(datetu[17:])
@@ -325,67 +325,6 @@ def Lines_mBack(thar, sd,  thres_rel=3, pl=False):
 
     return bkg
 
-def Wav_Solution_vel_shift(p_ref, pix_centers, wavelengths, minlines=80, maxrms=20, Cheby=False, Inv = False, l=4096,b=1):
-
-    def fitfunc(p, p_ref,x, m):
-	ret = (1+1e-6*p) * scipy.polyval(p_ref,x)    
-        return ret
-    errfunc = lambda p,p_ref,x,y: np.ravel( (fitfunc(p,p_ref,x)-y) )
- 
-    def fitfunc_cheb(p,p_ref,x):
-        ret = (1+1e-6*p) * Cheby_eval (p_ref,x,l,b)
-        return ret
-    errfunc_cheb_nw = lambda p,p_ref,x,y: np.ravel( (fitfunc_cheb(p,p_ref,x)-y) )
-
-        
-    p0 = np.array( [0] )
-
-    if (Cheby):
-        p1, success =  scipy.optimize.leastsq(errfunc_cheb_nw, p0, args=(p_ref,pix_centers, wavelengths ))
-        residuals   =  errfunc_cheb_nw(p1, p_ref, pix_centers, wavelengths)
-    else:
-        p1, success = scipy.optimize.leastsq(errfunc, p0, args=(p_ref, pix_centers, wavelengths))
-        residuals    = errfunc(p1, p_ref, pix_centers, wavelengths)
-
-    residuals_ms = 299792458.0 * residuals / wavelengths
-    rms_ms       = np.sqrt( np.var( residuals_ms ) ) 
-
-    N_l = len( pix_centers )
-    I = range( N_l )
-
-    cond = 1
-    L = np.where( abs(residuals_ms) > 3.0*rms_ms )
-    if ( (len(L[0]) == 0) and (rms_ms < maxrms) ) or (N_l < minlines): 
-        cond=0
-    
-    #print "Start Global culling with ", N_l, " number of lines"
-    while (cond):        
-        index_worst = np.argmax( abs(residuals) )
-	wavelengths = np.delete(wavelengths,index_worst)
-	pix_centers = np.delete(pix_centers,index_worst)
-        N_l -= 1
-        if (Cheby):
-            p1, success =  scipy.optimize.leastsq(errfunc_cheb_nw, p0, args=(p_ref,pix_centers, wavelengths ))
-	    residuals   =  errfunc_cheb_nw(p1, p_ref, pix_centers, wavelengths)
-        else:
-           p1, success = scipy.optimize.leastsq(errfunc, p0, args=(p_ref, pix_centers, wavelengths))
-	   residuals    = errfunc(p1, p_ref, pix_centers, wavelengths)
-
-        residuals_ms = 299792458.0 * residuals / wavelengths
-        rms_ms       = np.sqrt( np.var( residuals_ms ) ) 
-        #print 'p1',(1e-6*p1)*299792458.0, rms_ms 
-        L = np.where( abs(residuals_ms) > 3.*rms_ms )
-        if ( (len(L[0]) == 0) and (rms_ms < maxrms) ) or (N_l < minlines): 
-            cond=0
-
-    #print "Final RMS is ", rms_ms
-    #print "Number of lines is ", N_l
-    #print "--> Achievable RV precision is ", rms_ms/np.sqrt(N_l)
-    #print p1
-    #print "Velocity of ThAr w/r to solution provided is ", (1e-6*p1)*299792458.0
-
-    return p1, pix_centers, wavelengths, rms_ms, residuals 
-
 def FindLines_simple_sigma(d,sd,thres=3):
     """
     Given an array, find lines above a sigma-threshold
@@ -399,18 +338,6 @@ def FindLines_simple_sigma(d,sd,thres=3):
     
     return lines
 
-def Cheby_eval(p,x,l,b=1):
-    """
-    evaluates Chebyshev polynomial fit at x given best-fit parameters p
-    """
-    med = int( float( float(l) / float(b) ))
-    x_norm = (x-med) / med
-    order = len(p) - 1
-    ret_val = 0.0
-    for i in range(order + 1):
-        ret_val += p[order - i]*scipy.special.chebyt(i)(x_norm)
-    
-    return ret_val
 ### wavelength calibration routines ###
 def sigma_clip(vec,lim=3.0):
 	while True:

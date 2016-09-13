@@ -1,7 +1,8 @@
 import sys
 base = '../'
-sys.path.append(base+"utils/BaryCor")
-import BaryCor
+sys.path.append(base+"utils/GLOBALutils")
+import GLOBALutils
+
 import numpy as np
 import scipy
 import pyfits
@@ -270,7 +271,7 @@ def mjd_fromheader(h):
     """
     
     datetu = h[0].header['DATE-OBS'] 
-    mjd0,mjd,i = BaryCor.iau_cal2jd(int(datetu[:4]),int(datetu[5:7]),int(datetu[8:10]))
+    mjd0,mjd,i = GLOBALutils.iau_cal2jd(int(datetu[:4]),int(datetu[5:7]),int(datetu[8:10]))
     ut = float(datetu[11:13]) + float(datetu[14:16])/60. + float(datetu[17:])/3600.
     mjd_start = mjd + ut/24.0
 

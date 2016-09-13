@@ -2,8 +2,8 @@ from pylab import *
 import scipy
 from scipy import interpolate
 from scipy import signal
-sys.path.append("../utils/BaryCor")
-import BaryCor
+sys.path.append("../utils/GLOBALutils")
+import GLOBALutils
 
 def get_data(path):
     d = pyfits.getdata(path)
@@ -70,7 +70,7 @@ def mjd_fromheader(h):
     """
     datetu = h[0].header['DATE-OBS'][:10]
     ut     = h[0].header['DATE-OBS'][11:]
-    mjd0,mjd,i = BaryCor.iau_cal2jd(int(datetu[0:4]),int(datetu[5:7]),int(datetu[8:10]))
+    mjd0,mjd,i = GLOBALutils.iau_cal2jd(int(datetu[0:4]),int(datetu[5:7]),int(datetu[8:10]))
     ut = float(ut[:2])+ float(ut[3:5])/60. + float(ut[6:])/3600.
     mjd_start = mjd + ut/24.0
 

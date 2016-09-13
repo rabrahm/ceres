@@ -7,11 +7,10 @@ import os
 import matplotlib.pyplot as plt
 import sys
 from pylab import *
+
 base = "../"
-sys.path.append(base+"utils/BaryCor")
-import BaryCor
-import warnings
-warnings.filterwarnings("ignore")
+sys.path.append(base+"utils/GLOBALutils")
+import GLOBALutils
 
 from rpy2 import robjects
 import rpy2.robjects.numpy2ri
@@ -177,7 +176,7 @@ def FileClassify(diri, log):
 
 def mjd_from_data(datetu,ut,texp,fraction):
     secinday = 24*3600.0
-    mjd0,mjd,i = BaryCor.iau_cal2jd(int(datetu[0:4]),int(datetu[5:7]),int(datetu[8:10]))
+    mjd0,mjd,i = GLOBALutils.iau_cal2jd(int(datetu[0:4]),int(datetu[5:7]),int(datetu[8:10]))
 
     ut        = (float(ut[:2])*3600. + float(ut[3:5])*60. + float(ut[6:]))
     mjd_start = mjd + ut / secinday
@@ -204,7 +203,7 @@ def mjd_fromheader(h):
     ut = hour.replace('-',':')
     datetu = date.replace(' ','')
     ut = hour.replace(' ','')
-    mjd0,mjd,i = BaryCor.iau_cal2jd(int(datetu[0:4]),int(datetu[5:7]),int(datetu[8:10]))
+    mjd0,mjd,i = GLOBALutils.iau_cal2jd(int(datetu[0:4]),int(datetu[5:7]),int(datetu[8:10]))
     ut        = (float(ut[:2])*3600. + float(ut[3:5])*60. + float(ut[6:]))
     mjd_start = mjd + ut / secinday
 
@@ -227,7 +226,7 @@ def mjd_fromheader2(h):
     ut = hour.replace(' ','')
     #print datetu
     #print ut
-    mjd0,mjd,i = BaryCor.iau_cal2jd(int(datetu[0:4]),int(datetu[5:7]),int(datetu[8:10]))
+    mjd0,mjd,i = GLOBALutils.iau_cal2jd(int(datetu[0:4]),int(datetu[5:7]),int(datetu[8:10]))
     ut        = (float(ut[:2])*3600. + float(ut[3:5])*60. + float(ut[6:]))
     mjd_start = mjd + ut / secinday
 

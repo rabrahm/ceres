@@ -5,8 +5,9 @@ import glob
 import os
 import sys
 base = '../'
-sys.path.append(base+"utils/BaryCor")
-import BaryCor
+sys.path.append(base+"utils/GLOBALutils")
+import GLOBALutils
+
 from rpy2 import robjects
 import rpy2.robjects.numpy2ri
 r = robjects.r
@@ -104,7 +105,7 @@ def mjd_fromheader(h):
     datetu   = h[0].header['DATE-OBS'][:10] 
     ut       = h[0].header['DATE-OBS'][11:]
 
-    mjd0,mjd,i = BaryCor.iau_cal2jd(int(datetu[0:4]),int(datetu[5:7]),int(datetu[8:10]))
+    mjd0,mjd,i = GLOBALutils.iau_cal2jd(int(datetu[0:4]),int(datetu[5:7]),int(datetu[8:10]))
 
     ut        = (float(ut[:2])*3600. + float(ut[3:5])*60. + float(ut[6:]))
     mjd_start = mjd + ut / secinday

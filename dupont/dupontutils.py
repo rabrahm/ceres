@@ -1,7 +1,7 @@
 import sys
 base = '../'
-sys.path.append(base+"utils/BaryCor")
-import BaryCor
+sys.path.append(base+"utils/GLOBALutils")
+import GLOBALutils
 
 import numpy as np
 import scipy
@@ -10,22 +10,15 @@ import os
 import glob
 import scipy.signal
 from scipy.signal import medfilt
-from scipy import integrate
 from scipy import interpolate
-from scipy import optimize
 import copy
 
 from rpy2 import robjects
 import rpy2.robjects.numpy2ri
-####### agregado por mi ####
-import rpy2.robjects.numpy2ri
 rpy2.robjects.numpy2ri.activate()
-############################
 
 from pylab import *
-#import numdisplay
 r = robjects.r
-#r.library("MASS")
 
 
 def milk_comb(ImgList, darks, zero='Bias.fits'):
@@ -396,7 +389,7 @@ def mjd_fromheader(h):
     """  
     datetu = h['UT-DATE']
     timetu = h['UT-TIME']
-    mjd0,mjd,i = BaryCor.iau_cal2jd(int(datetu[:4]),int(datetu[5:7]),int(datetu[8:]))
+    mjd0,mjd,i = GLOBALutils.iau_cal2jd(int(datetu[:4]),int(datetu[5:7]),int(datetu[8:]))
     ho = int(timetu[:2])
     mi = int(timetu[3:5])
     se = float(timetu[7:])
