@@ -105,7 +105,7 @@ def Build(directory):
            print "     > C code found in directory "+directory+". Building..."
            cwd = os.getcwd()
            os.chdir(directory)
-           p = subprocess.Popen('python setup.py build',stdout = subprocess.PIPE, stderr = subprocess.PIPE,shell = True)
+           p = subprocess.Popen('{python} setup.py build'.format(python=sys.executable),stdout = subprocess.PIPE, stderr = subprocess.PIPE,shell = True)
            p.wait()
            if(p.returncode != 0 and p.returncode != None):
              print "     ----------------------------------------------------------"

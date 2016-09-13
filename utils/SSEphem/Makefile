@@ -2,17 +2,27 @@
 # Makefile for Python wrapper and test programs associated with the
 # JPL DE403 ephemerides.
 
-PY  = /usr/include/python2.7/
-SWIG = /usr/local/Cellar/swig/2.0.12/bin/swig
-INUM = /System/Library/Frameworks/Python.framework/Versions/2.7/Extras/lib/python/numpy/core/include/numpy/
+# Update this line!
+PY_PREFIX := /usr/local
+SWIG = /usr/local/bin/swig
+
+# Do not change below here
+PY  = $(PY_PREFIX)/include/python2.7/
+INUM = $(PY_PREFIX)/lib/python2.7/site-packages/numpy/core/include/numpy/
 ISOFA = ./SOFA
 LSOFA = ./SOFA/lib
 CPP = g++ -fPIC
 
+POSTSTEP =
+ifeq ($(shell uname),Darwin)
+    # XXX disgusting
+    POSTSTEP = install_name_tool -change libpython2.7.dylib $(PY_PREFIX)/lib/libpython2.7.dylib _jplephem.so
+endif
+
 #INCLUDE = -I. -I$(ISLALIB)
 INCLUDE = -I. -I$(ISOFA)
 #LIBRARIES = -L$(LSLALIB)
-LIBRARIES = -L$(LSOFA)
+LIBRARIES = -L$(LSOFA) -L$(PY_PREFIX)/lib
 
 OBJ_FILES = jplephem.o\
 	    python_client_fn.o \
@@ -55,6 +65,7 @@ all: $(EXECUTABLES)
 _jplephem.so : jplephem_wrap.o $(OBJ_FILES)
 	$(CPP) -lpython2.7 -shared jplephem_wrap.o $(OBJ_FILES) $(LIBRARIES) \
 					-lsofa_c -o _jplephem.so
+	$(POSTSTEP)
 
 jplephem_wrap.o : jplephem_wrap.c jplephem.h
 	$(CPP) jplephem_wrap.c -c -g -I$(PY)/Include -I$(PY) $(INCLUDE) \
