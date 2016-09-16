@@ -251,7 +251,7 @@ def get_them(sc,exap,ncoef,maxords=-1,startfrom=0,nsigmas=10.,mode=1,endat=-1):
     #plot(np.arange(len(d))[pos], d[pos],'go')
     #show()
     #print jfhedslja
-    #axhline(dtemp.mean() + 3*ddev)
+    #axhline(dtemp.mean() + nsigmas*ddev)
     #xlabel('pixel', fontsize=18)
     #ylabel('Flux [ADUs]', fontsize=18)
     #show()
@@ -539,6 +539,19 @@ def get_them(sc,exap,ncoef,maxords=-1,startfrom=0,nsigmas=10.,mode=1,endat=-1):
     #print gfds
     #print acoefs.shape
     return acoefs, len(acoefs)
+
+def good_orders(coef,nord,ny,nx,ext_aperture):
+    Centers = np.zeros((nord,nx))
+    ejx = np.arange(nx)
+    bad_inx = []
+    for i in range(nord):
+        Centers[i,:]=scipy.polyval(coef[i],ejx)
+	I = np.where(Centers[i,:]+ext_aperture>ny)[0]
+	if len(I)>0:
+	    bad_inx.append(i)
+    bad_inx = np.array(bad_inx)
+    im = np.min(bad_inx)
+    return coef[:im], nord-len(bad_inx)
 
 def get_zero_order_number(ords,wavs):
 	ords,wvas = np.array(ords),np.array(wavs)

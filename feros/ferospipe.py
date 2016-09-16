@@ -120,7 +120,7 @@ npar_wsol = (min(ncoef_x,ncoef_m) + 1) * (2*max(ncoef_x,ncoef_m) - min(ncoef_x,n
 nconts = np.array([2,2,3,3,2,3,3,3,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1])
 lim_iz = np.array([100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,150,200,250,300,350,400,450,500,500,800])
 
-models_path = base+"../COELHO_MODELS/R_50000b/"
+models_path = base+"data/COELHO_MODELS/R_40000b/"
 order_dir   = base+"feros/wavcals/"
  
 o0  = 8
@@ -635,6 +635,7 @@ else:
 spec_moon = np.array(spec_moon)
 use_moon  = np.array(use_moon)
 
+
 for fsim in comp_list:
 
     h        = pyfits.open(fsim)
@@ -1069,11 +1070,16 @@ if (not JustExtract):
                 query_success,sp_type_query = GLOBALutils.simbad_query_coords('12:00:00','00:00:00')
             print "\t\t\tSpectral type returned by SIMBAD query:",sp_type_query
 
-            hdu = GLOBALutils.update_header(hdu,'HIERARCH SIMBAD SPTYP', sp_type_query)
+            hdu[0] = GLOBALutils.update_header(hdu[0],'HIERARCH SIMBAD SPTYP', sp_type_query)
             pars_file = dirout + fsim.split('/')[-1][:-4]+'_stellar_pars.txt'
             if os.access(pars_file,os.F_OK) == False or force_stellar_pars:
                 print "\t\t\tEstimating atmospheric parameters:"
-                T_eff, logg, Z, vsini, vel0, ccf = correlation.CCF(spec,model_path=models_path,npools=npools)
+                Rx = np.around(1./np.sqrt(1./40000.**2 - 1./50000**2))
+                spec2 = spec.copy()
+                for i in range(spec.shape[1]):
+                    IJ = np.where(spec[5,i]!=0.)[0]
+                    spec2[5,i,IJ] = GLOBALutils.convolve(spec[0,i,IJ],spec[5,i,IJ],Rx)
+                T_eff, logg, Z, vsini, vel0, ccf = correlation.CCF(spec2,model_path=models_path,npools=npools)
                 line = "%6d %4.1f %4.1f %8.1f %8.1f\n" % (T_eff,logg, Z, vsini, vel0)
                 f = open(pars_file,'w')
                 f.write(line)
@@ -1086,16 +1092,16 @@ if (not JustExtract):
 
         else:
             T_eff, logg, Z, vsini, vel0 = -999,-999,-999,-999,-999
-            T_eff_epoch = T_eff
-            logg_epoch  = logg
-            Z_epoch     = Z
-            vsini_epoch = vsini
-            vel0_epoch  = vel0
-            hdu[0] = GLOBALutils.update_header(hdu[0],'HIERARCH TEFF', float(T_eff))
-            hdu[0] = GLOBALutils.update_header(hdu[0],'HIERARCH LOGG', float(logg))
-            hdu[0] = GLOBALutils.update_header(hdu[0],'HIERARCH Z', Z)
-            hdu[0] = GLOBALutils.update_header(hdu[0],'HIERARCH VSINI', vsini)
-            hdu[0] = GLOBALutils.update_header(hdu[0],'HIERARCH VEL0', vel0)
+        T_eff_epoch = T_eff
+        logg_epoch  = logg
+        Z_epoch     = Z
+        vsini_epoch = vsini
+        vel0_epoch  = vel0
+        hdu[0] = GLOBALutils.update_header(hdu[0],'HIERARCH TEFF', float(T_eff))
+        hdu[0] = GLOBALutils.update_header(hdu[0],'HIERARCH LOGG', float(logg))
+        hdu[0] = GLOBALutils.update_header(hdu[0],'HIERARCH Z', Z)
+        hdu[0] = GLOBALutils.update_header(hdu[0],'HIERARCH VSINI', vsini)
+        hdu[0] = GLOBALutils.update_header(hdu[0],'HIERARCH VEL0', vel0)
 
         print "\t\tRadial Velocity analysis:"
         # assign mask

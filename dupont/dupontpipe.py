@@ -140,12 +140,7 @@ oro0      = 36
 
 order_dir   = base+'dupont/wavcals/'
 
-if resolution == 40000:
-    models_path = base+'../COELHO_MODELS/R_40000b/'
-elif resolution == 50000:
-    models_path = base+'../COELHO_MODELS/R_50000b/'
-elif resolution == 60000:
-    models_path = base+'../COELHO_MODELS/R_60000b/'
+models_path = base+'data/COELHO_MODELS/R_40000b/'
 
 print "\n\n\tEchelle Du Pont 2.5m  PIPELINE\n"
 print "\tRAW data is in ",dirin
@@ -1103,7 +1098,13 @@ if not JustExtract:
 
 		    if os.access(pars_file,os.F_OK) == False or force_stellar_pars:
 			print "\t\t\tEstimating atmospheric parameters:"
-			T_eff, logg, Z, vsini, vel0, ccf = correlation.CCF(spec,model_path=models_path,npools=npools)
+            spec2 = spec.copy()
+            if resolution > 45000:
+                Rx = np.around(1./np.sqrt(1./40000.**2 - 1./resolution**2))
+                for i in range(spec.shape[1]):
+                    IJ = np.where(spec[5,i]!=0.)[0]
+                    spec2[5,i,IJ] = GLOBALutils.convolve(spec[0,i,IJ],spec[5,i,IJ],Rx)
+			T_eff, logg, Z, vsini, vel0, ccf = correlation.CCF(spec2,model_path=models_path,npools=npools)
 			line = "%6d %4.1f %4.1f %8.1f %8.1f\n" % (T_eff,logg, Z, vsini, vel0)
 		        f = open(pars_file,'w')
 		        f.write(line)
@@ -1310,13 +1311,13 @@ if not JustExtract:
 		hdu[0] = GLOBALutils.update_header(hdu[0],'SNR', SNR_5130)
 		hdu[0] = GLOBALutils.update_header(hdu[0],'SNR_R', SNR_5130_R)
 		hdu[0] = GLOBALutils.update_header(hdu[0],'INST', 'DUPONT')
-		hdu[0] = GLOBALutils.update_header(hdu[0],'RESOL', '60000')
+		hdu[0] = GLOBALutils.update_header(hdu[0],'RESOL', resolution)
 		hdu[0] = GLOBALutils.update_header(hdu[0],'PIPELINE', 'CERES')
 		hdu[0] = GLOBALutils.update_header(hdu[0],'XC_MIN', XC_min)
 		hdu[0] = GLOBALutils.update_header(hdu[0],'BJD_OUT', bjd_out)
 
-		line_out = "%-15s %18.8f %9.4f %7.4f %9.3f %5.3f   coralie   ceres   60000 %6d %5.2f %5.2f %5.1f %4.2f %5.2f %6.1f %4d %s\n"%\
-                      (obname, bjd_out, RV, RVerr2, BS, BSerr, T_eff_epoch, logg_epoch,\
+		line_out = "%-15s %18.8f %9.4f %7.4f %9.3f %5.3f   dupont   ceres   %8d %6d %5.2f %5.2f %5.1f %4.2f %5.2f %6.1f %4d %s\n"%\
+                      (obname, bjd_out, RV, RVerr2, BS, BSerr, ref_RES, T_eff_epoch, logg_epoch,\
 		       Z_epoch, vsini_epoch, XC_min, disp_epoch, TEXP, SNR_5130_R, ccf_pdf)
 		f_res.write(line_out)
 		hdu.close()
