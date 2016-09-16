@@ -158,4 +158,9 @@ For uninstalling CERES you can enter:
 
 # Spectral Classification Module
 
-In order to use the automated spectral classification routines (-do_class option), a set of synthetic spectra are required. In particular, CERES uses a modified version of the [Coelho et al 2005 models](http://adsabs.harvard.edu/abs/2005A%26A...443..735C), where the models have been reduced in wavelength coverage, degraded in resolution and v*sin(i), and reduced in sampling. This grid of models can be downloaded from this [link](http://www.astro.puc.cl/~rbrahm/coelho_05_red4_R40.tar.gz).
+In order to use the automated spectral classification routines (-do_class option), a set of synthetic spectra are required. In particular, CERES uses a modified version of the [Coelho et al 2005 models](http://adsabs.harvard.edu/abs/2005A%26A...443..735C), where the models have been reduced in wavelength coverage, degraded in resolution and v*sin(i), and reduced in sampling. This grid of models can be downloaded from this [link](http://www.astro.puc.cl/~rbrahm/coelho_05_red4_R40.tar.gz) (2.7 GB) and they should be placed in data/COELHO_MODELS:
+
+    mkdir ceres/data/COELHO_MODELS
+    cd ceres/data/COELHO_MODELS
+    wget http://www.astro.puc.cl/~rbrahm/coelho_05_red4_R40.tar.gz
+    tar -xf coelho_05_red4_R40.tar.gz
