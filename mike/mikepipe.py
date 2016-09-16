@@ -126,7 +126,7 @@ ncoef_x   = 7
 ncoef_m   = 8
 npar_wsol = (min(ncoef_x,ncoef_m) + 1) * (2*max(ncoef_x,ncoef_m) - min(ncoef_x,ncoef_m) + 2) / 2
 
-models_path = base+"../COELHO_MODELS/R_50000b/"
+models_path = base+"data/COELHO_MODELS/R_40000b/"
 order_dir   = "wavcals/"
 
 n_useful = 32    # up to which order do we care?

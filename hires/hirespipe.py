@@ -508,15 +508,13 @@ for fsim in new_list:
         hdu = GLOBALutils.update_header(hdu,'HIERARCH TARG AIRMASS',h[0].header['AIRMASS'])
 	hdu = GLOBALutils.update_header(hdu,'DECKNAME',h[0].header['DECKNAME'])
 
-	models_path = base+"../COELHO_MODELS/R_60000b/"
+	models_path = base+"../COELHO_MODELS/R_40000b/"
 	deckname = h[0].header['DECKNAME']
 	if deckname in ['B1','B2','B3','B4']:
 		ref_RES = 72000.		
 	elif deckname in ['B5','C1','C2','C3']:
 		ref_RES = 48000.
-		models_path = base+"../COELHO_MODELS/R_50000b/"
 	elif deckname in ['C4','C5','D1','D2']:
-		models_path = base+"../COELHO_MODELS/R_40000b/"
 		ref_RES = 36000.
 	else:
 		ref_RES = -999
@@ -610,7 +608,13 @@ for fsim in new_list:
 
 		if os.access(pars_file,os.F_OK) == False or force_stellar_pars:
 			print "\t\t\tEstimating atmospheric parameters:"
-			T_eff, logg, Z, vsini, vel0, ccf = correlation.CCF(spec,model_path=models_path,npools=npools)
+            spec2 = spec.copy()
+            if ref_RES>45000:
+                Rx = np.around(1./np.sqrt(1./40000.**2 - 1./ref_RES**2))
+                for i in range(spec.shape[1]):
+                    IJ = np.where(spec[5,i]!=0.)[0]
+                    spec2[5,i,IJ] = GLOBALutils.convolve(spec[0,i,IJ],spec[5,i,IJ],Rx)
+			T_eff, logg, Z, vsini, vel0, ccf = correlation.CCF(spec2,model_path=models_path,npools=npools)
 			line = "%6d %4.1f %4.1f %8.1f %8.1f\n" % (T_eff,logg, Z, vsini, vel0)
 		        f = open(pars_file,'w')
 		        f.write(line)

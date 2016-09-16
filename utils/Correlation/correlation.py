@@ -237,7 +237,7 @@ def gauss1(params,x):
 def res_gauss1(params,g,x):
 	return g-gauss1(params,x)
 
-def CCF(spec, model_path='/dummy/path/',doplot = False, plot_dir = '/home/rabrahm/',plot_name = 'MY_LUP',Li=4500.,Lf=6300.,npools=1):
+def CCF(spec, model_path='/dummy/path/',doplot = False, plot_dir = '/home/rabrahm/',plot_name = 'MY_LUP',Li=4500.,Lf=6300.,npools=1,base='../utils/Correlation/'):
 	"""
 	This function finds an aproximation to the stellar parameters (Teff, log(g), [Fe/H]) 
 	of the input echelle spectrum using a CCF with model spectra. This code also is 
@@ -253,16 +253,14 @@ def CCF(spec, model_path='/dummy/path/',doplot = False, plot_dir = '/home/rabrah
 
 	#width_path = '/home/rabrahm/Desktop/corr2/'
 	#slines_path = '/home/rabrahm/Desktop/corr2/'
-	width_path = '/data/echelle/ecpipe/Correlation/'
-	slines_path = '/data/echelle/ecpipe/Correlation/'
 	
-	SLi,SLf = numpy.loadtxt(slines_path+'lines2.dat',dtype=None,unpack=True)
+	SLi,SLf = numpy.loadtxt(base+'lines2.dat',dtype=None,unpack=True)
 	
 	SLi = ToVacuum(SLi)
 	SLf = ToVacuum(SLf)
 	
 	AT,AG,AZ,A000,A025,A050,A075,A100,A150,A200,A250,A300,A350,A400,A450,A500 =\
-            numpy.loadtxt(width_path+'anchos50000.dat',dtype=None,unpack=True)
+            numpy.loadtxt(base+'anchos50000.dat',dtype=None,unpack=True)
 	
 	vsini = [0.0,2.5,5.0,7.5,10.0,15.0,20.0,25.0,30.0,35.0,40.0,45.0,50.0]
 	
@@ -1176,6 +1174,5 @@ def CCF(spec, model_path='/dummy/path/',doplot = False, plot_dir = '/home/rabrah
 			xlabel('wavelenth [A]')
 			ylabel('Continuum Normalized Flux')
 			savefig(plot_dir + plot_name + '_' + str(int(L1[i,0])) + '_' + str(int(L1[i,-1])) + '.pdf', format='pdf')
-			
 			
 	return [intert, interg, interz, interv, velfin,maximCCF]

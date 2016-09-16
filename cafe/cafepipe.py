@@ -125,7 +125,7 @@ ncoef_x            = 3
 ncoef_m            = 8
 npar_wsol = (min(ncoef_x,ncoef_m) + 1) * (2*max(ncoef_x,ncoef_m) - min(ncoef_x,ncoef_m) + 2) / 2
 
-models_path = base+"../COELHO_MODELS/R_60000b/"
+models_path = base+"data/COELHO_MODELS/R_40000b/"
 order_dir   = base+"cafe/wavcals/"
 
 n_useful = 80
@@ -182,9 +182,11 @@ if (pre_process == 1):
     print "\t\t-> Masterflats: done!"
 
     print "\tTracing echelle orders..."
-    c_all,nord = GLOBALutils.get_them(Flat, ext_aperture, trace_degree, maxords=-1, mode=1 )
-    c_all = c_all[:90]
-    nord=90
+    c_all,nord = GLOBALutils.get_them(Flat, ext_aperture, trace_degree, maxords=-1, mode=1)
+    c_all, nord = GLOBALutils.good_orders(c_all,nord,Flat.shape[0],Flat.shape[1],ext_aperture)
+    if nord >= 90:
+        c_all = c_all[:90]
+        nord=90
     print '\t\t'+ str(nord)+' orders found.'
 
     # pickle traces
@@ -213,7 +215,6 @@ print '\n\tExtraction of Flat calibration frames:'
 
 P_fits      = dirout + 'P.fits'
 S_flat_fits = dirout +'flat.fits'
-P           = np.zeros( (Flat.shape[0],Flat.shape[1]) )
 S_flat      = np.zeros((nord, 3, Flat.shape[1]) )
 
 if ( os.access(P_fits,os.F_OK) == False ) or \
@@ -224,8 +225,13 @@ if ( os.access(P_fits,os.F_OK) == False ) or \
     Centers = np.zeros((len(c_all),Flat.shape[1]))
     for i in range(nord):
         Centers[i,:]=scipy.polyval(c_all[i,:],np.arange(len(Centers[i,:])))
+
     bac = GLOBALutils.get_scat(Flat,Centers,span=7)
     fl = Flat - bac
+    #plot(fl[:,1000])
+    #plot(np.around(Centers[:,1000]).astype('int'),fl[np.around(Centers[:,1000].astype('int')),1000],'ro')
+    #show()
+    #print gfd
     bacfile = dirout + 'BAC_FLAT.fits'
     if (os.access(bacfile,os.F_OK)):
             os.remove( bacfile )
@@ -233,10 +239,10 @@ if ( os.access(P_fits,os.F_OK) == False ) or \
     hdbac.writeto(bacfile)
 
     print "\t\tWill extract",nord,"orders for object fibre..."
-    for i in range(nord):
-        P_marsh = GLOBALutils.PCoeff( fl, c_all[i,:], ext_aperture, RO_fl, GA_fl,\
-		  NSigma_Marsh, S_Marsh, N_Marsh, Marsh_alg, min_extract_col,max_extract_col )
-        P    += P_marsh
+    P = GLOBALutils.obtain_P(fl,c_all,ext_aperture,RO_fl,\
+                                    GA_fl,NSigma_Marsh, S_Marsh, \
+                    N_Marsh, Marsh_alg, min_extract_col,\
+                    max_extract_col, npools)
 
     if (os.access(P_fits,os.F_OK)):
         os.remove( P_fits )
@@ -704,7 +710,12 @@ for fsim in new_list:
 
                 if os.access(pars_file,os.F_OK) == False or force_stellar_pars:
                     print "\t\t\tEstimating atmospheric parameters:"
-                    T_eff, logg, Z, vsini, vel0, ccf = correlation.CCF(spec,model_path=models_path,npools=npools)
+                    Rx = np.around(1./np.sqrt(1./40000.**2 - 1./60000.**2))
+                    spec2 = spec.copy()
+                    for i in range(spec.shape[1]):
+                        IJ = np.where(spec[5,i]!=0.)[0]
+                        spec2[5,i,IJ] = GLOBALutils.convolve(spec[0,i,IJ],spec[5,i,IJ],Rx)
+                    T_eff, logg, Z, vsini, vel0, ccf = correlation.CCF(spec2,model_path=models_path,npools=npools)
                     line = "%6d %4.1f %4.1f %8.1f %8.1f\n" % (T_eff,logg, Z, vsini, vel0)
                     f = open(pars_file,'w')
                     f.write(line)

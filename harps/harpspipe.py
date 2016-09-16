@@ -125,7 +125,7 @@ npar_wsol_R = (min(ncoef_x_R,ncoef_m_R) + 1) * (2*max(ncoef_x_R,ncoef_m_R) - min
 or0_R = 89
 or0_B = 116
 
-models_path = base+"../COELHO_MODELS/R_60000b/"
+models_path = base+"data/COELHO_MODELS/R_40000b/"
 order_dir   = "wavcals/"
 final_wav   = '.iwdat'
 
@@ -1437,12 +1437,12 @@ for nlisti in range(len(new_list)):
 
 		if os.access(pars_file,os.F_OK) == False or force_stellar_pars:
 			print "\t\t\tEstimating atmospheric parameters:"
-			Rx = np.around(1./np.sqrt(1./60000.**2 - 1./RESI**2))
+			Rx = np.around(1./np.sqrt(1./40000.**2 - 1./RESI**2))
                         spec2 = spec.copy()
                         for i in range(spec.shape[1]):
                             IJ = np.where(spec[5,i]!=0.)[0]
                             spec2[5,i,IJ] = GLOBALutils.convolve(spec[0,i,IJ],spec[5,i,IJ],Rx)
-			T_eff, logg, Z, vsini, vel0, ccf = correlation.CCF(spec,model_path=models_path,npools=npools)
+			T_eff, logg, Z, vsini, vel0, ccf = correlation.CCF(spec2,model_path=models_path,npools=npools)
 			line = "%6d %4.1f %4.1f %8.1f %8.1f\n" % (T_eff,logg, Z, vsini, vel0)
 		        f = open(pars_file,'w')
 		        f.write(line)

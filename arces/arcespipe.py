@@ -116,7 +116,7 @@ max_extract_col    = 1847
 ncoef_x            = 4
 ncoef_m            = 6
 npar_wsol = (min(ncoef_x,ncoef_m) + 1) * (2*max(ncoef_x,ncoef_m) - min(ncoef_x,ncoef_m) + 2) / 2
-models_path = base+"../COELHO_MODELS/R_40000b/"
+models_path = base+"data/COELHO_MODELS/R_40000b/"
 order_dir   = base+"arces/wavcals/"
 
 n_useful = 90    # up to which order do we care?
