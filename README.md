@@ -89,7 +89,7 @@ The .fits files are data cubes with dimensions (10,nords,npix), where nords are 
 The colummns in the results.txt file are the following:
 
     0-  Object name
-    1-  MBJD
+    1-  BJD
     2-  RV
     3-  error in RV
     4-  Bisector span
