@@ -1,7 +1,7 @@
 # ceres
 A set of pipelines and routines for echelle spectrographs.
 
-Authors: Rafael Brahm, Andrés Jordán, Néstor Espinoza. If you use this code, please cite [Brahm et al 2016](http://arxiv.org/abs/1609.02279).
+Authors: Rafael Brahm, Andrés Jordán, Néstor Espinoza. If you make use of this code, please cite [Brahm et al 2016](http://arxiv.org/abs/1609.02279).
 
 # About the code
 The principal goal of CERES is the developement of fully automated pipelines for the reduction, extraction and analysis of echelle spectrograph data. CERES currently counts with dedicated pipelines for eleven different instruments, which are included in the repository: APO3.5m/ARCES, CAHA2.2m/CAFE, Euler1.2m/Coralie, DuPont2.5m/Echelle, MPG2.2m/FEROS, ESO1.0m/FIDEOS, ESO3.6m/HARPS, KECK10m/HIRES, MAGELLAN6.5m/MIKE, MALLEGAN6.5m/PFS, PUC0.5m/PUCHEROS. These processing recipes can be used as a reference for developing pipelines for new instruments. A detailed decription of the structure and performance of these pipelines can be found in [Brahm et al 2016](http://arxiv.org/abs/1609.02279). The standard output of the pipelines is a fits cube with the optimally extracted, wavelength calibrated and instrumetal drift corrected spectrum for each of the science images. Additionally, CERES includes routines for the computation of precise radial velocities and bisector spans via the cross-correlation method, and an automated algorithm to obtain an estimate of the atmospheric parameters of the observed star.
