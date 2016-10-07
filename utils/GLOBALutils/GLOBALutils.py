@@ -1726,7 +1726,7 @@ def get_rough_offset(sc,files,window=100):
     return delta
 
 def Initial_Wav_Calibration(filename,spec,order,wei, porder=3, rmsmax=75, minlines=10, FixEnds=True,\
-                                Dump_Argon=False, Dump_AllLines=False, Cheby=False, rough_shift = 0.0, del_width=5.0, binning=1,line_width=4):
+                                Dump_Argon=False, Dump_AllLines=False, Cheby=False, rough_shift = 0.0, del_width=5.0, binning=1,line_width=4, fact=1):
     """
     Input: a file that contains:
     (1) number of lines
@@ -1755,7 +1755,7 @@ def Initial_Wav_Calibration(filename,spec,order,wei, porder=3, rmsmax=75, minlin
          w = line.split()
          nlines = int(w[0])
          for j in range(nlines):
-             pixel_centers_0.append(float(w[2*j+1])/float(binning) + rough_shift)
+             pixel_centers_0.append(float(w[2*j+1])*fact/float(binning) + rough_shift)
 
     ml = array(pixel_centers_0) - 2
     mh = array(pixel_centers_0) + 2
@@ -1780,8 +1780,8 @@ def Initial_Wav_Calibration(filename,spec,order,wei, porder=3, rmsmax=75, minlin
         pix = []
         wav = []
         for j in range(nlines):
-	    if float(w[2*j+1])+rough_shift+delta > 20 and float(w[2*j+1])+rough_shift+delta < len(spec)-20:
-                pix.append(float(w[2*j+1])+rough_shift)
+	    if float(w[2*j+1])*fact+rough_shift+delta > 20 and float(w[2*j+1])*fact+rough_shift+delta < len(spec)-20:
+                pix.append(float(w[2*j+1])*fact+rough_shift)
                 wav.append(float(w[2*j+2]))
 	if len(pix) > 0:
 		N_l += len(pix)
@@ -1832,7 +1832,7 @@ def Initial_Wav_Calibration(filename,spec,order,wei, porder=3, rmsmax=75, minlin
 		    else:
 		        centroids = np.append(centroids, -1)
     #show()
-    I = np.where((pixel_centers>0) & (pixel_centers<4000))[0]
+    #I = np.where((pixel_centers>0) & (pixel_centers<4600))[0]
     #plot(np.around(pixel_centers[I]).astype('int'),spec[np.around(pixel_centers[I]).astype('int')],'ro')
     #show()
     I1 = np.where(pixel_centers<50)[0]
@@ -2039,6 +2039,8 @@ def Fit_Global_Wav_Solution(pix_centers, wavelengths, orders, Wgt, p0, minlines=
     errfunc_cheb = lambda p,chebs,y,m, w: np.ravel( w*(fitfunc_cheb(p,chebs,m)-y) )
     errfunc_cheb_nw = lambda p,chebs,y,m: np.ravel( (fitfunc_cheb(p,chebs,m)-y) )
 
+    #print order0, ntotal, npix, nx, nm, minlines, maxrms, Cheby, Inv
+    #print gfd
         
     if (Cheby):
         chebs = Calculate_chebs(pix_centers, orders+order0, Inverse=Inv,order0=order0,ntotal=ntotal,npix=npix,nx=nx,nm=nm)
@@ -2117,7 +2119,7 @@ def Global_Wav_Solution_vel_shift(pix_centers, wavelengths, orders, Wgt, p_ref, 
     errfunc_cheb    = lambda p,p_ref,chebs,y,m, w: np.ravel( w*(fitfunc_cheb(p,p_ref,chebs,m)-y) )
     errfunc_cheb_nw = lambda p,p_ref,chebs,y,m: np.ravel( (fitfunc_cheb(p,p_ref,chebs,m)-y) )
 
-        
+    #print order0, ntotal, npix, nx, nm, minlines, maxrms, Cheby, Inv
     p0 = np.array( [0] )
 
     if (Cheby):
@@ -2159,7 +2161,7 @@ def Global_Wav_Solution_vel_shift(pix_centers, wavelengths, orders, Wgt, p_ref, 
 
         residuals_ms = 299792458.0 * residuals / wavelengths[I]
         rms_ms       = np.sqrt( np.var( residuals_ms ) ) 
-        #print 'p1',(1e-6*p1)*299792458.0, rms_ms 
+        #print 'p1',(1e-6*p1)*299792458.0
         L = np.where( np.absolute(residuals_ms) > 3.5*rms_ms )
         if ( (len(L[0]) == 0) and (rms_ms < maxrms) ) or (N_l < minlines): 
             cond=0
@@ -2639,7 +2641,6 @@ def get_cont(W,F,nc=3,ll=1.,lu = 5.,frac=0.1,window=21):
 		I = np.where((wav>lns[0])&(wav<lns[1]))[0]
 		wav,flx = np.delete(wav,I),np.delete(flx,I)
 	for i in range(F.shape[0]):
-		
 		if i == 0:
 			wi = W[i+2,0]
 			wf = W[i,-1]
