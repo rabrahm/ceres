@@ -1166,7 +1166,7 @@ if not JustExtract:
 
 		if disp == 0:
 			known_sigma = False
-			if vsini != -999:
+			if vsini != -999 and vsini != 0.:
 				disp = vsini
 			else:
 				disp = 3.
