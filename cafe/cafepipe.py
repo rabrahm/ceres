@@ -388,7 +388,7 @@ for i in range(len(ThAr_ref_dates)):
             thar_order      = thar_order_orig #- bkg
 
             coeffs_pix2wav, coeffs_pix2sigma, pixel_centers, wavelengths, rms_ms, residuals, centroids,sigmas, intensities \
-                = GLOBALutils.Initial_Wav_Calibration( order_dir+'order_'+order_s+'.iwdat', thar_order, order, wei, rmsmax=300, minlines=10, FixEnds=False,Dump_Argon=dumpargon, Dump_AllLines=True, Cheby=use_cheby,porder=3,rough_shift=rough_shift)
+                = GLOBALutils.Initial_Wav_Calibration( order_dir+'order_'+order_s+'.iwdat', thar_order, order, np.ones(len(thar_order)), rmsmax=300, minlines=10, FixEnds=False,Dump_Argon=dumpargon, Dump_AllLines=True, Cheby=use_cheby,porder=3,rough_shift=rough_shift)
 
             if (order == int(.5*n_useful)+ro0): 
 		

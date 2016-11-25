@@ -511,7 +511,7 @@ def get_them(sc,exap,ncoef,maxords=-1,startfrom=0,nsigmas=10.,mode=1,endat=-1):
 	I = np.where(y!=0)[0]
 	x,y = x[I],y[I]+startfrom
 	coef = np.polyfit(x,y,ncoef)
-	#plot(x,y,'r')
+	#plot(x,y,'bo')
 	residuals = y - np.polyval(coef,x)
 	rms = np.sqrt(np.var(residuals))
 	I = np.where(np.absolute(residuals)>3*rms)[0]
@@ -533,7 +533,7 @@ def get_them(sc,exap,ncoef,maxords=-1,startfrom=0,nsigmas=10.,mode=1,endat=-1):
 	    acoefs = coef
 	else:
 	    acoefs = np.vstack((acoefs,coef))
-	#plot(np.polyval(coef,np.arange(len(mat[i]))),'r')
+	#plot(np.polyval(coef,np.arange(len(mat[i]))),'k')
 
     #show()
     #print gfds
@@ -541,17 +541,20 @@ def get_them(sc,exap,ncoef,maxords=-1,startfrom=0,nsigmas=10.,mode=1,endat=-1):
     return acoefs, len(acoefs)
 
 def good_orders(coef,nord,ny,nx,ext_aperture):
-    Centers = np.zeros((nord,nx))
-    ejx = np.arange(nx)
-    bad_inx = []
-    for i in range(nord):
-        Centers[i,:]=scipy.polyval(coef[i],ejx)
-	I = np.where(Centers[i,:]+ext_aperture>ny)[0]
-	if len(I)>0:
-	    bad_inx.append(i)
-    bad_inx = np.array(bad_inx)
-    im = np.min(bad_inx)
-    return coef[:im], nord-len(bad_inx)
+	Centers = np.zeros((nord,nx))
+	ejx = np.arange(nx)
+	bad_inx = []
+	for i in range(nord):
+		Centers[i,:]=scipy.polyval(coef[i],ejx)
+		I = np.where(Centers[i,:]+ext_aperture>ny)[0]
+		if len(I)>0:
+			bad_inx.append(i)
+	bad_inx = np.array(bad_inx)
+	if len(bad_inx) > 0:
+		im = np.min(bad_inx)
+		return coef[:im], nord-len(bad_inx)
+	else:
+		return coef, nord
 
 def get_zero_order_number(ords,wavs):
 	ords,wvas = np.array(ords),np.array(wavs)
@@ -1356,77 +1359,78 @@ def get_herms(horder):
 
 def XCor(spectra, mask_l, mask_h, mask_w, vel, lbary_ltopo, vel_width=30,\
              vel_step=0.3,  start_order=0, spec_order=9,iv_order=10,sn_order=8,max_vel_rough=300.):
-    """
-    Calculates the cross-correlation function for a Coralie Spectra
-    """
-    # speed of light, km/s
-    c = 2.99792458E5
+	"""
+	Calculates the cross-correlation function for a Coralie Spectra
+	"""
+	# speed of light, km/s
+	c = 2.99792458E5
 
-    # loop over orders
-    norders = spectra.shape[1]
+	# loop over orders
+	norders = spectra.shape[1]
 
-    # determine minimum velocities
-    vel_min = vel - vel_width
-    vel_max = vel + vel_width
-    N = int(np.ceil( (2*vel_width) / vel_step ))
+	# determine minimum velocities
+	vel_min = vel - vel_width
+	vel_max = vel + vel_width
+	N = int(np.ceil( (2*vel_width) / vel_step ))
 
-    Xcor_full   = np.zeros( (N, norders+1) )
-    sn          = np.zeros( (norders) )
-    nlines_used = np.zeros( (norders) )
+	Xcor_full   = np.zeros( (N, norders+1) )
+	sn          = np.zeros( (norders) )
+	nlines_used = np.zeros( (norders) )
     
-    velocities = vel_min + np.arange( N ) * vel_step
+	velocities = vel_min + np.arange( N ) * vel_step
 
-    Xcor_full[:,0] = velocities
+	Xcor_full[:,0] = velocities
 
-    weight=0.0
-    mask_middle = 0.5*(mask_l + mask_h)
-    W = np.zeros( norders )
+	weight=0.0
+	mask_middle = 0.5*(mask_l + mask_h)
+	W = np.zeros( norders )
 
-    vwt = 300
-    for j in range(start_order,norders):
-	t1 = time.time()
-        LL = np.where( spectra[spec_order,j,:] != 0 )
-        x1 = np.min( LL )
-        x2 = np.max( LL )
-        w1 = np.argmin( np.absolute( spectra[0,j,:] - spectra[0,j,x1] ) )
-        w2 = np.argmin( np.absolute( spectra[0,j,:] - spectra[0,j,x2] ) )
-        l1_0 = spectra[0,j,w1] / lbary_ltopo
-        l2_0 = spectra[0,j,w2] / lbary_ltopo
-        ww1 = np.argmin( np.abs( spectra[0,j,:] - l1_0*(1+(31+max_vel_rough)/c) ) )
-        ww2 = np.argmin( np.abs( spectra[0,j,:] - l2_0*(1-(31+max_vel_rough)/c) ) )
-        # should not happen, but hey, just in case...
-        if (ww1 < w1):
-            ww1 = w1
-        if (ww2 > w2):
-            ww2 = w2
-        l1 = spectra[0,j,ww1]
-        l2 = spectra[0,j,ww2]
-        II = np.where( (mask_l > l1) & (mask_h < l2) )
-	#if len(II[0])>0:
-	#	print j,II[0][0],II[0][-1]
-        nlu = len(II[0])
-        nlines_used[j] = nlu
-	snw1 = int(0.25*spectra.shape[2])
-	snw2 = int(0.75*spectra.shape[2])
-        if (nlu > 0):
-            # calculate median S/N
-            #median_sn = np.median( spectra[5,j,w1:w2] * np.sqrt( spectra[6,j,w1:w2] ) )
-	    median_sn = np.median( spectra[sn_order,j,snw1:snw2] )
-            sn[j]     = median_sn
-            S = spectra[spec_order,j,w1:w2]
-            #iv = spectra[iv_order,j,w1:w2]
-            signal2noise = spectra[sn_order,j,w1:w2]
-            snwa = np.zeros(N)
-            for k in range(N):
-		#print k
-                Xcor_full[k,j+1], snw = CCF.ccfcos(mask_l[II], mask_h[II], spectra[0,j,w1:w2], S,\
-                                                       mask_w[II], signal2noise, vel_min + k*vel_step)
-                snwa[k] = snw
-            xc_weight  = np.median( snwa )
-            Xcor_full[:,j+1] /= snwa #xc_weight
-            W[j] = xc_weight
+	vwt = 300
+	for j in range(start_order,norders):
+		t1 = time.time()
+		LL = np.where( spectra[spec_order,j,:] != 0 )
+		if len(LL[0]) > 0:
+			x1 = np.min( LL )
+			x2 = np.max( LL )
+			w1 = np.argmin( np.absolute( spectra[0,j,:] - spectra[0,j,x1] ) )
+			w2 = np.argmin( np.absolute( spectra[0,j,:] - spectra[0,j,x2] ) )
+			l1_0 = spectra[0,j,w1] / lbary_ltopo
+			l2_0 = spectra[0,j,w2] / lbary_ltopo
+			ww1 = np.argmin( np.abs( spectra[0,j,:] - l1_0*(1+(31+max_vel_rough)/c) ) )
+			ww2 = np.argmin( np.abs( spectra[0,j,:] - l2_0*(1-(31+max_vel_rough)/c) ) )
+			# should not happen, but hey, just in case...
+			if (ww1 < w1):
+				ww1 = w1
+			if (ww2 > w2):
+				ww2 = w2
+			l1 = spectra[0,j,ww1]
+			l2 = spectra[0,j,ww2]
+			II = np.where( (mask_l > l1) & (mask_h < l2) )
+			#if len(II[0])>0:
+			#print j,II[0][0],II[0][-1]
+			nlu = len(II[0])
+			nlines_used[j] = nlu
+			snw1 = int(0.25*spectra.shape[2])
+			snw2 = int(0.75*spectra.shape[2])
+			if (nlu > 0):
+				# calculate median S/N
+				#median_sn = np.median( spectra[5,j,w1:w2] * np.sqrt( spectra[6,j,w1:w2] ) )
+				median_sn = np.median( spectra[sn_order,j,snw1:snw2] )
+				sn[j]     = median_sn
+				S = spectra[spec_order,j,w1:w2]
+				#iv = spectra[iv_order,j,w1:w2]
+				signal2noise = spectra[sn_order,j,w1:w2]
+				snwa = np.zeros(N)
+				for k in range(N):
+					#print k
+					Xcor_full[k,j+1], snw = CCF.ccfcos(mask_l[II], mask_h[II], spectra[0,j,w1:w2], S,\
+	                                                       mask_w[II], signal2noise, vel_min + k*vel_step)
+					snwa[k] = snw
+				xc_weight  = np.median( snwa )
+				Xcor_full[:,j+1] /= snwa #xc_weight
+				W[j] = xc_weight
 
-    return velocities, Xcor_full, sn, nlines_used, W
+	return velocities, Xcor_full, sn, nlines_used, W
 
 def XC_Herm_Fit(X,Y,back_lag=5, usemin=True, horder=20, sigma_res = 2, horder_res_herm=10, sigma_res_herm = 2.5):
     """
@@ -1764,7 +1768,7 @@ def Initial_Wav_Calibration(filename,spec,order,wei, porder=3, rmsmax=75, minlin
 
     ind_max = np.argmax( xc )
     delta   = offs[ind_max]  
-    
+
     #print "Computed offset for order ", order, " is ", delta
     N_l = 0
 
@@ -1780,8 +1784,8 @@ def Initial_Wav_Calibration(filename,spec,order,wei, porder=3, rmsmax=75, minlin
         pix = []
         wav = []
         for j in range(nlines):
-	    if float(w[2*j+1])*fact+rough_shift+delta > 20 and float(w[2*j+1])*fact+rough_shift+delta < len(spec)-20:
-                pix.append(float(w[2*j+1])*fact+rough_shift)
+	    if float(w[2*j+1])*fact/float(binning) + rough_shift+delta > 20 and float(w[2*j+1])*fact/float(binning) + rough_shift+delta < len(spec)-20:
+                pix.append(float(w[2*j+1])*fact/float(binning) + rough_shift)
                 wav.append(float(w[2*j+2]))
 	if len(pix) > 0:
 		N_l += len(pix)

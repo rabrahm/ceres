@@ -118,7 +118,7 @@ ncoef_x            = 4
 ncoef_m            = 6
 npar_wsol = (min(ncoef_x,ncoef_m) + 1) * (2*max(ncoef_x,ncoef_m) - min(ncoef_x,ncoef_m) + 2) / 2
 
-models_path = base+"../COELHO_MODELS/R_40000b/"    # path to the synthetic models 
+models_path = base+"data/COELHO_MODELS/R_40000b/" # path to the synthetic models 
 order_dir = "wavcals/"
 n_useful  = 41 # up to which order do we care?
 
@@ -266,7 +266,7 @@ else:
 	d = h.data
 	d = d.T
 	Flat = d.copy()
-
+#MasterBias = 0.
 ################################ ThAr spectra extraction & calibration ##################################################
 thtimes   = []
 nThAr_ref = []
@@ -322,7 +322,6 @@ for thar in ThAr_ref:
 		print "\t\tWorking on ThAr file", thar
 	
 		lines_thar = thar_Ss.copy()
-		delta = 0.0
 		force_ofind=True
 		if numt == 0:
 			if os.access(dirout+'order_find.pkl',os.F_OK)==False or force_ofind:
@@ -395,7 +394,7 @@ for thar in ThAr_ref:
                 		= GLOBALutils.Initial_Wav_Calibration(order_dir+'gorder'+order_s+'.dat',\
                                                       thar_order,order,wei,rmsmax=5000000,\
                                                       minlines=6,FixEnds=True,Dump_Argon=False,\
-                                                      Dump_AllLines=True, Cheby=use_cheby)
+                                                      Dump_AllLines=True, Cheby=use_cheby,rough_shift=delta)
 			
 			if (order == 20): 
 				if (use_cheby):
@@ -734,7 +733,7 @@ for obj in new_list:
 	   (force_sci_extract):
 		print "\t\tNo previous extraction or extraction forced for science file", obj, "extracting..."
 
-		dat = pyfits.getdata(obj)
+		dat = pyfits.getdata(obj).astype('float')
 		dat -= MasterBias
 		if len(MasDarl)>0 and dark_corr:
 			dat -= pucherosutils.get_dark(MasDarl, hd['EXPTIME'])

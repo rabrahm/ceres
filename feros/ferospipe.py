@@ -1141,6 +1141,7 @@ if (not JustExtract):
                     GLOBALutils.XCor(spec, ml_v, mh_v, weight, 0, lbary_ltopo, vel_width=velw,vel_step=velsh,\
                                           spec_order=9,iv_order=10,sn_order=8,max_vel_rough=velw)
             xc_av = GLOBALutils.Average_CCF(xc_full, sn, sn_min=3., Simple=True, W=W_ccf)
+            outt = np.vstack((vels,xc_av))
             yy     = scipy.signal.medfilt(xc_av,11)
             lowess = robjects.r("lowess")
             approx = robjects.r("approx")

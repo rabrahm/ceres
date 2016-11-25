@@ -480,7 +480,7 @@ for fsim in ThAr_ref:
     hthar = pyfits.open( fsim )
     dtharB = harpsutils.OverscanTrim( hthar[1].data ) - MasterBias[:,:,0]
     dtharR = harpsutils.OverscanTrim( hthar[2].data ) - MasterBias[:,:,1]
-
+    print 'one'
     bacfile = dirout + 'BACR_' + fsim.split('/')[-1][:-4]+'fits'
     if os.access(bacfile,os.F_OK) == False:
         CentersR = np.zeros((len(c_all2),dtharR.shape[1]))
@@ -494,7 +494,7 @@ for fsim in ThAr_ref:
         hdbac.writeto(bacfile)
     else:
         bacR = pyfits.getdata(bacfile)
-
+    print 'two'
     bacfile = dirout + 'BACB_' + fsim.split('/')[-1][:-4]+'fits'
     if os.access(bacfile,os.F_OK) == False:
         CentersB = np.zeros((len(c_all1),dtharB.shape[1]))
@@ -1421,232 +1421,233 @@ for nlisti in range(len(new_list)):
             spec[10,order + nord_ob2,:][L] = spec[6,order + nord_ob2,:][L] / (dlambda_dx[L] ** 2)
 
 	JustExtract = False
-        if (not JustExtract):
-	    if DoClass:
-		print '\t\tSpectral Analysis:'
-                # spectral analysis
-                query_success,sp_type_query = GLOBALutils.simbad_query_obname(obname)
-		# Now, query SIMBAD by coordinates if above not successful
-		if (not query_success):
-		    query_success,sp_type_query = GLOBALutils.simbad_query_coords('12:00:00','00:00:00')
-		print "\t\t\tSpectral type returned by SIMBAD query:",sp_type_query
+    if (not JustExtract):
+        if DoClass:
+            print '\t\tSpectral Analysis:'
+            query_success,sp_type_query = False,'None'
+            # spectral analysis
+            #query_success,sp_type_query = GLOBALutils.simbad_query_obname(obname)
+            # Now, query SIMBAD by coordinates if above not successful
+            #if (not query_success):
+            #    query_success,sp_type_query = GLOBALutils.simbad_query_coords('12:00:00','00:00:00')
+            #print "\t\t\tSpectral type returned by SIMBAD query:",sp_type_query
 
-                hdu = GLOBALutils.update_header(hdu,'HIERARCH SIMBAD SPTYP', sp_type_query)
+            hdu = GLOBALutils.update_header(hdu,'HIERARCH SIMBAD SPTYP', sp_type_query)
 
-                pars_file = dirout + fsim.split('/')[-1][:-4]+'_stellar_pars.txt'
+            pars_file = dirout + fsim.split('/')[-1][:-4]+'_stellar_pars.txt'
 
-		if os.access(pars_file,os.F_OK) == False or force_stellar_pars:
-			print "\t\t\tEstimating atmospheric parameters:"
-			Rx = np.around(1./np.sqrt(1./40000.**2 - 1./RESI**2))
-                        spec2 = spec.copy()
-                        for i in range(spec.shape[1]):
-                            IJ = np.where(spec[5,i]!=0.)[0]
-                            spec2[5,i,IJ] = GLOBALutils.convolve(spec[0,i,IJ],spec[5,i,IJ],Rx)
-			T_eff, logg, Z, vsini, vel0, ccf = correlation.CCF(spec2,model_path=models_path,npools=npools)
-			line = "%6d %4.1f %4.1f %8.1f %8.1f\n" % (T_eff,logg, Z, vsini, vel0)
-		        f = open(pars_file,'w')
-		        f.write(line)
-			f.close()
+            if os.access(pars_file,os.F_OK) == False or force_stellar_pars:
+                print "\t\t\tEstimating atmospheric parameters:"
+                Rx = np.around(1./np.sqrt(1./40000.**2 - 1./RESI**2))
+                spec2 = spec.copy()
+                for i in range(spec.shape[1]):
+                    IJ = np.where(spec[5,i]!=0.)[0]
+                    spec2[5,i,IJ] = GLOBALutils.convolve(spec[0,i,IJ],spec[5,i,IJ],Rx)
+                T_eff, logg, Z, vsini, vel0, ccf = correlation.CCF(spec2,model_path=models_path,npools=npools)
+                line = "%6d %4.1f %4.1f %8.1f %8.1f\n" % (T_eff,logg, Z, vsini, vel0)
+                f = open(pars_file,'w')
+                f.write(line)
+                f.close()
 		       
-		else:
-			print "\t\t\tAtmospheric parameters loaded from file:"
-			T_eff, logg, Z, vsini, vel0 = np.loadtxt(pars_file,unpack=True)
-
-		print "\t\t\t\tT_eff=",T_eff,"log(g)=",logg,"Z=",Z,"vsin(i)=",vsini,"vel0",vel0
-
-	    else:
-		T_eff, logg, Z, vsini, vel0 = -999,-999,-999,-999,-999
-            # store the parameters measured for this epoch
-            T_eff_epoch = T_eff
-            logg_epoch  = logg
-            Z_epoch     = Z
-            vsini_epoch = vsini
-            vel0_epoch  = vel0
-
-	    hdu = GLOBALutils.update_header(hdu,'HIERARCH TEFF', float(T_eff))
-	    hdu = GLOBALutils.update_header(hdu,'HIERARCH LOGG', float(logg))
-	    hdu = GLOBALutils.update_header(hdu,'HIERARCH Z', Z)
-	    hdu = GLOBALutils.update_header(hdu,'HIERARCH VSINI', vsini)
-	    hdu = GLOBALutils.update_header(hdu,'HIERARCH VEL0', vel0)
-
-            print "\t\tRadial Velocity analysis:"
-            # assign mask
-            sp_type, mask = GLOBALutils.get_mask_reffile(obname,reffile=reffile,base='../data/xc_masks/')
-	    print "\t\t\tWill use",sp_type,"mask for CCF."
-
-            # Read in mask
-            ml, mh, weight = np.loadtxt(mask,unpack=True)
-            ml_v = GLOBALutils.ToVacuum( ml )
-            mh_v = GLOBALutils.ToVacuum( mh )
-	    av_m = 0.5*( ml_v + mh_v )
-            mask_hw_kms = (GLOBALutils.Constants.c/1e3) * 0.5*(mh_v - ml_v) / av_m
-
-	    disp = GLOBALutils.get_disp(obname, reffile=reffile)
-	    if disp == 0:
-                known_sigma = False
-                if vsini != -999 and vsini != 0.:
-	            disp = vsini
-	        else:
-	            disp = 3.
             else:
-                known_sigma = True
+                print "\t\t\tAtmospheric parameters loaded from file:"
+                T_eff, logg, Z, vsini, vel0 = np.loadtxt(pars_file,unpack=True)
 
-            mask_hw_wide = av_m * disp / (GLOBALutils.Constants.c/1.0e3)
-            ml_v = av_m - mask_hw_wide
-            mh_v = av_m + mask_hw_wide 
+            print "\t\t\t\tT_eff=",T_eff,"log(g)=",logg,"Z=",Z,"vsin(i)=",vsini,"vel0",vel0
 
-            print '\t\t\tComputing the CCF...'
-            cond = True
+        else:
+            T_eff, logg, Z, vsini, vel0 = -999,-999,-999,-999,-999
+        # store the parameters measured for this epoch
+        T_eff_epoch = T_eff
+        logg_epoch  = logg
+        Z_epoch     = Z
+        vsini_epoch = vsini
+        vel0_epoch  = vel0
 
-	    if sp_type == 'M5':
-		moon_sig = 4.5
-	    elif sp_type == 'K5':
-		moon_sig = 4.2
-	    else:
-		moon_sig = 4.0
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH TEFF', float(T_eff))
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH LOGG', float(logg))
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH Z', Z)
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH VSINI', vsini)
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH VEL0', vel0)
 
-            while (cond):
-                # first rough correlation to find the minimum
-                vels, xc_full, sn, nlines_ccf, W_ccf = \
+        print "\t\tRadial Velocity analysis:"
+        # assign mask
+        sp_type, mask = GLOBALutils.get_mask_reffile(obname,reffile=reffile,base='../data/xc_masks/')
+        print "\t\t\tWill use",sp_type,"mask for CCF."
+
+        # Read in mask
+        ml, mh, weight = np.loadtxt(mask,unpack=True)
+        ml_v = GLOBALutils.ToVacuum( ml )
+        mh_v = GLOBALutils.ToVacuum( mh )
+        av_m = 0.5*( ml_v + mh_v )
+        mask_hw_kms = (GLOBALutils.Constants.c/1e3) * 0.5*(mh_v - ml_v) / av_m
+
+        disp = GLOBALutils.get_disp(obname, reffile=reffile)
+        if disp == 0:
+            known_sigma = False
+            if vsini != -999 and vsini != 0.:
+                disp = vsini
+            else:
+                disp = 3.
+        else:
+            known_sigma = True
+
+        mask_hw_wide = av_m * disp / (GLOBALutils.Constants.c/1.0e3)
+        ml_v = av_m - mask_hw_wide
+        mh_v = av_m + mask_hw_wide 
+
+        print '\t\t\tComputing the CCF...'
+        cond = True
+
+        if sp_type == 'M5':
+            moon_sig = 4.5
+        elif sp_type == 'K5':
+            moon_sig = 4.2
+        else:
+            moon_sig = 4.0
+
+        while (cond):
+            # first rough correlation to find the minimum
+            vels, xc_full, sn, nlines_ccf, W_ccf = \
 					GLOBALutils.XCor(spec, ml_v, mh_v, weight,\
 					0, lbary_ltopo, vel_width=300, vel_step=3,\
 					spec_order=9, iv_order=10, sn_order=8,max_vel_rough=300)
 
-                xc_av = GLOBALutils.Average_CCF(xc_full, sn, sn_min=3.0, Simple=True, W=W_ccf)
+            xc_av = GLOBALutils.Average_CCF(xc_full, sn, sn_min=3.0, Simple=True, W=W_ccf)
 
-                # Normalize the continuum of the CCF robustly with R     
-                yy = scipy.signal.medfilt(xc_av,11)
-                lowess = robjects.r("lowess")
-                approx = robjects.r("approx")
-                Temp = lowess(vels,yy,f=0.4,iter=10)
-                pred = np.array( approx(Temp[0],Temp[1],xout=vels, method="linear", rule=2) )[1]
+            # Normalize the continuum of the CCF robustly with R     
+            yy = scipy.signal.medfilt(xc_av,11)
+            lowess = robjects.r("lowess")
+            approx = robjects.r("approx")
+            Temp = lowess(vels,yy,f=0.4,iter=10)
+            pred = np.array( approx(Temp[0],Temp[1],xout=vels, method="linear", rule=2) )[1]
 
-                xc_av_orig = xc_av.copy()
-                xc_av /= pred
-		vel0_xc = vels[ np.argmin( xc_av ) ] 
+            xc_av_orig = xc_av.copy()
+            xc_av /= pred
+            vel0_xc = vels[ np.argmin( xc_av ) ] 
                 
-                rvels, rxc_av, rpred, rxc_av_orig, rvel0_xc = \
+            rvels, rxc_av, rpred, rxc_av_orig, rvel0_xc = \
 					vels.copy(), xc_av.copy(), pred.copy(),\
 					xc_av_orig.copy(), vel0_xc
 
-		xc_av_rough = xc_av
-                vels_rough  = vels
+            xc_av_rough = xc_av
+            vels_rough  = vels
                 
-                vel_width = np.maximum( 20.0, 6*disp )
-                vels, xc_full, sn, nlines_ccf, W_ccf =\
+            vel_width = np.maximum( 20.0, 6*disp )
+            vels, xc_full, sn, nlines_ccf, W_ccf =\
 					GLOBALutils.XCor(spec, ml_v, mh_v, weight,\
 					vel0_xc, lbary_ltopo, vel_width=vel_width,\
 					vel_step=0.1, spec_order=9, iv_order=10, sn_order=8,max_vel_rough=300)
 
-		xc_av = GLOBALutils.Average_CCF(xc_full, sn, sn_min=3.0, Simple=True, W=W_ccf)
+            xc_av = GLOBALutils.Average_CCF(xc_full, sn, sn_min=3.0, Simple=True, W=W_ccf)
 
-                pred = np.array( approx(Temp[0],Temp[1],xout=vels, method="linear", rule=2) )[1]
-                xc_av /= pred
+            pred = np.array( approx(Temp[0],Temp[1],xout=vels, method="linear", rule=2) )[1]
+            xc_av /= pred
 
-		p1,XCmodel,p1gau,XCmodelgau,Ls2 = \
+            p1,XCmodel,p1gau,XCmodelgau,Ls2 = \
 					GLOBALutils.XC_Final_Fit( vels, xc_av, sigma_res = 4,\
 					 horder=8, moonv=refvel, moons=moon_sig, moon=False)
 
-		moonmatters = False
-		if (know_moon and here_moon):
-			moonmatters = True
-			ismoon = True
-			confused = False
-			p1_m,XCmodel_m,p1gau_m,XCmodelgau_m,Ls2_m = GLOBALutils.XC_Final_Fit( vels, xc_av, \
+            moonmatters = False
+            if (know_moon and here_moon):
+                moonmatters = True
+                ismoon = True
+                confused = False
+                p1_m,XCmodel_m,p1gau_m,XCmodelgau_m,Ls2_m = GLOBALutils.XC_Final_Fit( vels, xc_av, \
 				sigma_res = 4, horder=8, moonv = refvel, moons = moon_sig, moon = True)
-			moon_flag = 1
-		else:
-			confused = False
-			ismoon = False
-			p1_m,XCmodel_m,p1gau_m,XCmodelgau_m,Ls2_m = p1,XCmodel,p1gau,XCmodelgau,Ls2
-			moon_flag = 0
+                moon_flag = 1
+            else:
+                confused = False
+                ismoon = False
+                p1_m,XCmodel_m,p1gau_m,XCmodelgau_m,Ls2_m = p1,XCmodel,p1gau,XCmodelgau,Ls2
+                moon_flag = 0
 
-		bspan = GLOBALutils.calc_bss(vels,xc_av)
-		SP = bspan[0]
+            bspan = GLOBALutils.calc_bss(vels,xc_av)
+            SP = bspan[0]
         	
-                if (not known_sigma):
-                    disp = np.floor(p1gau[2])
-                    if (disp < 3.0): 
-                        disp = 3.0
-                    mask_hw_wide = av_m * disp / (GLOBALutils.Constants.c/1.0e3)
-                    ml_v = av_m - mask_hw_wide
-                    mh_v = av_m + mask_hw_wide            
-                    known_sigma = True
-                else:
-                    cond = False
+            if (not known_sigma):
+                disp = np.floor(p1gau[2])
+                if (disp < 3.0): 
+                    disp = 3.0
+                mask_hw_wide = av_m * disp / (GLOBALutils.Constants.c/1.0e3)
+                ml_v = av_m - mask_hw_wide
+                mh_v = av_m + mask_hw_wide            
+                known_sigma = True
+            else:
+                cond = False
 
-            xc_dict = {'vels':vels,'xc_av':xc_av,'XCmodelgau':XCmodelgau,'Ls2':Ls2,'refvel':refvel,\
+        xc_dict = {'vels':vels,'xc_av':xc_av,'XCmodelgau':XCmodelgau,'Ls2':Ls2,'refvel':refvel,\
 		       'rvels':rvels,'rxc_av':rxc_av,'rpred':rpred,'rxc_av_orig':rxc_av_orig,\
 		       'rvel0_xc':rvel0_xc,'xc_full':xc_full, 'p1':p1, 'sn':sn, 'p1gau':p1gau,\
 		       'p1_m':p1_m,'XCmodel_m':XCmodel_m,'p1gau_m':p1gau_m,'Ls2_m':Ls2_m,\
 		       'XCmodelgau_m':XCmodelgau_m}
 
-	    moon_dict = {'moonmatters':moonmatters,'moon_state':moon_state,'moonsep':moonsep,\
+        moon_dict = {'moonmatters':moonmatters,'moon_state':moon_state,'moonsep':moonsep,\
 			 'lunation':lunation,'mephem':mephem,'texp':h[0].header['EXPTIME']}
 
-	    pkl_xc = dirout + fsim.split('/')[-1][:-4]+obname+'_XC_'+sp_type+'.pkl'
-            pickle.dump( xc_dict, open( pkl_xc, 'w' ) )
+        pkl_xc = dirout + fsim.split('/')[-1][:-4]+obname+'_XC_'+sp_type+'.pkl'
+        pickle.dump( xc_dict, open( pkl_xc, 'w' ) )
 
-	    ccf_pdf = dirout + 'proc/' + fsim.split('/')[-1][:-4] + obname + '_XCs_' + sp_type + '.pdf'
+        ccf_pdf = dirout + 'proc/' + fsim.split('/')[-1][:-4] + obname + '_XCs_' + sp_type + '.pdf'
 
-	    if not avoid_plot:
-	        GLOBALutils.plot_CCF(xc_dict,moon_dict,path=ccf_pdf)
+        if not avoid_plot:
+            GLOBALutils.plot_CCF(xc_dict,moon_dict,path=ccf_pdf)
 
-            SNR_5130 = np.median(spec[8,28,1900:2101] ) 
-            airmass  = h[0].header['HIERARCH ESO TEL AIRM START']
-            seeing   = h[0].header['HIERARCH ESO TEL AMBI FWHM START']
+        SNR_5130 = np.median(spec[8,28,1900:2101] ) 
+        airmass  = h[0].header['HIERARCH ESO TEL AIRM START']
+        seeing   = h[0].header['HIERARCH ESO TEL AMBI FWHM START']
 
-	    B,A = -0.00257864,0.07765779
-	    RVerr  =  B + ( 1.6 + 0.2 * p1gau[2] ) * A / np.round(SNR_5130)
-	    depth_fact = 1. + p1gau[0]/(p1gau[2]*np.sqrt(2*np.pi))
-	    if depth_fact < 0.6:
-		depth_fact = 0.6
-	    depth_fact = (1 - 0.6) / (1 - depth_fact)
-	    RVerr *= depth_fact
-	    if RVerr < 0.002:
-	    	RVerr = .002
+        B,A = -0.00257864,0.07765779
+        RVerr  =  B + ( 1.6 + 0.2 * p1gau[2] ) * A / np.round(SNR_5130)
+        depth_fact = 1. + p1gau[0]/(p1gau[2]*np.sqrt(2*np.pi))
+        if depth_fact < 0.6:
+            depth_fact = 0.6
+        depth_fact = (1 - 0.6) / (1 - depth_fact)
+        RVerr *= depth_fact
+        if RVerr < 0.002:
+            RVerr = .002
 
-	    B,A = -0.00348879, 0.10220848
-	    BSerr = B + ( 1.6 + 0.2 * p1gau[2] ) * A / np.round(SNR_5130)
-	    if BSerr<0.002:
-		BSerr = .002
+        B,A = -0.00348879, 0.10220848
+        BSerr = B + ( 1.6 + 0.2 * p1gau[2] ) * A / np.round(SNR_5130)
+        if BSerr<0.002:
+            BSerr = .002
 
-	    RV     = np.around(p1gau_m[1],4)  
-	    BS     = np.around(SP,4)   
-            RVerr2 = np.around(RVerr,4)
-            BSerr = np.around(BSerr,4)
+        RV     = np.around(p1gau_m[1],4)  
+        BS     = np.around(SP,4)   
+        RVerr2 = np.around(RVerr,4)
+        BSerr = np.around(BSerr,4)
 
-	    print '\t\t\tRV = '+str(RV)+' +- '+str(RVerr2)
-	    print '\t\t\tBS = '+str(BS)+' +- '+str(BSerr)
+        print '\t\t\tRV = '+str(RV)+' +- '+str(RVerr2)
+        print '\t\t\tBS = '+str(BS)+' +- '+str(BSerr)
 
-            bjd_out = 2400000.5 + mbjd
-            T_eff_err = 100
-            logg_err = 0.5
-            Z_err = 0.5
-            vsini_err = 2
-	    XC_min = np.abs(np.around(np.min(XCmodel),2))
+        bjd_out = 2400000.5 + mbjd
+        T_eff_err = 100
+        logg_err = 0.5
+        Z_err = 0.5
+        vsini_err = 2
+        XC_min = np.abs(np.around(np.min(XCmodel),2))
 
-	    SNR_5130 = np.around(SNR_5130)
-	    SNR_5130_R = np.around(SNR_5130*np.sqrt(3.0))
+        SNR_5130 = np.around(SNR_5130)
+        SNR_5130_R = np.around(SNR_5130*np.sqrt(3.0))
 
-	    disp_epoch = np.around(p1gau_m[2],1)
-            hdu = GLOBALutils.update_header(hdu,'RV', RV)
-            hdu = GLOBALutils.update_header(hdu,'RV_E', RVerr2)
-            hdu = GLOBALutils.update_header(hdu,'BS', BS)
-            hdu = GLOBALutils.update_header(hdu,'BS_E', BSerr)
-            hdu = GLOBALutils.update_header(hdu,'DISP', disp_epoch)
-            hdu = GLOBALutils.update_header(hdu,'SNR', SNR_5130)
-            hdu = GLOBALutils.update_header(hdu,'SNR_R', SNR_5130_R)
-	    hdu = GLOBALutils.update_header(hdu,'INST', 'HARPS')
-	    hdu = GLOBALutils.update_header(hdu,'RESOL', RESI)
-	    hdu = GLOBALutils.update_header(hdu,'PIPELINE', 'CERES')
-	    hdu = GLOBALutils.update_header(hdu,'XC_MIN', XC_min)
-	    hdu = GLOBALutils.update_header(hdu,'BJD_OUT', bjd_out)
+        disp_epoch = np.around(p1gau_m[2],1)
+        hdu = GLOBALutils.update_header(hdu,'RV', RV)
+        hdu = GLOBALutils.update_header(hdu,'RV_E', RVerr2)
+        hdu = GLOBALutils.update_header(hdu,'BS', BS)
+        hdu = GLOBALutils.update_header(hdu,'BS_E', BSerr)
+        hdu = GLOBALutils.update_header(hdu,'DISP', disp_epoch)
+        hdu = GLOBALutils.update_header(hdu,'SNR', SNR_5130)
+        hdu = GLOBALutils.update_header(hdu,'SNR_R', SNR_5130_R)
+        hdu = GLOBALutils.update_header(hdu,'INST', 'HARPS')
+        hdu = GLOBALutils.update_header(hdu,'RESOL', RESI)
+        hdu = GLOBALutils.update_header(hdu,'PIPELINE', 'CERES')
+        hdu = GLOBALutils.update_header(hdu,'XC_MIN', XC_min)
+        hdu = GLOBALutils.update_header(hdu,'BJD_OUT', bjd_out)
     
-            line_out = "%-15s %18.8f %9.4f %7.4f %9.3f %5.3f     harps   ceres   %8d %6d %5.2f %5.2f %5.1f %4.2f %5.2f %6.1f %4d %s\n"%\
+        line_out = "%-15s %18.8f %9.4f %7.4f %9.3f %5.3f     harps   ceres   %8d %6d %5.2f %5.2f %5.1f %4.2f %5.2f %6.1f %4d %s\n"%\
                       (obname, bjd_out, RV, RVerr2, BS, BSerr, RESI, T_eff_epoch, logg_epoch, Z_epoch, vsini_epoch, XC_min, disp_epoch,\
 		       TEXP, SNR_5130_R, ccf_pdf)
-	    f_res.write(line_out)
+        f_res.write(line_out)
         if (os.access( dirout + fout,os.F_OK)):
             os.remove( dirout + fout)
         hdu.writeto( dirout + fout )
