@@ -1730,171 +1730,159 @@ def get_rough_offset(sc,files,window=100):
     return delta
 
 def Initial_Wav_Calibration(filename,spec,order,wei, porder=3, rmsmax=75, minlines=10, FixEnds=True,\
-                                Dump_Argon=False, Dump_AllLines=False, Cheby=False, rough_shift = 0.0, del_width=5.0, binning=1,line_width=4, fact=1):
-    """
-    Input: a file that contains:
-    (1) number of lines
-    (2) pixel
-    (3) wavelength
-    (4) atomic species, info not used currently
+                                Dump_Argon=False, Dump_AllLines=False, Cheby=False, rough_shift = 0.0, del_width=5.0, binning=1,line_width=4, fact=1,do_xc=True):
 
-    spectra
-    order number
+	f = open(filename).readlines()
 
-    returns: initial 3rd order calibration to go from:
-    (A) pixel to wavelenght
-    (B) wavelength to pixel
-    """
+	pixel_centers = array([])
+	wavelengths   = array([])
+	sigmas        = array([])
+	centroids     = array([])
+	intensities   = array([])
 
-    f = open(filename).readlines()
+	if do_xc:
+		pixel_centers_0 = []
+		for line in f:
+			w = line.split()
+			nlines = int(w[0])
+			for j in range(nlines):
+				pixel_centers_0.append(float(w[2*j+1])*fact/float(binning) + rough_shift)
+		ml = array(pixel_centers_0) - 2
+		mh = array(pixel_centers_0) + 2
+		xc,offs = XCorPix( spec, ml, mh, del_width=del_width)
+		ind_max = np.argmax( xc )
+		delta   = offs[ind_max] 
+	else:
+		delta=0.
 
-    pixel_centers = array([])
-    wavelengths   = array([])
-    sigmas        = array([])
-    centroids     = array([])
-    intensities   = array([])
+	#print "Computed offset for order ", order, " is ", delta
+	N_l = 0
 
-    pixel_centers_0 = []
-    for line in f:
-         w = line.split()
-         nlines = int(w[0])
-         for j in range(nlines):
-             pixel_centers_0.append(float(w[2*j+1])*fact/float(binning) + rough_shift)
-
-    ml = array(pixel_centers_0) - 2
-    mh = array(pixel_centers_0) + 2
-
-    xc,offs = XCorPix( spec, ml, mh, del_width=del_width)
-
-    ind_max = np.argmax( xc )
-    delta   = offs[ind_max]  
-
-    #print "Computed offset for order ", order, " is ", delta
-    N_l = 0
-
-    bad_indices = []
-    bad_indices_ct = 0
-    #print order
-    #plot(spec)
-    for line in f:
-	#print line
-        w = line.split()
-        # extract info, and fit line(s)
-        nlines = int(w[0])
-        pix = []
-        wav = []
-        for j in range(nlines):
-	    if float(w[2*j+1])*fact/float(binning) + rough_shift+delta > 20 and float(w[2*j+1])*fact/float(binning) + rough_shift+delta < len(spec)-20:
-                pix.append(float(w[2*j+1])*fact/float(binning) + rough_shift)
-                wav.append(float(w[2*j+2]))
-	if len(pix) > 0:
-		N_l += len(pix)
-		"""
+	bad_indices = []
+	bad_indices_ct = 0
+	#print order
+	#plot(spec)
+	for line in f:
+		#print line
+		w = line.split()
+		# extract info, and fit line(s)
+		nlines = int(w[0])
+		pix = []
+		wav = []
 		for j in range(nlines):
-		    dumped=False
-		    muj = round(float(w[2*j+1]) + delta)
-		    testw = wei[muj-4:muj+5]
-		    jjj = np.where( testw == 0)
-		    if (len(jjj[0]) >= 2) and (not dumped):
-		        bad_indices.append(bad_indices_ct)
-		    bad_indices_ct += 1
-		"""
+			if float(w[2*j+1])*fact/float(binning) + rough_shift+delta > 20 and float(w[2*j+1])*fact/float(binning) + rough_shift+delta < len(spec)-20:
+				pix.append(float(w[2*j+1])*fact/float(binning) + delta + rough_shift)
+				wav.append(float(w[2*j+2]))
+		if len(pix) > 0:
+			N_l += len(pix)
+			pix = np.array(pix)
+			#pix2=np.around(pix).astype('int')
+			#plot(pix2,spec[pix2],'ro')
+			wav = np.array(wav)
+			xmin = int(round(min(pix)))
+			xmax = int(round(max(pix)))
+			X = array(range(xmin-line_width,xmax+line_width+1))
+			Y = spec[xmin-line_width:xmax+line_width+1]
+			if (nlines == 1):
+				num       = np.sum(X*Y)
+				den       = np.sum(Y)
+				if (den > 0):
+					Cent = num/den
+				else:
+					Cent = -1
+			weight = wei[xmin-line_width:xmax+line_width+1]
+			kk = np.where( weight == 0)
+			# Input Spectrum is background subtracted ---> B=0
+			B = np.zeros(len(X))
+			mu = pix
+			sigma = np.zeros(nlines) + 1.1 * fact / float(binning)
+			#plot(X,Y)
+			#show()
+			#print X, Y, B, mu, sigma, weight
+			p1, suc = LineFit_SingleSigma( X, Y, B, mu, sigma, weight)
+			#if (suc<1) or (suc > 4):
+			#    print "Problem", order, X, delta
+			# collect fit information
+			#plot(X,Y)
+			wavelenghts = np.append(wavelengths,wav)
+			for j in range(nlines):
+				pixel_centers = np.append(pixel_centers,p1[3*j + 1])
+				sigmas        = np.append(sigmas,p1[3*j + 2])
+				wavelengths   = np.append(wavelengths,wav[j])
+				intensities   = np.append(intensities,p1[3*j])
+				if (nlines == 1):
+					centroids = np.append(centroids, Cent)
+				else:
+					centroids = np.append(centroids, -1)
+	#pixel_centers2 = np.around(pixel_centers).astype('int')
+	#plot(pixel_centers2,spec[pixel_centers2],'go')
+	#show()
+	#I = np.where((pixel_centers>0) & (pixel_centers<4600))[0]
+	#plot(np.around(pixel_centers[I]).astype('int'),spec[np.around(pixel_centers[I]).astype('int')],'ro')
+	#show()
+	I1 = np.where(pixel_centers<50)[0]
+	I2 = np.where(pixel_centers>len(spec)-50)[0]
+	II = np.hstack((I1,I2))
+	bad_indices = np.hstack((np.array(bad_indices),II))
+	bad_indices = list(np.unique(bad_indices))
+	# now, do the polynomial fit, rejecting some lines until RMS is below rmsmax
+	I = range( N_l )
 
-		pix = np.array(pix) + delta
-	
-		wav = np.array(wav)
-		xmin = int(round(min(pix)))
-		xmax = int(round(max(pix)))
-		X = array(range(xmin-line_width,xmax+line_width+1))
-		Y = spec[xmin-line_width:xmax+line_width+1]
-		if (nlines == 1):
-		    num       = np.sum(X*Y)
-		    den       = np.sum(Y)
-		    if (den > 0):
-		        Cent = num/den
-		    else:
-		        Cent = -1
-		weight = wei[xmin-line_width:xmax+line_width+1]
-		kk = np.where( weight == 0)
-		# Input Spectrum is background subtracted ---> B=0
-		B = np.zeros(len(X)) 
-		mu = pix
-		sigma = np.zeros(nlines) + 1.1
-		p1, suc = LineFit_SingleSigma( X, Y, B, mu, sigma, weight)
-		#if (suc<1) or (suc > 4):
-		#    print "Problem", order, X, delta
-		# collect fit information
-		#plot(X,Y)
-		wavelenghts = np.append(wavelengths,wav)
-		for j in range(nlines):
-		    pixel_centers = np.append(pixel_centers,p1[3*j + 1])
-		    sigmas        = np.append(sigmas,p1[3*j + 2])
-		    wavelengths   = np.append(wavelengths,wav[j])
-		    intensities   = np.append(intensities,p1[3*j])
-		    if (nlines == 1):
-		        centroids = np.append(centroids, Cent)
-		    else:
-		        centroids = np.append(centroids, -1)
-    #show()
-    #I = np.where((pixel_centers>0) & (pixel_centers<4600))[0]
-    #plot(np.around(pixel_centers[I]).astype('int'),spec[np.around(pixel_centers[I]).astype('int')],'ro')
-    #show()
-    I1 = np.where(pixel_centers<50)[0]
-    I2 = np.where(pixel_centers>len(spec)-50)[0]
-    II = np.hstack((I1,I2))
-    bad_indices = np.hstack((np.array(bad_indices),II))
-    bad_indices = list(np.unique(bad_indices))
-    # now, do the polynomial fit, rejecting some lines until RMS is below rmsmax
-    I = range( N_l )
+	for bi in bad_indices:
+		I.remove( bi )
+		N_l -= 1
 
-    for bi in bad_indices:
-        I.remove( bi )
-        N_l -= 1
+	if (Cheby):
+		coeffs_pix2wav   = Cheby_Fit(pixel_centers[I], wavelengths[I], porder,len(spec))   
+		coeffs_pix2sigma = Cheby_Fit(pixel_centers[I], sigmas[I], porder,len(spec))
+	else:
+		coeffs_pix2wav   = scipy.polyfit(pixel_centers[I], wavelengths[I], porder)    
+		coeffs_pix2sigma = scipy.polyfit(pixel_centers[I], sigmas[I], porder)
 
-    if (Cheby):
-        coeffs_pix2wav   = Cheby_Fit(pixel_centers[I], wavelengths[I], porder,len(spec))   
-        coeffs_pix2sigma = Cheby_Fit(pixel_centers[I], sigmas[I], porder,len(spec))
-    else:
-        coeffs_pix2wav   = scipy.polyfit(pixel_centers[I], wavelengths[I], porder)    
-        coeffs_pix2sigma = scipy.polyfit(pixel_centers[I], sigmas[I], porder)
+	rmsms, residuals = rms_ms(coeffs_pix2wav, pixel_centers[I], wavelengths[I], len(spec), Cheby=Cheby)
 
-    rmsms, residuals = rms_ms(coeffs_pix2wav, pixel_centers[I], wavelengths[I], len(spec), Cheby=Cheby)
+	if (FixEnds):
+		minI = np.min( I ) + 1
+		maxI = np.max( I ) - 1
+	else:
+		minI = np.min( I )
+		maxI = np.max( I )
+	#if order==26:
+	#	    plot(pixel_centers[I],residuals,'ro')
+	#	    plot([0,4096],[0,0])
+	#plot(np.arange(4096),Cheby_eval(coeffs_pix2wav,np.arange(4096),len(spec)))
+	#show()
+	#print dfgh
+	count = 0
+	while ((N_l > minlines) and (rmsms > rmsmax)):
+		rmsms, residuals = rms_ms(coeffs_pix2wav, pixel_centers[I], wavelengths[I], len(spec), Cheby=Cheby)
+		index_worst = np.argmax( np.absolute(residuals) )
+		I.pop( index_worst)
+		N_l -= 1
+		if (Cheby):
+			coeffs_pix2wav   = Cheby_Fit(pixel_centers[I], wavelengths[I], porder,len(spec))   
+			coeffs_pix2sigma = Cheby_Fit(pixel_centers[I], sigmas[I], porder,len(spec))
+		else:
+			coeffs_pix2wav   = scipy.polyfit(pixel_centers[I], wavelengths[I], porder)    
+			coeffs_pix2sigma = scipy.polyfit(pixel_centers[I], sigmas[I], porder)
+		count +=1
 
-    if (FixEnds):
-        minI = np.min( I ) + 1
-        maxI = np.max( I ) - 1
-    else:
-        minI = np.min( I )
-        maxI = np.max( I )
-    #if order==26:
-    #	    plot(pixel_centers[I],residuals,'ro')
-    #	    plot([0,4096],[0,0])
-    #plot(np.arange(4096),Cheby_eval(coeffs_pix2wav,np.arange(4096),len(spec)))
-    #show()
+	rmsms, residuals = rms_ms(coeffs_pix2wav, pixel_centers[I], wavelengths[I], len(spec), Cheby=Cheby)    
 
-    count = 0
-    while ((N_l > minlines) and (rmsms > rmsmax)):
-        rmsms, residuals = rms_ms(coeffs_pix2wav, pixel_centers[I], wavelengths[I], len(spec), Cheby=Cheby)
-        index_worst = np.argmax( np.absolute(residuals) )
-        I.pop( index_worst)
-        N_l -= 1
-        if (Cheby):
-            coeffs_pix2wav   = Cheby_Fit(pixel_centers[I], wavelengths[I], porder,len(spec))   
-            coeffs_pix2sigma = Cheby_Fit(pixel_centers[I], sigmas[I], porder,len(spec))
-        else:
-            coeffs_pix2wav   = scipy.polyfit(pixel_centers[I], wavelengths[I], porder)    
-            coeffs_pix2sigma = scipy.polyfit(pixel_centers[I], sigmas[I], porder)
-        count +=1
+	pci = np.around(pixel_centers).astype('int')
+	#plot(spec)
+	#plot(pci,spec[pci],'ro')
+	#plot(pci[I],spec[pci[I]],'bo')
+	#show()
 
-    rmsms, residuals = rms_ms(coeffs_pix2wav, pixel_centers[I], wavelengths[I], len(spec), Cheby=Cheby)    
-    #print "RMS is ", rmsms, "using ", N_l, " lines at indices ", I
-    #plot(pixel_centers[I],wavelengths[I],'ro')
-    #if order == 26:
-    #	    plot(pixel_centers[I],residuals-0.1,'bo')
-    #	    plot([0,4096],[-0.1,-0.1])
-    #	    #plot(np.arange(4096),Cheby_eval(coeffs_pix2wav,np.arange(4096),len(spec)))
-    #	    show()
-    return coeffs_pix2wav, coeffs_pix2sigma, pixel_centers[I], wavelengths[I], \
+	#print "RMS is ", rmsms, "using ", N_l, " lines at indices ", I
+	#plot(pixel_centers[I],wavelengths[I],'ro')
+	#if order == 26:
+	#	    plot(pixel_centers[I],residuals-0.1,'bo')
+	#	    plot([0,4096],[-0.1,-0.1])
+	#	    #plot(np.arange(4096),Cheby_eval(coeffs_pix2wav,np.arange(4096),len(spec)))
+	#	    show()
+	return coeffs_pix2wav, coeffs_pix2sigma, pixel_centers[I], wavelengths[I], \
         rmsms, residuals, centroids[I], sigmas[I], intensities[I]
 
 def XCorPix(spectra, mask_l, mask_h, del0=0, del_width=5, del_step=0.1):

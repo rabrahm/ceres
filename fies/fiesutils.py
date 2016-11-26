@@ -37,7 +37,7 @@ def ra_from_sec(ra,time=True):
 		sss = '0' + sss
 	return sign + shh + ':' + smm + ':' + sss
 
-def FileClassify(diri, log,binning=1):
+def FileClassify(diri, log,binning=1,mode='F1'):
     """
     
     Classifies all files in a directory and writes a night log of science images
@@ -77,7 +77,7 @@ def FileClassify(diri, log,binning=1):
 	if dump == False:
 		h = pyfits.open(archivo)
 		hd = pyfits.getheader(archivo)
-		if int(h[0].header['DETXBIN']) == binning and int(h[0].header['DETYBIN']) == binning:
+		if int(h[0].header['DETXBIN']) == binning and int(h[0].header['DETYBIN']) == binning and (mode in h[0].header['FIFMSKNM']):
 			print archivo, h[0].header['IMAGETYP'], h[0].header['SHSTAT'], h[0].header['EXPTIME'], h[0].header['OBJECT'], h[0].header['TCSTGT'] 
 			if h[0].header['IMAGETYP'].replace(' ','') == '' or h[0].header['IMAGETYP'] == 'science':
 			    sim_sci.append(archivo)

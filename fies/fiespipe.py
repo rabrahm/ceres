@@ -62,6 +62,7 @@ parser.add_argument('-npools', default=1)
 parser.add_argument('-reffile',default='default')
 parser.add_argument('-dirout',default='default')
 parser.add_argument('-binning', default=1)
+parser.add_argument('-fibre',default='default')
 
 args = parser.parse_args()
 DoClass     = args.do_class
@@ -73,12 +74,13 @@ npools      = int(args.npools)
 reffile     = args.reffile
 dirout      = args.dirout
 binning     = int(args.binning)
+mode        = args.fibre
 
 if dirin[-1] != '/':
     dirin = dirin + '/'
 
 if dirout == 'default':
-    dirout = dirin[:-1]+'_red/'
+    dirout = dirin[:-1]+'_red_'+mode+'/'
 
 if not os.access(dirout,os.F_OK):
     os.system('mkdir '+dirout)
@@ -97,7 +99,7 @@ force_flat_extract = False
 force_sci_extract  = False
 force_thar_extract = False	
 force_tharxc       = False
-force_thar_wavcal  = False
+force_thar_wavcal  = True
 force_spectral_file_build = True
 force_stellar_pars = False
 dumpargon          = False
@@ -117,8 +119,8 @@ N_Marsh            = 3      # grado polinomio
 min_extract_col    = 5
 max_extract_col    = 2048
 
-ncoef_x            = 3
-ncoef_m            = 4
+ncoef_x            = 4
+ncoef_m            = 6
 npar_wsol = (min(ncoef_x,ncoef_m) + 1) * (2*max(ncoef_x,ncoef_m) - min(ncoef_x,ncoef_m) + 2) / 2
 
 models_path = base+"data/COELHO_MODELS/R_40000b/"
@@ -135,6 +137,14 @@ if binning == 2:
 	max_extract_col = int(np.around(max_extract_col/2.))
 	bacap = 4
 	orders_offset = 2
+
+if mode == 'F1':
+	resol = 25000
+	MRMS  = 200.
+elif mode == 'F3':
+	resol = 46000
+elif mode == 'F4':
+	resol = 67000
 #############################
 
 # file containing the log
@@ -145,7 +155,7 @@ print "\tRAW data is in ",dirin
 print "\tProducts of reduction will be in",dirout
 print '\n'
 
-biases, flats, ThAr_ref, sim_sci, ThAr_ref_dates, obnames, exptimes = fiesutils.FileClassify(dirin,log,binning=binning)
+biases, flats, ThAr_ref, sim_sci, ThAr_ref_dates, obnames, exptimes = fiesutils.FileClassify(dirin,log,binning=binning, mode=mode)
 IS = np.argsort(ThAr_ref_dates)
 ThAr_ref_dates = ThAr_ref_dates[IS]
 ThAr_ref = ThAr_ref[IS]
@@ -187,7 +197,6 @@ if (pre_process == 1):
 
     print "\tTracing echelle orders..."
     c_all,nord = GLOBALutils.get_them(Flat.T, ext_aperture, trace_degree, maxords=-1, mode=1,nsigmas=5.)
-    print nord
     c_all,nord = GLOBALutils.good_orders(c_all,nord,Flat.shape[1],Flat.shape[0],ext_aperture)
     print '\t\t'+ str(nord)+' orders found.'
 
@@ -431,10 +440,12 @@ for i in range(len(ThAr_ref_dates)):
 					xcs = xc.copy()
 				else:
 					xcs = xcs + xc
+		#plot(offs,xcs)
+		#show()
 		rough_shift = offs[np.argmax(xcs)]
 
 		for order in range(lines_thar.shape[0]):
-			print order
+			#print order
 			order_s = str(order+orders_offset)
 			if (order + orders_offset < 10):
 				order_s = '0' + str(order+orders_offset)
@@ -446,13 +457,14 @@ for i in range(len(ThAr_ref_dates)):
 				L = np.where(thar_order_orig != 0)[0]
 				IV = 1. / (thar_order_orig / gain + (ron/gain)**2 )
 				IV[L] = 0.
-				wei             = np.sqrt( IV )
+				wei             = np.ones(len(thar_order_orig))  #np.sqrt( IV )
 				thar_order      = thar_order_orig #- bkg
 
 				coeffs_pix2wav, coeffs_pix2sigma, pixel_centers, wavelengths, rms_ms, residuals, centroids,sigmas, intensities \
 	                = GLOBALutils.Initial_Wav_Calibration( order_dir+'order_'+order_s+'.iwdat', thar_order, order, wei, \
-	                	rmsmax=300, minlines=10, FixEnds=False,Dump_Argon=dumpargon, Dump_AllLines=True, Cheby=use_cheby,porder=3,rough_shift=rough_shift,binning=binning,del_width=5.)
-				#plot(wavelengths, residuals,'.')			            
+	                	rmsmax=1000, minlines=10, FixEnds=False,Dump_Argon=dumpargon, Dump_AllLines=True, line_width=6, Cheby=use_cheby,porder=3,rough_shift=rough_shift,binning=binning,del_width=5.,do_xc=False)
+				#plot(wavelengths, residuals,'.')	
+				#show()		            
 				if (order == int(.5*nord)): 	
 					if (use_cheby):
 						Global_ZP = GLOBALutils.Cheby_eval( coeffs_pix2wav,  0.5*len(thar_order), len(thar_order) )
@@ -471,8 +483,13 @@ for i in range(len(ThAr_ref_dates)):
 		p0[0] =  int(.5*nord) * Global_ZP 
 		p1, G_pix, G_ord, G_wav, II, rms_ms, G_res = GLOBALutils.Fit_Global_Wav_Solution(All_Pixel_Centers, All_Wavelengths,\
 						     All_Orders, np.ones(All_Intensities.shape), p0, Cheby=use_cheby,       \
-						     order0=ro0+orders_offset, ntotal=nord, maxrms=300, Inv=Inverse_m, minlines=300,  \
+						     order0=ro0+orders_offset, ntotal=nord, maxrms=MRMS, Inv=Inverse_m, minlines=300,  \
 						     npix=len(thar_order),nx=ncoef_x,nm=ncoef_m)
+
+		#for i in np.unique(G_ord):
+		#	I = np.where(G_ord == i)[0]
+		#	plot(G_wav[I],G_res[I],'.')
+		#show()
 
 		pdict = {'p1':p1,'mjd':mjd, 'G_pix':G_pix, 'G_ord':G_ord, 'G_wav':G_wav, 'II':II, 'rms_ms':rms_ms,\
                      'G_res':G_res, 'All_Centroids':All_Centroids, 'All_Wavelengths':All_Wavelengths, 'All_Orders':All_Orders, 'All_Pixel_Centers':All_Pixel_Centers, 'All_Sigmas':All_Sigmas}
@@ -498,7 +515,7 @@ for i in range(len(ThAr_ref_dates)):
 	p_shift, pix_centers, orders, wavelengths, I, rms_ms, residuals  = \
 		    GLOBALutils.Global_Wav_Solution_vel_shift(dct['G_pix'], dct['G_wav'], dct['G_ord'],\
 		                                        np.ones(len(dct['G_ord'])), p_ref, order0=ro0 + orders_offset, npix=npix,\
-		                                        Cheby=use_cheby, ntotal=nord, maxrms=300, Inv=Inverse_m, minlines=300, nx=ncoef_x,nm=ncoef_m)
+		                                        Cheby=use_cheby, ntotal=nord, maxrms=MRMS, Inv=Inverse_m, minlines=300, nx=ncoef_x,nm=ncoef_m)
 	shifts.append(p_shift[0])
 
 mjds_thar,shifts = np.array(mjds_thar),np.array(shifts)
@@ -561,7 +578,6 @@ for fsim in new_list:
 
 	# Open file, trim, overscan subtract and MasterBias subtract
 	data        = h[1].data
-	print data.shape
 	data        = fiesutils.OverscanTrim( data, binning=binning ) - MasterBias
 	#drift,c_new = GLOBALutils.get_drift(data,P,c_all,pii=1024,win=10)
 	#P_new       = GLOBALutils.shift_P(P,drift,c_new,ext_aperture)
@@ -750,7 +766,7 @@ for fsim in new_list:
 
 			if os.access(pars_file,os.F_OK) == False or force_stellar_pars:
 				print "\t\t\tEstimating atmospheric parameters:"
-				Rx = np.around(1./np.sqrt(1./40000.**2 - 1./60000.**2))
+				Rx = np.around(1./np.sqrt(1./40000.**2 - 1./resol**2))
 				spec2 = spec.copy()
 				for i in range(spec.shape[1]):
 					IJ = np.where(spec[5,i]!=0.)[0]
@@ -973,14 +989,14 @@ for fsim in new_list:
 		hdu = GLOBALutils.update_header(hdu,'SNR', SNR_5130)
 		hdu = GLOBALutils.update_header(hdu,'SNR_R', SNR_5130_R)
 		hdu = GLOBALutils.update_header(hdu,'INST', 'FIES')
-		hdu = GLOBALutils.update_header(hdu,'RESOL', '40000')
+		hdu = GLOBALutils.update_header(hdu,'RESOL', str(resol))
 		hdu = GLOBALutils.update_header(hdu,'PIPELINE', 'CERES')
 		hdu = GLOBALutils.update_header(hdu,'XC_MIN', XC_min)
 		hdu = GLOBALutils.update_header(hdu,'BJD_OUT', bjd_out)
 
 		# write to output
-		line_out = "%-15s %18.8f %9.4f %7.4f %9.3f %5.3f   fies   ceres   40000 %6d %5.2f %5.2f %5.1f %4.2f %5.2f %6.1f %4d %s\n"%\
-                      (obname, bjd_out, RV, RVerr2, BS, BSerr, T_eff_epoch, logg_epoch, Z_epoch, vsini_epoch, XC_min, disp_epoch,\
+		line_out = "%-15s %18.8f %9.4f %7.4f %9.3f %5.3f   fies   ceres   %8d %6d %5.2f %5.2f %5.1f %4.2f %5.2f %6.1f %4d %s\n"%\
+                      (obname, bjd_out, RV, RVerr2, BS, BSerr, resol, T_eff_epoch, logg_epoch, Z_epoch, vsini_epoch, XC_min, disp_epoch,\
 			TEXP, SNR_5130_R, ccf_pdf)
 		f_res.write(line_out)
     
