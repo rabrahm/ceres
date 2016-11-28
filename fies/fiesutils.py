@@ -37,95 +37,117 @@ def ra_from_sec(ra,time=True):
 		sss = '0' + sss
 	return sign + shh + ':' + smm + ':' + sss
 
-def FileClassify(diri, log,binning=1,mode='F1'):
-    """
+def FileClassify(diri, log,binning=1,mode='F1', dark_corr=False):
+	"""
     
-    Classifies all files in a directory and writes a night log of science images
+	Classifies all files in a directory and writes a night log of science images
 
-    """
+	"""
 
-    # define output lists
-    sim_sci        = []
-    biases         = []
-    flats          = []
-    ThAr_ref       = []
-    ThAr_ref_dates = []
-    flat_ref_dates = []
-    bias_ref_dates = []
-    obnames        = []
-    exptimes       = []
+	# define output lists
+	sim_sci        = []
+	biases         = []
+	flats          = []
+	ThAr_ref       = []
+	ThAr_ref_dates = []
+	flat_ref_dates = []
+	bias_ref_dates = []
+	obnames        = []
+	exptimes       = []
+	darks		   = []
 
-    f = open(log,'w')
+	sdarks = []
+	if dark_corr and os.access(diri+'/darks.txt',os.F_OK):
+		fd = open(diri+'/darks.txt','r')
+		ds = fd.readlines()
+		for dk in ds:
+			sdarks.append(diri+dk[:-1])
+	sdarks = np.array(sdarks)
 
-    #Do not consider the images specified in dir+badfiles.txt
-    bad_files = []
-    if os.access(diri+'bad_files.txt',os.F_OK):
-    	bf = open(diri+'bad_files.txt')
-	linesbf = bf.readlines()
-	for line in linesbf:
-		bad_files.append(diri+line[:-1])
-	bf.close()
+	f = open(log,'w')
+
+	#Do not consider the images specified in dir+badfiles.txt
+	bad_files = []
+	if os.access(diri+'bad_files.txt',os.F_OK):
+		bf = open(diri+'bad_files.txt')
+		linesbf = bf.readlines()
+		for line in linesbf:
+			bad_files.append(diri+line[:-1])
+		bf.close()
     
-    all_files = glob.glob(diri+"/*fits")
-    for archivo in all_files:
-	#print archivo
-	dump = False
-	for bf in bad_files:
-		if archivo == bf:
-			dump = True
-			break
-	if dump == False:
-		h = pyfits.open(archivo)
-		hd = pyfits.getheader(archivo)
-		if int(h[0].header['DETXBIN']) == binning and int(h[0].header['DETYBIN']) == binning and (mode in h[0].header['FIFMSKNM']):
-			print archivo, h[0].header['IMAGETYP'], h[0].header['SHSTAT'], h[0].header['EXPTIME'], h[0].header['OBJECT'], h[0].header['TCSTGT'] 
-			if h[0].header['IMAGETYP'].replace(' ','') == '' or h[0].header['IMAGETYP'] == 'science':
-			    sim_sci.append(archivo)
-			    obname = h[0].header['OBJECT']
-			    obnames.append( obname )
-			    ra     = ra_from_sec(h[0].header['RA']*3600.*24./360.)
-			    delta  = ra_from_sec(h[0].header['DEC']*3600.)
-			    airmass= float(h[0].header['AIRMASS'])
-			    texp   = float(h[0].header['EXPTIME'])
+	all_files = glob.glob(diri+"/*fits")
+	for archivo in all_files:
+		#print archivo
+		dump = False
+		for bf in bad_files:
+			if archivo == bf:
+				dump = True
+				break
+		isdark=False
+		for df in sdarks:
+			if archivo == df:
+				darks.append(archivo)
+				isdark=True
 
-			    date   =  h[0].header['DATE-OBS']		    
-			    hour   = date[11:]
-			    date    = date[:10]
-			    exptimes.append( texp ) 
-			    line = "%-15s %10s %10s %8.2f %4.2f %8s %11s %s\n" % (obname, ra, delta, texp, airmass, date, hour, archivo)
-			    f.write(line)
-			elif h[0].header['IMAGETYP'] == 'BIAS':
-			    biases.append(archivo)
-			    mjd, mjd0 = mjd_fromheader2(h)
-			    bias_ref_dates.append( mjd )
-			elif h[0].header['IMAGETYP'] == 'FLAT':
-			    flats.append(archivo)
-			    mjd, mjd0 = mjd_fromheader2(h)
-			    flat_ref_dates.append( mjd )
-			elif h[0].header['IMAGETYP'] == 'WAVE':
-			    ThAr_ref.append(archivo)
-			    mjd, mjd0 = mjd_fromheader2(h)
-			    ThAr_ref_dates.append( mjd )
+		if dump == False and isdark == False:
+			h = pyfits.open(archivo)
+			hd = pyfits.getheader(archivo)
+			if int(h[0].header['DETXBIN']) == binning and int(h[0].header['DETYBIN']) == binning and (mode in h[0].header['FIFMSKNM']):
+				print archivo, h[0].header['IMAGETYP'], h[0].header['SHSTAT'], h[0].header['EXPTIME'], h[0].header['OBJECT'], h[0].header['TCSTGT'] 
+				if h[0].header['IMAGETYP'].replace(' ','') == '' or h[0].header['IMAGETYP'] == 'science':
+					sim_sci.append(archivo)
+					obname = h[0].header['OBJECT']
+					obnames.append( obname )
+					ra     = ra_from_sec(h[0].header['RA']*3600.*24./360.)
+					delta  = ra_from_sec(h[0].header['DEC']*3600.)
+					airmass= float(h[0].header['AIRMASS'])
+					texp   = float(h[0].header['EXPTIME'])
+
+					date   =  h[0].header['DATE-OBS']		    
+					hour   = date[11:]
+					date    = date[:10]
+					exptimes.append( texp ) 
+					line = "%-15s %10s %10s %8.2f %4.2f %8s %11s %s\n" % (obname, ra, delta, texp, airmass, date, hour, archivo)
+					f.write(line)
+				elif h[0].header['IMAGETYP'] == 'BIAS':
+					biases.append(archivo)
+					mjd, mjd0 = mjd_fromheader2(h)
+					bias_ref_dates.append( mjd )
+				elif h[0].header['IMAGETYP'] == 'FLAT':
+					flats.append(archivo)
+					mjd, mjd0 = mjd_fromheader2(h)
+					flat_ref_dates.append( mjd )
+				elif h[0].header['IMAGETYP'] == 'WAVE':
+					ThAr_ref.append(archivo)
+					mjd, mjd0 = mjd_fromheader2(h)
+					ThAr_ref_dates.append( mjd )
 		
     
-    flat_ref_dates = np.array(flat_ref_dates)
-    flats = np.array(flats)
-    IS = np.argsort(flat_ref_dates)
-    flat_ref_dates = flat_ref_dates[IS]
-    flats = flats[IS]
-    #for i in range(len(flats)):
-    #	print 'flat',flats[i], flat_ref_dates[i]
+	flat_ref_dates = np.array(flat_ref_dates)
+	flats = np.array(flats)
+	IS = np.argsort(flat_ref_dates)
+	flat_ref_dates = flat_ref_dates[IS]
+	flats = flats[IS]
+	#for i in range(len(flats)):
+	#	print 'flat',flats[i], flat_ref_dates[i]
 
-    bias_ref_dates = np.array(bias_ref_dates)
-    biases = np.array(biases)
-    IS = np.argsort(bias_ref_dates)
-    bias_ref_dates = bias_ref_dates[IS]
-    biases = biases[IS]
-    #for i in range(len(biases)):
-    #	print 'bias',biases[i], bias_ref_dates[i]
-    f.close()
+	bias_ref_dates = np.array(bias_ref_dates)
+	biases = np.array(biases)
+	IS = np.argsort(bias_ref_dates)
+	bias_ref_dates = bias_ref_dates[IS]
+	biases = biases[IS]
+	#for i in range(len(biases)):
+	#	print 'bias',biases[i], bias_ref_dates[i]
+	f.close()
 
-    return biases, np.array(flats), np.array(ThAr_ref), sim_sci, np.array(ThAr_ref_dates), obnames, exptimes
+	return biases, np.array(flats), np.array(ThAr_ref), sim_sci, np.array(ThAr_ref_dates), obnames, exptimes, np.array(darks)
+
+def get_darktimes(darks):
+	times = []
+	for dark in darks:
+		hd = pyfits.getheader(dark)
+		times.append(hd['EXPTIME'])
+	return np.unique(np.sort(np.array(times))), np.array(times)
 
 def mjd_fromheader2(h):
 	"""

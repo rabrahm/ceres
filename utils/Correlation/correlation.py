@@ -336,7 +336,7 @@ def CCF(spec, model_path='/dummy/path/',doplot = False, plot_dir = '/home/rabrah
 		I = numpy.where((Fm[i] != 0.0) & (Fm[i] < 2.0))[0]
 		Ls = Lm[i][I]
 		Fs = Fm[i][I]
-		
+
 		I = numpy.where((wam > Ls[0]-5.0) & (wam < Ls[-1]+5.0))[0]
 		MLs = wam[I]
 		MFs = flm[I]

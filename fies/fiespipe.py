@@ -80,7 +80,7 @@ if dirin[-1] != '/':
     dirin = dirin + '/'
 
 if dirout == 'default':
-    dirout = dirin[:-1]+'_red_'+mode+'/'
+    dirout = dirin[:-1]+'_red_'+mode+'_B'+str(int(binning))+'/'
 
 if not os.access(dirout,os.F_OK):
     os.system('mkdir '+dirout)
@@ -99,10 +99,11 @@ force_flat_extract = False
 force_sci_extract  = False
 force_thar_extract = False	
 force_tharxc       = False
-force_thar_wavcal  = True
+force_thar_wavcal  = False
 force_spectral_file_build = True
 force_stellar_pars = False
 dumpargon          = False
+dark_corr		   = True
 minlines_glob      = 700
 
 Inverse_m          = True
@@ -155,7 +156,7 @@ print "\tRAW data is in ",dirin
 print "\tProducts of reduction will be in",dirout
 print '\n'
 
-biases, flats, ThAr_ref, sim_sci, ThAr_ref_dates, obnames, exptimes = fiesutils.FileClassify(dirin,log,binning=binning, mode=mode)
+biases, flats, ThAr_ref, sim_sci, ThAr_ref_dates, obnames, exptimes, darks = fiesutils.FileClassify(dirin,log,binning=binning, mode=mode, dark_corr=dark_corr)
 IS = np.argsort(ThAr_ref_dates)
 ThAr_ref_dates = ThAr_ref_dates[IS]
 ThAr_ref = ThAr_ref[IS]
@@ -178,49 +179,68 @@ else:
     pre_process = 0
 
 if (pre_process == 1):
-    # median combine Biases
-    print "\tGenerating Master calibration frames..."
-    MasterBias, RO_bias, GA_bias = fiesutils.MedianCombine(biases, binning=binning)
-    hdu = pyfits.PrimaryHDU( MasterBias )
-    if (os.access(dirout+'MasterBias.fits',os.F_OK)):
-        os.remove(dirout+'MasterBias.fits')
-    hdu.writeto(dirout+'MasterBias.fits')
-    print "\t\t-> Masterbias: done!"
+	# median combine Biases
+	print "\tGenerating Master calibration frames..."
+	MasterBias, RO_bias, GA_bias = fiesutils.MedianCombine(biases, binning=binning)
+	hdu = pyfits.PrimaryHDU( MasterBias )
+	if (os.access(dirout+'MasterBias.fits',os.F_OK)):
+		os.remove(dirout+'MasterBias.fits')
+	hdu.writeto(dirout+'MasterBias.fits')
+	print "\t\t-> Masterbias: done!"
 
-    # median combine list of flats
-    Flat, RO_fl, GA_fl = fiesutils.MedianCombine(flats, zero=dirout+'MasterBias.fits',binning=binning)
-    hdu = pyfits.PrimaryHDU(Flat)
-    if (os.access(dirout+'Flat.fits',os.F_OK)):
-        os.remove(dirout+'Flat.fits')
-    hdu.writeto(dirout+'Flat.fits')
-    print "\t\t-> Masterflats: done!"
+	dark_names = []
+	dark_utimes = []
+	if dark_corr and len(darks)>0:
+		dark_utimes, dark_times = fiesutils.get_darktimes(darks)
+		for tim in dark_utimes:
+			I = np.where(dark_times == tim)[0]
+			dark,ron_d,gain_d = fiesutils.MedianCombine(darks[I], zero=dirout+'MasterBias.fits',binning=binning)
+			hdu = pyfits.PrimaryHDU(dark)
+			dark_names.append(dirout+'Dark_'+str(int(tim))+'.fits')
+			if (os.access(dark_names[-1],os.F_OK)):
+				os.remove(dark_names[-1])
+			hdu.writeto(dark_names[-1])
+		print "\t\t-> MasterDarks: done!"
+	dark_names, dark_utimes = np.array(dark_names), np.array(dark_utimes)
 
-    print "\tTracing echelle orders..."
-    c_all,nord = GLOBALutils.get_them(Flat.T, ext_aperture, trace_degree, maxords=-1, mode=1,nsigmas=5.)
-    c_all,nord = GLOBALutils.good_orders(c_all,nord,Flat.shape[1],Flat.shape[0],ext_aperture)
-    print '\t\t'+ str(nord)+' orders found.'
+	# median combine list of flats
+	Flat, RO_fl, GA_fl = fiesutils.MedianCombine(flats, zero=dirout+'MasterBias.fits',binning=binning)
+	hdu = pyfits.PrimaryHDU(Flat)
+	if (os.access(dirout+'Flat.fits',os.F_OK)):
+		os.remove(dirout+'Flat.fits')
+	hdu.writeto(dirout+'Flat.fits')
+	print "\t\t-> Masterflats: done!"
 
-    # pickle traces
-    trace_dict = {'c_all':c_all,
+	print "\tTracing echelle orders..."
+	c_all,nord = GLOBALutils.get_them(Flat.T, ext_aperture, trace_degree, maxords=-1, mode=1,nsigmas=5.)
+	c_all,nord = GLOBALutils.good_orders(c_all,nord,Flat.shape[1],Flat.shape[0],ext_aperture)
+	print '\t\t'+ str(nord)+' orders found.'
+
+	# pickle traces
+	trace_dict = {'c_all':c_all,
                   'nord':nord,
                   'GA_bias': GA_bias, 'RO_bias' : RO_bias,
-                  'GA_fl': GA_fl, 'RO_fl': RO_fl}
-    pickle.dump( trace_dict, open( dirout+"trace.pkl", 'w' ) )
+                  'GA_fl': GA_fl, 'RO_fl': RO_fl,
+                  'dark_names':dark_names, 'dark_utimes':dark_utimes}
+	pickle.dump( trace_dict, open( dirout+"trace.pkl", 'w' ) )
 
 else:
-    trace_dict = pickle.load( open( dirout+"trace.pkl", 'r' ) )
-    c_all = trace_dict['c_all']
-    nord  = trace_dict['nord']
-    # recover GA*, RO*
-    GA_bias = trace_dict['GA_bias']
-    RO_bias = trace_dict['RO_bias']
-    GA_fl = trace_dict['GA_fl']
-    RO_fl = trace_dict['RO_fl']
-    # recover flats & master bias
-    h = pyfits.open(dirout+'Flat.fits')
-    Flat = h[0].data
-    h = pyfits.open(dirout+'MasterBias.fits')
-    MasterBias = h[0].data
+	trace_dict = pickle.load( open( dirout+"trace.pkl", 'r' ) )
+	c_all = trace_dict['c_all']
+	nord  = trace_dict['nord']
+	# recover GA*, RO*
+	GA_bias = trace_dict['GA_bias']
+	RO_bias = trace_dict['RO_bias']
+	GA_fl = trace_dict['GA_fl']
+	RO_fl = trace_dict['RO_fl']
+	if dark_corr and len(darks)>0:
+		dark_utimes = trace_dict['dark_utimes']
+		dark_names = trace_dict['dark_names']
+	# recover flats & master bias
+	h = pyfits.open(dirout+'Flat.fits')
+	Flat = h[0].data
+	h = pyfits.open(dirout+'MasterBias.fits')
+	MasterBias = h[0].data
 
 print '\n\tExtraction of Flat calibration frames:'
 
@@ -579,6 +599,10 @@ for fsim in new_list:
 	# Open file, trim, overscan subtract and MasterBias subtract
 	data        = h[1].data
 	data        = fiesutils.OverscanTrim( data, binning=binning ) - MasterBias
+	if dark_corr and len(darks)>0 and int(h[0].header['EXPTIME']) in dark_utimes.astype('int'):
+		I = np.where(dark_utimes.astype('int') == int(h[0].header['EXPTIME']))[0]
+		data = data - pyfits.getdata(dark_names[I][0])
+
 	#drift,c_new = GLOBALutils.get_drift(data,P,c_all,pii=1024,win=10)
 	#P_new       = GLOBALutils.shift_P(P,drift,c_new,ext_aperture)
 	#print 'ydrift:',drift
@@ -741,7 +765,9 @@ for fsim in new_list:
 		spec[5,order,LL] = 1.
 		spec[9,order][L] = spec[5,order][L] * (dlambda_dx[L] ** 1) 
 		spec[10,order][L] = spec[6,order][L] / (dlambda_dx[L] ** 2)
+		#plot(spec[0,order],spec[5,order])
 		order +=1
+	#show()
 	if os.access(dirout + fout, os.F_OK):
 		os.remove(dirout + fout)
 	hdu.writeto(dirout + fout)
@@ -766,11 +792,12 @@ for fsim in new_list:
 
 			if os.access(pars_file,os.F_OK) == False or force_stellar_pars:
 				print "\t\t\tEstimating atmospheric parameters:"
-				Rx = np.around(1./np.sqrt(1./40000.**2 - 1./resol**2))
 				spec2 = spec.copy()
-				for i in range(spec.shape[1]):
-					IJ = np.where(spec[5,i]!=0.)[0]
-					spec2[5,i,IJ] = GLOBALutils.convolve(spec[0,i,IJ],spec[5,i,IJ],Rx)
+				if resol > 44000:
+					Rx = np.around(1./np.sqrt(1./40000.**2 - 1./resol**2))
+					for i in range(spec.shape[1]):
+						IJ = np.where(spec[5,i]!=0.)[0]
+						spec2[5,i,IJ] = GLOBALutils.convolve(spec[0,i,IJ],spec[5,i,IJ],Rx)
 				T_eff, logg, Z, vsini, vel0, ccf = correlation.CCF(spec2,model_path=models_path,npools=npools)
 				line = "%6d %4.1f %4.1f %8.1f %8.1f\n" % (T_eff,logg, Z, vsini, vel0)
 				f = open(pars_file,'w')
