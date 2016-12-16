@@ -156,107 +156,110 @@ def res_gauss(params,g,x):
 	return g-gauss(params,x)
 
 def FileClassify(diri, log):
-    """
-    Classifies all files in a directory and writes a night log of science images
-    """
+	"""
+	Classifies all files in a directory and writes a night log of science images
+	"""
 
-    # define output lists
-    simThAr_sci = []
-    simSky_sci  = []
-    biases      = []
-    bias_dates  = []
-    flat_dates  = []
-    flats       = []
-    ThArNe_ref  = []
-    ThAr_Ne_ref = []
-    ThArNe_ref_dates  = []
-    ThAr_Ne_ref_dates = []
+	# define output lists
+	simThAr_sci = []
+	simSky_sci  = []
+	biases      = []
+	bias_dates  = []
+	flat_dates  = []
+	flats       = []
+	ThArNe_ref  = []
+	ThAr_Ne_ref = []
+	ThArNe_ref_dates  = []
+	ThAr_Ne_ref_dates = []
+	darks       = []
+	dark_times  = []
 
-    f = open(log,'w')
-    bad_files = []
-    if os.access(diri+'bad_files.txt',os.F_OK):
-    	bf = open(diri+'bad_files.txt')
-	linesbf = bf.readlines()
-	for line in linesbf:
-		bad_files.append(diri+line[:-1])
-	bf.close()
+	f = open(log,'w')
+	bad_files = []
+	if os.access(diri+'bad_files.txt',os.F_OK):
+		bf = open(diri+'bad_files.txt')
+		linesbf = bf.readlines()
+		for line in linesbf:
+			bad_files.append(diri+line[:-1])
+		bf.close()
     
-    all_files = glob.glob(diri+"*fits")
+	all_files = glob.glob(diri+"*fits")
     
-    jj = 0
-    for archivo in all_files:
-	jj+=1
-	dump = False
-	for bf in bad_files:
-		if archivo == bf:
-			dump = True
-			break
-	
-	if not dump:
-		h = pyfits.open(archivo)
-		print archivo, h[0].header['HIERARCH ESO DPR TYPE']
-		if True:
+	jj = 0
+	for archivo in all_files:
+		jj+=1
+		dump = False
+		for bf in bad_files:
+			if archivo == bf:
+				dump = True
+				break
+
+		if not dump:
+			h = pyfits.open(archivo)
+			print archivo, h[0].header['HIERARCH ESO DPR TYPE']
+
 			if h[0].header['HIERARCH ESO DPR TYPE'] == 'OBJECT,WAVE' or h[0].header['HIERARCH ESO DPR TYPE'] == 'VELOC,WAVE':
-				
-		    		simThAr_sci.append(archivo)
-		    		obname = h[0].header['OBJECT']
-		    		ra     = h[0].header['HIERARCH ESO INS ADC1 RA']
-		    		delta  = h[0].header['HIERARCH ESO INS ADC1 DEC']
+				simThAr_sci.append(archivo)
+				obname = h[0].header['OBJECT']
+				ra     = h[0].header['HIERARCH ESO INS ADC1 RA']
+				delta  = h[0].header['HIERARCH ESO INS ADC1 DEC']
 				try:
-		    			airmass= h[0].header['HIERARCH ESO TEL AIRM START']
+					airmass= h[0].header['HIERARCH ESO TEL AIRM START']
 				except:
 					airmass = -999.
-		    		texp   = h[0].header['EXPTIME']
-		    		date   = h[0].header['DATE-OBS']
-		    		line = "%-15s %10s %10s %8.2f %4.2f %s %8s %s\n" % (obname, ra, delta, texp, airmass, h[0].header['HIERARCH ESO DPR TYPE'], date, archivo)
-		    		f.write(line)
+					texp   = h[0].header['EXPTIME']
+					date   = h[0].header['DATE-OBS']
+					line = "%-15s %10s %10s %8.2f %4.2f %s %8s %s\n" % (obname, ra, delta, texp, airmass, h[0].header['HIERARCH ESO DPR TYPE'], date, archivo)
+					f.write(line)
 			elif h[0].header['HIERARCH ESO DPR TYPE'] == 'OBJECT,SKY' or h[0].header['HIERARCH ESO DPR TYPE'] == 'VELOC,SKY':
-		 		simSky_sci.append(archivo)
-		    		obname = h[0].header['OBJECT']
-		    		ra     = h[0].header['HIERARCH ESO INS ADC1 RA']
-		    		delta  = h[0].header['HIERARCH ESO INS ADC1 DEC']
+				simSky_sci.append(archivo)
+				obname = h[0].header['OBJECT']
+				ra     = h[0].header['HIERARCH ESO INS ADC1 RA']
+				delta  = h[0].header['HIERARCH ESO INS ADC1 DEC']
 				try:
-		    			airmass= h[0].header['HIERARCH ESO TEL AIRM START']
+					airmass= h[0].header['HIERARCH ESO TEL AIRM START']
 				except:
 					airmass = -999.
-		    		texp   = h[0].header['EXPTIME']
-		    		date   = h[0].header['DATE-OBS']
-		    		line = "%-15s %10s %10s %8.2f %4.2f %s %8s %s\n" % (obname, ra, delta, texp, airmass, h[0].header['HIERARCH ESO DPR TYPE'], date, archivo)
-		    		f.write(line)
+					texp   = h[0].header['EXPTIME']
+					date   = h[0].header['DATE-OBS']
+					line = "%-15s %10s %10s %8.2f %4.2f %s %8s %s\n" % (obname, ra, delta, texp, airmass, h[0].header['HIERARCH ESO DPR TYPE'], date, archivo)
+					f.write(line)
 
 			elif h[0].header['HIERARCH ESO DPR TYPE'] == 'BIAS':
-			    biases.append(archivo)
-			    mjd,mjd0 = mjd_fromheader(h)
-			    bias_dates.append(mjd)
+				biases.append(archivo)
+				mjd,mjd0 = mjd_fromheader(h)
+				bias_dates.append(mjd)
 
 			elif h[0].header['HIERARCH ESO DPR TYPE'] == 'FLAT':
-			    flats.append(archivo)
-			    mjd,mjd0 = mjd_fromheader(h)
-			    flat_dates.append(mjd)
+				flats.append(archivo)
+				mjd,mjd0 = mjd_fromheader(h)
+				flat_dates.append(mjd)
 
 			elif h[0].header['HIERARCH ESO DPR TYPE'] == 'WAVE':
-			    div = archivo.split('_')
-			    if h[0].header['HIERARCH ESO INS CALMIRR2 ID'] == 'LAMP1':
-				ThArNe_ref.append(archivo)
-			    	mjd, mjd0 = mjd_fromheader(h)
-			    	ThArNe_ref_dates.append( mjd )
-			    elif h[0].header['HIERARCH ESO INS CALMIRR2 ID'] == 'LAMP3':
-				ThAr_Ne_ref.append(archivo)
-		    		mjd, mjd0 = mjd_fromheader(h)
-		    		ThAr_Ne_ref_dates.append( mjd )
+				div = archivo.split('_')
+				if h[0].header['HIERARCH ESO INS CALMIRR2 ID'] == 'LAMP1':
+					ThArNe_ref.append(archivo)
+					mjd, mjd0 = mjd_fromheader(h)
+					ThArNe_ref_dates.append( mjd )
+				elif h[0].header['HIERARCH ESO INS CALMIRR2 ID'] == 'LAMP3':
+					ThAr_Ne_ref.append(archivo)
+					mjd, mjd0 = mjd_fromheader(h)
+					ThAr_Ne_ref_dates.append( mjd )
 
-		# now build log
-		# retrieve object name
+			elif h[0].header['HIERARCH ESO DPR TYPE'] == 'DARK':
+				darks.append(archivo)
+				dark_times.append(h[0].header['EXPTIME'])
        
-    f.close()
-    biases, bias_dates = np.array(biases), np.array(bias_dates)
-    flats, flat_dates  = np.array(flats), np.array(flat_dates)
-    IS = np.argsort(bias_dates)
-    biases, bias_dates = biases[IS], bias_dates[IS]
-    IS = np.argsort(flat_dates)
-    flats, flat_dates = flats[IS], flat_dates[IS]   
+	f.close()
+	biases, bias_dates = np.array(biases), np.array(bias_dates)
+	flats, flat_dates  = np.array(flats), np.array(flat_dates)
+	darks, dark_times  = np.array(darks), np.array(dark_times)
+	IS = np.argsort(bias_dates)
+	biases, bias_dates = biases[IS], bias_dates[IS]
+	IS = np.argsort(flat_dates)
+	flats, flat_dates = flats[IS], flat_dates[IS]   
 
-    return biases, flats, ThArNe_ref, ThAr_Ne_ref, simThAr_sci, simSky_sci, ThArNe_ref_dates, ThAr_Ne_ref_dates
+	return biases, flats, ThArNe_ref, ThAr_Ne_ref, simThAr_sci, simSky_sci, ThArNe_ref_dates, ThAr_Ne_ref_dates, darks, dark_times
 
 def mjd_fromheader(h):
     """
@@ -350,4 +353,27 @@ def sigma_clip(vec,lim=3.0):
 		else:
 			vec = vec[I]
 	return vec
+
+def get_dark(time,dnames,dtimes):
+	print dnames
+	print dtimes
+	print time
+	if len(dnames) == 0:
+		return 0.
+	elif len(dnames) == 1:
+		darko = pyfits.getdata(dnames[0])
+		dark  = darko * float(time)/float(dtimes[0])
+		print np.median(darko),np.median(dark)
+		return darko
+	elif len(dnames) == 2:
+		sc0 = pyfits.getdata(dnames[0]).astype('float')
+		sc1 = pyfits.getdata(dnames[1]).astype('float')
+		t0,t1 = float(dtimes[0]),float(dtimes[1])
+		m = (sc1 - sc0) / (t1 - t0)
+		n = sc1 - m*t1
+		darko =  m*float(time) + n
+		print np.median(sc0),np.median(sc1)
+		print np.median(sc1*time/dtimes[1]),np.median(sc0*time/dtimes[0])
+		print np.median(darko)
+		return darko
 

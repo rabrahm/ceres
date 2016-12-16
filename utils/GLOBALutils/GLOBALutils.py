@@ -1426,6 +1426,19 @@ def XCor(spectra, mask_l, mask_h, mask_w, vel, lbary_ltopo, vel_width=30,\
 					Xcor_full[k,j+1], snw = CCF.ccfcos(mask_l[II], mask_h[II], spectra[0,j,w1:w2], S,\
 	                                                       mask_w[II], signal2noise, vel_min + k*vel_step)
 					snwa[k] = snw
+
+					if np.isnan(Xcor_full[k,j+1]):
+						Xcor_full[k,j+1] = Xcor_full[k-1,j+1]
+						snwa[k] = snwa[k-1]
+					#if k ==182 and j==35:
+					#	#print mask_l[II], mask_h[II], spectra[0,j,w1:w2], S,mask_w[II], signal2noise, vel_min + k*vel_step
+					#	#for z in range(len(mask_l[II])):
+					#	#	III =  np.where((spectra[0,j,w1:w2]>=mask_l[II][z])&(spectra[0,j,w1:w2]<=mask_h[II][z]))[0]
+					#	#	print spectra[0,j,w1:w2][III],S[III] 
+					#	#print Xcor_full[k,j+1]
+					#	#print snw
+					#	#print gfd
+
 				xc_weight  = np.median( snwa )
 				Xcor_full[:,j+1] /= snwa #xc_weight
 				W[j] = xc_weight
@@ -1639,10 +1652,13 @@ def Average_CCF(xc_full, sn, start_order=0,sn_min=0.15, Simple=False, W=None, bo
     ws = 0.0
 
     combine_indices = range(start_order, norders)
+    #print combine_indices
     if (boot_ind != None):
         combine_indices = boot_ind
     
     for order in combine_indices:
+    	#I = np.where(np.isnan(xc_full[:,order+1]))
+    	#print I
         sum_xc = np.sum( xc_full[:,order+1] )
 	#print order, sum_xc, xc_full[:,order+1]
         if (sum_xc > 0):
@@ -1729,8 +1745,112 @@ def get_rough_offset(sc,files,window=100):
     #show()
     return delta
 
+def fit_these_lines(waves_ob,filename,spec,order,wei, rough_shift = 0.0, del_width=5.0, binning=1,\
+					line_width=4, fact=1,do_xc=True,sigmai=2.2):
+
+	f = open(filename).readlines()
+	pixel_centers = array([])
+	wavelengths   = array([])
+	sigmas        = array([])
+	centroids     = array([])
+	intensities   = array([])
+
+	if do_xc:
+		pixel_centers_0 = []
+		for line in f:
+			w = line.split()
+			nlines = int(w[0])
+			for j in range(nlines):
+				pixel_centers_0.append(float(w[2*j+1])*fact/float(binning) + rough_shift)
+		ml = array(pixel_centers_0) - 2
+		mh = array(pixel_centers_0) + 2
+		xc,offs = XCorPix( spec, ml, mh, del_width=del_width)
+		ind_max = np.argmax( xc )
+		delta   = offs[ind_max] 
+	else:
+		delta=0.
+
+	N_l = 0
+	bad_indices = []
+	bad_indices_ct = 0
+	plot(spec)
+	for line in f:
+		#print line
+		w = line.split()
+		# extract info, and fit line(s)
+		nlines = int(w[0])
+		pix = []
+		wav = []
+		for j in range(nlines):
+			if float(w[2*j+1])*fact/float(binning) + rough_shift+delta > 20 and float(w[2*j+1])*fact/float(binning) + rough_shift+delta < len(spec)-20:
+				pix.append(float(w[2*j+1])*fact/float(binning) + delta + rough_shift)
+				wav.append(float(w[2*j+2]))
+		if len(pix) > 0:
+			N_l += len(pix)
+			pix = np.array(pix)
+			#pix2=np.around(pix).astype('int')
+			#plot(pix2,spec[pix2],'ro')
+			wav = np.array(wav)
+			xmin = int(round(min(pix)))
+			xmax = int(round(max(pix)))
+			X = array(range(xmin-line_width,xmax+line_width+1))
+			Y = spec[xmin-line_width:xmax+line_width+1]
+			if (nlines == 1):
+				num       = np.sum(X*Y)
+				den       = np.sum(Y)
+				if (den > 0):
+					Cent = num/den
+				else:
+					Cent = -1
+			weight = wei[xmin-line_width:xmax+line_width+1]
+			kk = np.where( weight == 0)
+			# Input Spectrum is background subtracted ---> B=0
+			B = np.zeros(len(X))
+			mu = pix
+			sigma = np.zeros(nlines) + sigmai * fact / float(binning)
+			#plot(X,Y)
+			#show()
+			#print X, Y, B, mu, sigma, weight
+			p1, suc = LineFit_SingleSigma( X, Y, B, mu, sigma, weight)
+			#print p1
+			#if (suc<1) or (suc > 4):
+			#    print "Problem", order, X, delta
+			# collect fit information
+			plot(X,Y)
+			reto =  p1[0]*np.exp((X-p1[1])**2/(-0.5*p1[2]**2))
+			#print reto
+			plot(X,reto,'r')
+
+			wavelenghts = np.append(wavelengths,wav)
+			for j in range(nlines):
+				pixel_centers = np.append(pixel_centers,p1[3*j + 1])
+				sigmas        = np.append(sigmas,p1[3*j + 2])
+				wavelengths   = np.append(wavelengths,wav[j])
+				intensities   = np.append(intensities,p1[3*j])
+				if (nlines == 1):
+					centroids = np.append(centroids, Cent)
+				else:
+					centroids = np.append(centroids, -1)
+	wavelengths_co,pixel_centers_co,intensities_co,sigmas_co,centroids_co = [],[],[],[],[]
+	for i in range(len(wavelengths)):
+		if np.around(wavelengths[i],4) in np.around(waves_ob,4):
+			wavelengths_co.append(wavelengths[i])
+			pixel_centers_co.append(pixel_centers[i])
+			intensities_co.append(intensities[i])
+			sigmas_co.append(sigmas[i])
+			centroids_co.append(centroids[i])
+	wavelengths_co,pixel_centers_co,intensities_co,sigmas_co,centroids_co = \
+	   np.array(wavelengths_co),np.array(pixel_centers_co),np.array(intensities_co), \
+	   np.array(sigmas_co),np.array(centroids_co)
+	plot(np.around(pixel_centers_co).astype('int'),spec[np.around(pixel_centers_co).astype('int')],'ro')
+	show()
+
+	return wavelengths_co,pixel_centers_co,intensities_co,sigmas_co,centroids_co
+
+
+
 def Initial_Wav_Calibration(filename,spec,order,wei, porder=3, rmsmax=75, minlines=10, FixEnds=True,\
-                                Dump_Argon=False, Dump_AllLines=False, Cheby=False, rough_shift = 0.0, del_width=5.0, binning=1,line_width=4, fact=1,do_xc=True):
+                                Dump_Argon=False, Dump_AllLines=False, Cheby=False, rough_shift = 0.0, del_width=5.0, binning=1,line_width=4, fact=1,do_xc=True,sigmai=2.2):
 
 	f = open(filename).readlines()
 
@@ -1754,7 +1874,14 @@ def Initial_Wav_Calibration(filename,spec,order,wei, porder=3, rmsmax=75, minlin
 		delta   = offs[ind_max] 
 	else:
 		delta=0.
-
+	#if order>-1:
+	#	refx = np.arange(len(spec))
+	#	plot(refx - rough_shift, spec)
+	#	pixel_centers_0 = np.around(pixel_centers_0).astype('int')
+	#	I = np.where((pixel_centers_0>0) & (pixel_centers_0<2048))[0]
+	#	plot(pixel_centers_0[I]- rough_shift,spec[pixel_centers_0[I]],'go')
+	#	show()
+	#	#print vcx
 	#print "Computed offset for order ", order, " is ", delta
 	N_l = 0
 
@@ -1795,15 +1922,19 @@ def Initial_Wav_Calibration(filename,spec,order,wei, porder=3, rmsmax=75, minlin
 			# Input Spectrum is background subtracted ---> B=0
 			B = np.zeros(len(X))
 			mu = pix
-			sigma = np.zeros(nlines) + 1.1 * fact / float(binning)
+			sigma = np.zeros(nlines) + sigmai * fact / float(binning)
 			#plot(X,Y)
 			#show()
 			#print X, Y, B, mu, sigma, weight
 			p1, suc = LineFit_SingleSigma( X, Y, B, mu, sigma, weight)
+			#print p1
 			#if (suc<1) or (suc > 4):
 			#    print "Problem", order, X, delta
 			# collect fit information
 			#plot(X,Y)
+			reto =  p1[0]*np.exp((X-p1[1])**2/(-0.5*p1[2]**2))
+			#print reto
+			#plot(X,reto,'r')
 			wavelenghts = np.append(wavelengths,wav)
 			for j in range(nlines):
 				pixel_centers = np.append(pixel_centers,p1[3*j + 1])
@@ -1817,7 +1948,9 @@ def Initial_Wav_Calibration(filename,spec,order,wei, porder=3, rmsmax=75, minlin
 	#pixel_centers2 = np.around(pixel_centers).astype('int')
 	#plot(pixel_centers2,spec[pixel_centers2],'go')
 	#show()
-	#I = np.where((pixel_centers>0) & (pixel_centers<4600))[0]
+	#print gfd
+
+	#I = np.where((pixel_centers>0) & (pixel_centers<2048))[0]
 	#plot(np.around(pixel_centers[I]).astype('int'),spec[np.around(pixel_centers[I]).astype('int')],'ro')
 	#show()
 	I1 = np.where(pixel_centers<50)[0]
@@ -1874,7 +2007,8 @@ def Initial_Wav_Calibration(filename,spec,order,wei, porder=3, rmsmax=75, minlin
 	#plot(pci,spec[pci],'ro')
 	#plot(pci[I],spec[pci[I]],'bo')
 	#show()
-
+	#plot(wavelengths[I],residuals,'ro')
+	#show()
 	#print "RMS is ", rmsms, "using ", N_l, " lines at indices ", I
 	#plot(pixel_centers[I],wavelengths[I],'ro')
 	#if order == 26:
@@ -1999,8 +2133,9 @@ def LineFit_SingleSigma(X, Y, B, mu, sigma, weight):
         p0[i*2+2] = mu[i]
 
     # perform fit
+    #plot(X,Y,'b')
     p1, success = scipy.optimize.leastsq(errfunc,p0, args=(X,n,Y-B, weight))
-
+    #plot(X,fitfunc(p1,X,n),'r')
     # build output consistent with LineFit
     p_output = np.zeros(3*n)
     for i in range(n):
@@ -2946,7 +3081,7 @@ def calc_bss(vels, xc_av, bot_i=0.1, bot_f=0.4, top_i=0.6, top_f=0.85):
 		slope = 0
 	return span,der_bottom,der_top, slope, stat
 
-def cor_thar(spec, span=10, filename='/data/echelle/ecpipe/DuPont/wavcals/',binning=1):
+def cor_thar(spec, span=10, filename='/data/echelle/ecpipe/DuPont/wavcals/',binning=1, di=0.1):
 	
 	f = open(filename).readlines()
 
@@ -2963,7 +3098,6 @@ def cor_thar(spec, span=10, filename='/data/echelle/ecpipe/DuPont/wavcals/',binn
 
 	vi = -span
 	vf = span
-	di = 0.1
 
 	NM = np.sqrt(np.add.reduce((mh - ml)**2))
 	NS = np.sqrt(integrate.simps(spec*spec) )
@@ -3204,3 +3338,134 @@ def iau_cal2jd(IY,IM,ID):
 		else:
 			J = -2
 	return DJM0, DJM, J
+
+def identify_order(thar, path, window=100,di=0.5):
+	ccfs,shifts,ors = [],[],[]
+	for o in range(len(thar)):
+		tharo = thar[o] - scipy.signal.medfilt(thar[o],101)
+		ccf_max, shift = cor_thar(tharo,filename=path,span=window,di=di)
+		ccfs.append(ccf_max)
+		shifts.append(shift)
+		ors.append(o)
+	ccfs,shifts,ors = np.array(ccfs),np.array(shifts),np.array(ors)
+	im = np.argmax(ccfs)
+	return ors[im],shifts[im]
+ 
+
+def simbad_coords(obname,mjd):
+	if obname.lower() == 'alphacent':
+		obname = 'alpha cent'
+	elif obname.lower() == 'alphaboo':
+		obname = 'alpha boo'
+	elif obname.lower() == 'hadar' or obname.lower() == 'betacen':
+		obname = 'beta cen'
+	elif obname.lower() == 'diphda':
+		obname = 'bet cet'
+	elif obname.lower() == 'betacar':
+		obname = 'beta car'
+	elif obname.lower() == 'betscl':
+		obname = 'bet scl'
+	elif obname.lower() == 'bvel':
+		obname = 'b vel'
+	elif obname.lower() == 'deltasco':
+		obname = 'del sco'
+	elif obname.lower() == 'delcen':
+		obname = 'del cen'
+	elif obname.lower() == 'epsilonaqr':
+		obname = 'eps aqr'
+	elif obname.lower() == 'epspsa':
+		obname = 'eps psa'
+	elif obname.lower() == 'etahya' or obname.lower() == 'ethahydra':
+		obname = 'eta Hya'
+	elif obname.lower() == 'etapsa':
+		obname = 'eta psa'
+	elif obname.lower() == 'etacen':
+		obname = 'eta cen'
+	elif obname.lower() == 'opup':
+		obname = 'o Pup'
+	elif obname.lower() == 'etacar':
+		obname = 'eta Car'
+	elif obname.lower() == 'agcar':
+		obname = 'ag Car'
+	elif obname.lower() == 'hrcar':
+		obname = 'hr Car'
+	elif obname.lower() == 'sslep':
+		obname = 'ss lep'
+	elif obname.lower() == 'thetavir':
+		obname = 'theta vir'
+	elif obname.lower() == 'mucen':
+		obname = 'mu cen'
+	elif obname.lower() == 'lesath':
+		obname = 'ups sco'
+	elif obname.lower() == 'mulup':
+		obname = 'mu lup'
+	elif obname.lower() == 'chioph':
+		obname = 'chi oph'
+	elif obname.lower() == 'dlup':
+		obname = 'd lup'
+	elif obname.lower() == '48lib':
+		obname = '48 lib'
+	elif obname.lower() == 'iotara':
+		obname = 'iot ara'
+	elif obname.lower() == 'qvtel':
+		obname = 'qv tel'			
+	elif obname.lower() == 'taucet':
+		obname = 'tau cet'
+	elif obname.lower() == 'pi2ori':
+		obname = 'pi2 ori'
+	elif obname.lower() == 'zetapeg':
+		obname = 'zet peg'
+	elif obname.lower() == 'tpyx':
+		obname = 't pyx'
+	elif obname.lower() == 'omicronpup':
+		obname = 'omi pup'
+
+	sp,ra,dec = 0,0,0
+	(th,tfile) = tempfile.mkstemp(prefix='CP', text=True)
+        tf = open(tfile,'w')
+	tf.write("output console=off\n")
+	tf.write("output script=off\n")
+	tf.write("output error=merge\n")
+	tf.write("set limit 1\n")
+	tf.write("format object fmt1 \"%IDLIST(1) | %OTYPELIST(S) | %SP(S) | %COO(A) | %COO(D) | %PM(A) | %PM(D)\"\n")
+	tf.write("result full\n")
+	tf.write("query id %s\n" % ( obname ) )
+	tf.close()
+	values = [("scriptFIle", (pycurl.FORM_FILE, tfile))]
+	output = StringIO.StringIO() 
+	c = pycurl.Curl()
+	c.setopt(pycurl.URL, "http://simbad.harvard.edu/simbad/sim-script")
+	c.setopt(c.HTTPPOST, values)
+	c.setopt(pycurl.WRITEFUNCTION, output.write)
+	cond = True
+	while cond:
+		try:
+			c.perform()
+		except:
+			print 'Trying again to perform query to SIMBAD'
+		else:
+			cond = False
+	c.close()
+	result = output.getvalue() 
+	lines = result.split('\n')
+	info = lines[6].split('|')
+	print info
+	if 'Unrecogniezd' in info[0] or 'not' in info[0]:
+		know = False
+	else:
+		know = True
+		sp,ra,dec,pmra,pmdec = info[2],info[3],info[4],info[5],info[6]
+
+		if '~' in pmra:
+			pmra = '0.'
+		if '~' in pmdec:
+			pmdec = '0.'
+
+		rad = ra.split()
+		decd = dec.split()
+		ra = float(rad[0])*360./24. + float(rad[1])*6./24. + float(rad[2])/240. +  (float(pmra)/(3600*1000.))*((mjd-51544.5)/365.)
+		if float(decd[0])<0:
+			dec = -(np.absolute(float(decd[0])) + float(decd[1])/60. + float(decd[2])/3600.) +  (float(pmdec)/(3600*1000.))*((mjd-51544.5)/365.)
+		else:
+			dec = float(decd[0]) + float(decd[1])/60. + float(decd[2])/3600. +  (float(pmdec)/(3600*1000.))*((mjd-51544.5)/365.)
+	return sp,ra,dec,know

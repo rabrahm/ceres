@@ -101,14 +101,14 @@ force_thar_extract = False
 force_tharxc       = False
 force_thar_wavcal  = False
 force_spectral_file_build = True
-force_stellar_pars = False
+force_stellar_pars = True
 dumpargon          = False
 dark_corr		   = True
 minlines_glob      = 700
 
 Inverse_m          = True
 use_cheby          = True
-MRMS               = 100   # max rms in m/s, global wav solution
+MRMS               = 90   # max rms in m/s, global wav solution
 
 trace_degree       = 4
 Marsh_alg          = 0
@@ -478,11 +478,12 @@ for i in range(len(ThAr_ref_dates)):
 				IV = 1. / (thar_order_orig / gain + (ron/gain)**2 )
 				IV[L] = 0.
 				wei             = np.ones(len(thar_order_orig))  #np.sqrt( IV )
-				thar_order      = thar_order_orig #- bkg
+				bkg = scipy.signal.medfilt(thar_order_orig,101)
+				thar_order      = thar_order_orig - bkg
 
 				coeffs_pix2wav, coeffs_pix2sigma, pixel_centers, wavelengths, rms_ms, residuals, centroids,sigmas, intensities \
 	                = GLOBALutils.Initial_Wav_Calibration( order_dir+'order_'+order_s+'.iwdat', thar_order, order, wei, \
-	                	rmsmax=1000, minlines=10, FixEnds=False,Dump_Argon=dumpargon, Dump_AllLines=True, line_width=6, Cheby=use_cheby,porder=3,rough_shift=rough_shift,binning=binning,del_width=5.,do_xc=False)
+	                	rmsmax=500, minlines=10, FixEnds=False,Dump_Argon=dumpargon, Dump_AllLines=True, line_width=6, Cheby=use_cheby,porder=3,rough_shift=rough_shift,binning=binning,del_width=5.,do_xc=False)
 				#plot(wavelengths, residuals,'.')	
 				#show()		            
 				if (order == int(.5*nord)): 	
@@ -509,6 +510,7 @@ for i in range(len(ThAr_ref_dates)):
 		#for i in np.unique(G_ord):
 		#	I = np.where(G_ord == i)[0]
 		#	plot(G_wav[I],G_res[I],'.')
+		#	plot(np.median(G_wav[I]),np.median(G_res[I]),'ko')
 		#show()
 
 		pdict = {'p1':p1,'mjd':mjd, 'G_pix':G_pix, 'G_ord':G_ord, 'G_wav':G_wav, 'II':II, 'rms_ms':rms_ms,\
@@ -530,13 +532,15 @@ for i in range(len(ThAr_ref_dates)):
 	wavsol_pkl = dirout + ThAr_ref[i].split('/')[-1][:-4]+'wavsolpars.pkl'
 	dthar = pyfits.getdata( ThAr_ref[i] )
 	npix = dthar.shape[0]
-	mjds_thar.append(mjd)
 	dct = pickle.load(open(wavsol_pkl,'r'))
 	p_shift, pix_centers, orders, wavelengths, I, rms_ms, residuals  = \
 		    GLOBALutils.Global_Wav_Solution_vel_shift(dct['G_pix'], dct['G_wav'], dct['G_ord'],\
 		                                        np.ones(len(dct['G_ord'])), p_ref, order0=ro0 + orders_offset, npix=npix,\
 		                                        Cheby=use_cheby, ntotal=nord, maxrms=MRMS, Inv=Inverse_m, minlines=300, nx=ncoef_x,nm=ncoef_m)
-	shifts.append(p_shift[0])
+
+	if rms_ms / np.sqrt(float(len(orders))) < 10.:
+		shifts.append(p_shift[0])
+		mjds_thar.append(mjd)
 
 mjds_thar,shifts = np.array(mjds_thar),np.array(shifts)
 shv = (1e-6*shifts)*299792458.0
@@ -705,7 +709,7 @@ for fsim in new_list:
 
 	fout = 'proc/' + obname + '_' + h[0].header['DATE-OBS'] + '_sp.fits'
 	if ( os.access(dirout+fout ,os.F_OK) == False ) or (force_spectral_file_build):
-		spec = np.zeros((11, n_useful, data.shape[1]))
+		spec = np.zeros((11, nord, data.shape[1]))
 		hdu  = pyfits.PrimaryHDU( spec )
 		hdu = GLOBALutils.update_header(hdu,'HIERARCH MJD', mjd)
 		hdu = GLOBALutils.update_header(hdu,'HIERARCH MBJD', mbjd)
@@ -793,11 +797,15 @@ for fsim in new_list:
 			if os.access(pars_file,os.F_OK) == False or force_stellar_pars:
 				print "\t\t\tEstimating atmospheric parameters:"
 				spec2 = spec.copy()
+				#print resol
 				if resol > 44000:
 					Rx = np.around(1./np.sqrt(1./40000.**2 - 1./resol**2))
 					for i in range(spec.shape[1]):
 						IJ = np.where(spec[5,i]!=0.)[0]
 						spec2[5,i,IJ] = GLOBALutils.convolve(spec[0,i,IJ],spec[5,i,IJ],Rx)
+						#plot(spec[0,i],spec[5,i])
+						#plot(spec2[0,i],spec2[5,i])
+					#show()
 				T_eff, logg, Z, vsini, vel0, ccf = correlation.CCF(spec2,model_path=models_path,npools=npools)
 				line = "%6d %4.1f %4.1f %8.1f %8.1f\n" % (T_eff,logg, Z, vsini, vel0)
 				f = open(pars_file,'w')

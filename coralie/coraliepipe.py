@@ -703,11 +703,11 @@ for nlisti in range(len(new_list)):
     sci_fits_co_simple = dirout + fsim.split('/')[-1][:-8]+'spec.simple.co.fits.S'
     sci_fits_bac = dirout + fsim.split('/')[-1][:-8]+'spec.simple.bac.fits.S'
     if ( os.access(sci_fits_ob,os.F_OK) == False ) or \
-       ( os.access(sci_fits_co,os.F_OK) == False ) or \
-       ( os.access(sci_fits_ob_simple,os.F_OK) == False ) or \
-       ( os.access(sci_fits_co_simple,os.F_OK) == False ) or \
-       ( os.access(sci_fits_bac,os.F_OK) == False ) or \
-       (force_sci_extract):
+        ( os.access(sci_fits_co,os.F_OK) == False ) or \
+        ( os.access(sci_fits_ob_simple,os.F_OK) == False ) or \
+        ( os.access(sci_fits_co_simple,os.F_OK) == False ) or \
+        ( os.access(sci_fits_bac,os.F_OK) == False ) or \
+        (force_sci_extract):
 
         print "\t\t\tNo previous extraction or extraction forced for science file", fsim, "extracting..."
         sci_Ss_ob = GLOBALutils.simple_extraction(data,c_ob,ext_aperture,\
@@ -788,118 +788,116 @@ for nlisti in range(len(new_list)):
         hdu = GLOBALutils.update_header(hdu,'HIERARCH OBS ALTITUDE',h[0].header['HIERARCH ESO OBS GEO ALTITUDE'])
         hdu = GLOBALutils.update_header(hdu,'HIERARCH TARG AIRMASS',h[0].header['HIERARCH ESO OBS TARG AIRMASS'])
 
-    print '\t\tWavelength calibration:'
-    print '\t\t\tComparision fibre is '+ h[0].header['HIERARCH ESO TPL TYPE']
-    if h[0].header['HIERARCH ESO TPL TYPE'] == 'OBTH':
-        # get ThAr closest in time
-        indice = sorted_indices[0]
-        thar_fits_ob = dirout + ThAr_ref[indice].split('/')[-1][:-8]+'spec.ob.fits.S'
-        thar_fits_co = dirout + ThAr_ref[indice].split('/')[-1][:-8]+'spec.co.fits.S'
-        pkl_wsol = dirout + ThAr_ref[indice].split('/')[-1][:-8]+'wavsolpars.pkl'
-        print "\t\t\tUnpickling reference wavelength solution from", pkl_wsol, " ..."
-        wsol_dict = pickle.load(open(pkl_wsol,'r'))
-        # Extract thAr lines from comparison orders
-        lines_thar_co  = sci_S_co[:,1,:]
-        iv_thar_co     = sci_S_co[:,2,:]
-        All_Pixel_Centers_co = np.array([])
-        All_Wavelengths_co   = np.array([])
-        All_Orders_co        = np.array([])
-        All_Centroids_co     = np.array([])
-        All_Sigmas_co        = np.array([])
-        All_Intensities_co   = np.array([])
-        for order in range(22,n_useful):
-            order_s = str(order)
-            if (order < 10):
-                order_s = '0'+str(order)
-            thar_order_orig = lines_thar_co[order-22,:]
-            IV              = iv_thar_co[order-22,:]
-            wei             = np.sqrt( IV )
-            bkg             = GLOBALutils.Lines_mBack(thar_order_orig, IV,  thres_rel=3)        
-            thar_order      = thar_order_orig - bkg
+        print '\t\tWavelength calibration:'
+        print '\t\t\tComparision fibre is '+ h[0].header['HIERARCH ESO TPL TYPE']
+        if h[0].header['HIERARCH ESO TPL TYPE'] == 'OBTH':
+            # get ThAr closest in time
+            indice = sorted_indices[0]
+            thar_fits_ob = dirout + ThAr_ref[indice].split('/')[-1][:-8]+'spec.ob.fits.S'
+            thar_fits_co = dirout + ThAr_ref[indice].split('/')[-1][:-8]+'spec.co.fits.S'
+            pkl_wsol = dirout + ThAr_ref[indice].split('/')[-1][:-8]+'wavsolpars.pkl'
+            print "\t\t\tUnpickling reference wavelength solution from", pkl_wsol, " ..."
+            wsol_dict = pickle.load(open(pkl_wsol,'r'))
+            # Extract thAr lines from comparison orders
+            lines_thar_co  = sci_S_co[:,1,:]
+            iv_thar_co     = sci_S_co[:,2,:]
+            All_Pixel_Centers_co = np.array([])
+            All_Wavelengths_co   = np.array([])
+            All_Orders_co        = np.array([])
+            All_Centroids_co     = np.array([])
+            All_Sigmas_co        = np.array([])
+            All_Intensities_co   = np.array([])
+            for order in range(22,n_useful):
+                order_s = str(order)
+                if (order < 10):
+                    order_s = '0'+str(order)
+                thar_order_orig = lines_thar_co[order-22,:]
+                IV              = iv_thar_co[order-22,:]
+                wei             = np.sqrt( IV )
+                bkg             = GLOBALutils.Lines_mBack(thar_order_orig, IV,  thres_rel=3)        
+                thar_order      = thar_order_orig - bkg
 		    
-            coeffs_pix2wav, coeffs_pix2sigma, pixel_centers, wavelengths, rms_ms, residuals, centroids, sigmas, intensities \
-		        = GLOBALutils.Initial_Wav_Calibration( order_dir+'order_'+order_s+'o.iwdat', thar_order, order, wei, \
+                coeffs_pix2wav, coeffs_pix2sigma, pixel_centers, wavelengths, rms_ms, residuals, centroids, sigmas, intensities \
+                    = GLOBALutils.Initial_Wav_Calibration( order_dir+'order_'+order_s+'o.iwdat', thar_order, order, wei, \
 		                                                    rmsmax=5000000, minlines=10,FixEnds=True,Dump_Argon=dumpargon, \
 		                                                    Dump_AllLines=True, Cheby=use_cheby)
 		
-            All_Pixel_Centers_co = np.append( All_Pixel_Centers_co, pixel_centers )
-            All_Wavelengths_co   = np.append( All_Wavelengths_co, wavelengths )
-            All_Orders_co        = np.append( All_Orders_co, np.zeros( len(pixel_centers) ) + order )
-            All_Centroids_co     = np.append( All_Centroids_co, centroids)
-            All_Sigmas_co        = np.append( All_Sigmas_co, sigmas)
-            All_Intensities_co   = np.append( All_Intensities_co, intensities )
+                All_Pixel_Centers_co = np.append( All_Pixel_Centers_co, pixel_centers )
+                All_Wavelengths_co   = np.append( All_Wavelengths_co, wavelengths )
+                All_Orders_co        = np.append( All_Orders_co, np.zeros( len(pixel_centers) ) + order )
+                All_Centroids_co     = np.append( All_Centroids_co, centroids)
+                All_Sigmas_co        = np.append( All_Sigmas_co, sigmas)
+                All_Intensities_co   = np.append( All_Intensities_co, intensities )
 	    
-        # get a global solution for the lines found
-        p1_co, G_pix_co, G_ord_co, G_wav_co, II_co, rms_ms_co, G_res_co = \
-		    GLOBALutils.Fit_Global_Wav_Solution(All_Pixel_Centers_co, All_Wavelengths_co, All_Orders_co,\
+            # get a global solution for the lines found
+            p1_co, G_pix_co, G_ord_co, G_wav_co, II_co, rms_ms_co, G_res_co = \
+		      GLOBALutils.Fit_Global_Wav_Solution(All_Pixel_Centers_co, All_Wavelengths_co, All_Orders_co,\
 		                                             np.ones(All_Intensities_co.shape), wsol_dict['p1_co'], Cheby=use_cheby,\
 		                                             maxrms=MRMS, Inv=Inverse_m,minlines=minlines_glob_co,\
                                                              order0=89,ntotal=n_useful,npix=len(thar_order),nx=ncoef_x,nm=ncoef_m)
 	    
-        # get shift with respect to reference ThAr
-        p_shift, pix_centers, orders, wavelengths, I, rms_ms, residuals  = \
-		    GLOBALutils.Global_Wav_Solution_vel_shift(G_pix_co, G_wav_co, G_ord_co,\
+            # get shift with respect to reference ThAr
+            p_shift, pix_centers, orders, wavelengths, I, rms_ms, residuals  = \
+		      GLOBALutils.Global_Wav_Solution_vel_shift(G_pix_co, G_wav_co, G_ord_co,\
 		                                                   np.ones(G_wav_co.shape), wsol_dict['p1_co'],\
 		                                                   Cheby=True,Inv=True,maxrms=100,minlines=minlines_glob_co,\
                                                                    order0=89,ntotal=n_useful,npix=len(thar_order),nx=ncoef_x,nm=ncoef_m)
 	    
-        precision = rms_ms/np.sqrt(len(I))
-        good_quality = True
-        if (precision > 10):
-            good_quality = False
+            precision = rms_ms/np.sqrt(len(I))
+            good_quality = True
+            if (precision > 10):
+                good_quality = False
 		
-        # Apply new wavelength solution including barycentric correction
+        else:
+            indice = sorted_indices_FP[0]
+            thfp_fits_co = dirout + ThFP_ref[indice].split('/')[-1][:-8]+'spec.co.fits.S'
+            pkl_wsol = dirout + ThFP_ref[indice].split('/')[-1][:-8]+'wavsolpars.pkl'
+            print "\t\t\tUnpickling reference wavelength solution from", pkl_wsol, " ..."
+            wsol_dict = pickle.load(open(pkl_wsol,'r'))
+            lines_thar_co = np.zeros(sci_Ss_co.shape)
+            lines_thar_co_ref = np.zeros(sci_Ss_co.shape)
+            for si in range(S_flat_co_n.shape[0]):
+                JI = np.where(S_flat_co_n[si,1]>0)[0]
+                lines_thar_co[si,JI] = sci_S_co[si,1,JI] / S_flat_co_n[si,1,JI]
+                lines_thar_co_ref[si,JI]  = pyfits.getdata(thfp_fits_co)[si,1,JI] / S_flat_co_n[si,1,JI]
+                JI1 = np.where(lines_thar_co[si]<0)[0]
+                JI2 = np.where(lines_thar_co_ref[si]<0)[0]
+                lines_thar_co[si,JI1] = 0.
+                lines_thar_co_ref[si,JI2] = 0.
+            #lines_thar_co      = sci_S_co[:,1,:] / S_flat_co_simple_n
+            #lines_thar_co_ref  = pyfits.getdata(thfp_fits_co)[:,1,:] / S_flat_co_simple_n
+            rv_fps = []
+            for order in range(nord_co):
+                I = np.where(np.isnan(lines_thar_co[order]))[0]
+                lines_thar_co[order][I]=0.
+                I = np.where(np.isnan(lines_thar_co_ref[order]))[0]
+                lines_thar_co_ref[order][I]=0.
+                try:
+                    tc = GLOBALutils.fp_base(lines_thar_co[order])
+                    tcr = GLOBALutils.fp_base(lines_thar_co_ref[order])
+                    IJ1 = np.where(tc!=0)[0]
+                    IJ2 = np.where(tcr!=0)[0]
+                    tc /= np.median(tc[IJ1])
+                    tcr /= np.median(tcr[IJ2])
+                    rv_fp = GLOBALutils.ccf_fp(tc,tcr,wsol_dict['p1_co'],order+22,order0=89,nx=ncoef_x,nm=ncoef_m,npix=len(tc))
+                except:
+                    rv_fp = -999
+                rv_fps.append(rv_fp)
+            #plot(rv_fps,'ro')
 
-    else:
-        indice = sorted_indices_FP[0]
-        thfp_fits_co = dirout + ThFP_ref[indice].split('/')[-1][:-8]+'spec.co.fits.S'
-        pkl_wsol = dirout + ThFP_ref[indice].split('/')[-1][:-8]+'wavsolpars.pkl'
-        print "\t\t\tUnpickling reference wavelength solution from", pkl_wsol, " ..."
-        wsol_dict = pickle.load(open(pkl_wsol,'r'))
-        lines_thar_co = np.zeros(sci_Ss_co.shape)
-        lines_thar_co_ref = np.zeros(sci_Ss_co.shape)
-        for si in range(S_flat_co_n.shape[0]):
-            JI = np.where(S_flat_co_n[si,1]>0)[0]
-            lines_thar_co[si,JI] = sci_S_co[si,1,JI] / S_flat_co_n[si,1,JI]
-            lines_thar_co_ref[si,JI]  = pyfits.getdata(thfp_fits_co)[si,1,JI] / S_flat_co_n[si,1,JI]
-            JI1 = np.where(lines_thar_co[si]<0)[0]
-            JI2 = np.where(lines_thar_co_ref[si]<0)[0]
-            lines_thar_co[si,JI1] = 0.
-            lines_thar_co_ref[si,JI2] = 0.
-        #lines_thar_co      = sci_S_co[:,1,:] / S_flat_co_simple_n
-        #lines_thar_co_ref  = pyfits.getdata(thfp_fits_co)[:,1,:] / S_flat_co_simple_n
-        rv_fps = []
-        for order in range(nord_co):
-            I = np.where(np.isnan(lines_thar_co[order]))[0]
-            lines_thar_co[order][I]=0.
-            I = np.where(np.isnan(lines_thar_co_ref[order]))[0]
-            lines_thar_co_ref[order][I]=0.
-            try:
-                tc = GLOBALutils.fp_base(lines_thar_co[order])
-                tcr = GLOBALutils.fp_base(lines_thar_co_ref[order])
-                IJ1 = np.where(tc!=0)[0]
-                IJ2 = np.where(tcr!=0)[0]
-                tc /= np.median(tc[IJ1])
-                tcr /= np.median(tcr[IJ2])
-                rv_fp = GLOBALutils.ccf_fp(tc,tcr,wsol_dict['p1_co'],order+22,order0=89,nx=ncoef_x,nm=ncoef_m,npix=len(tc))
-            except:
-                rv_fp = -999
-            rv_fps.append(rv_fp)
-        #plot(rv_fps,'ro')
-
-        rv_fps = np.array(rv_fps)
-        I = np.where(rv_fps!=-999)[0]
-        rv_fps = rv_fps[I]
-        rv_fps = GLOBALutils.sig_cli2(rv_fps,ns=3.)
-        #plot(rv_fps,'ro')
-        #show()
-        #print np.median(rv_fps),np.sqrt(np.var(rv_fps))/np.sqrt(float(len(rv_fps)))
-        fp_shift = np.median(rv_fps)
-        p_sh = wsol_dict['p_shift'] * 299792458. * 1e-6
-        fp_shift += p_sh
-        p_shift = 1e6*fp_shift/299792458.
-        print '\t\t\tFP shift = ',fp_shift[0],'+-',np.sqrt(np.var(rv_fps))/np.sqrt(float(len(rv_fps))),'m/s'
-        good_quality = True
+            rv_fps = np.array(rv_fps)
+            I = np.where(rv_fps!=-999)[0]
+            rv_fps = rv_fps[I]
+            rv_fps = GLOBALutils.sig_cli2(rv_fps,ns=3.)
+            #plot(rv_fps,'ro')
+            #show()
+            #print np.median(rv_fps),np.sqrt(np.var(rv_fps))/np.sqrt(float(len(rv_fps)))
+            fp_shift = np.median(rv_fps)
+            p_sh = wsol_dict['p_shift'] * 299792458. * 1e-6
+            fp_shift += p_sh
+            p_shift = 1e6*fp_shift/299792458.
+            print '\t\t\tFP shift = ',fp_shift[0],'+-',np.sqrt(np.var(rv_fps))/np.sqrt(float(len(rv_fps))),'m/s'
+            good_quality = True
 
         equis = np.arange( data.shape[1] )        
 

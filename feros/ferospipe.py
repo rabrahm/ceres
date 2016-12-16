@@ -91,11 +91,12 @@ force_flat_extract = False
 force_thar_extract = False
 force_thar_wavcal  = False
 force_tharxc       = False
-force_sci_extract  = False
+force_sci_extract  = True
 force_stellar_pars = False
 force_trace	   = False
 dumpargon          = False
 force_spectral_file_build = True
+dark_correction    = False
 
 bad_colummn        = True
 Inverse_m          = True
@@ -136,7 +137,8 @@ print "\tRAW data is in ",dirin
 print "\tProducts of reduction will be in",dirout
 print '\n'
 
-biases, flats, ThArNe_ref, ThAr_Ne_ref, simThAr_sci, simSky_sci, ThAr_ref_dates, ThAr_Ne_ref_dates = ferosutils.FileClassify(dirin,log)
+biases, flats, ThArNe_ref, ThAr_Ne_ref, simThAr_sci, simSky_sci, ThAr_ref_dates, \
+        ThAr_Ne_ref_dates, darks, dark_times = ferosutils.FileClassify(dirin,log)
 
 if ( (os.access(dirout+'Flat.fits',os.F_OK) == False)        or \
      (os.access(dirout+'trace.pkl',os.F_OK) == False)        or \
@@ -204,6 +206,21 @@ else:
     Flat = Flat.T
     h = pyfits.open(dirout+'MasterBias.fits')
     MasterBias = h[0].data
+
+dark_times = np.around(dark_times).astype('int')
+uni_times = np.unique(dark_times)
+dark_names = []
+for tim in uni_times:
+    I = np.where(dark_times == tim)[0]
+    Dark, RO_dark, GA_dark = ferosutils.MedianCombine(darks[I], zero_bo=True, zero=dirout+'MasterBias.fits')
+    dname = dirout+'MasterDark_'+str(tim)+'.fits'
+    dark_names.append(dname)
+    hdu = pyfits.PrimaryHDU( Dark )
+    if (os.access(dname,os.F_OK)):
+        os.remove(dname)
+    hdu.writeto(dname)
+    print 'Dark of', tim,' seconds done!'
+
 
 
 print '\n\tExtraction of Flat calibration frames:'
@@ -552,26 +569,33 @@ ThAr_all       = np.hstack(( np.array(ThArNe_ref), np.array(ThAr_Ne_ref) ))
 ThAr_all_dates = np.hstack(( np.array(ThAr_ref_dates), np.array(ThAr_Ne_ref_dates) ))
 
 if len(ThAr_all)>0:
-	Thar_shifts_out = dirout + 'ThAr_Ne_shifts.dat'
+    Thar_shifts_out = dirout + 'ThAr_Ne_shifts.dat'
 
-	i = 0
-	p_shifts = []
-	p_mjds   = []
-	fref   = ThAr_Ne_ref[sorted_ThAr_Ne_dates[0]]
-	refdct = pickle.load( open(dirout + fref.split('/')[-1][:-4]+'wavsolpars.pkl','r' ) )
+    i = 0
+    p_shifts = []
+    p_mjds   = []
+    fref   = ThAr_Ne_ref[sorted_ThAr_Ne_dates[0]]
+    refdct = pickle.load( open(dirout + fref.split('/')[-1][:-4]+'wavsolpars.pkl','r' ) )
 
-	while i < len(sorted_ThAr_Ne_dates):
-		fsim  = ThAr_Ne_ref[sorted_ThAr_Ne_dates[i]]
-		pdict = pickle.load( open(dirout + fsim.split('/')[-1][:-4]+'wavsolpars.pkl','r' ) )
-		p_shift, pix_centers, orders, wavelengths, I, rms_ms, residuals  = \
+    while i < len(sorted_ThAr_Ne_dates):
+        fsim  = ThAr_Ne_ref[sorted_ThAr_Ne_dates[i]]
+        pdict = pickle.load( open(dirout + fsim.split('/')[-1][:-4]+'wavsolpars.pkl','r' ) )
+        p_shift, pix_centers, orders, wavelengths, I, rms_ms, residuals  = \
 			    GLOBALutils.Global_Wav_Solution_vel_shift(pdict['All_Pixel_Centers_co'],\
 			    pdict['All_Wavelengths_co'], pdict['All_Orders_co'],\
 			    np.ones(len(pdict['All_Wavelengths_co'])), refdct['p1_co'],\
 			    minlines=1200, maxrms=MRMS,order0=OO0, ntotal=n_useful,\
 			    Cheby=use_cheby, Inv=Inverse_m, npix=Flat.shape[1],nx=ncoef_x,nm=ncoef_m)
-		p_shifts.append(p_shift)
-		p_mjds.append(pdict['mjd'])
-		i+=1
+        p_shifts.append(p_shift)
+        p_mjds.append(pdict['mjd'])
+        p_shift_ob, pix_centers_ob, orders_ob, wavelengths_ob, I_ob, rms_ms_ob, residuals_ob  = \
+                GLOBALutils.Global_Wav_Solution_vel_shift(pdict['All_Pixel_Centers'],\
+                pdict['All_Wavelengths'], pdict['All_Orders'],\
+                np.ones(len(pdict['All_Wavelengths'])), refdct['p1'],\
+                minlines=1200, maxrms=MRMS,order0=OO0, ntotal=n_useful,\
+                Cheby=use_cheby, Inv=Inverse_m, npix=Flat.shape[1],nx=ncoef_x,nm=ncoef_m)
+
+        i+=1
 
 
 ### start of science frame reductions ###
@@ -659,6 +683,12 @@ for fsim in comp_list:
     if bad_colummn:
         data = ferosutils.b_col(data)
     data -= MasterBias
+    #plot(data[:,2000])
+    if dark_correction:
+        dark = ferosutils.get_dark(np.around(h[0].header['EXPTIME']),dark_names,uni_times)
+        #plot(dark[:,2000])
+        #show()
+        data -= dark
     data = data.T
 
     bacfile = dirout + 'BAC_' + fsim.split('/')[-1][:-4]+'fits'

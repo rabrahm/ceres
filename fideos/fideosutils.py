@@ -4,6 +4,113 @@ from scipy import interpolate
 from scipy import signal
 sys.path.append("../utils/GLOBALutils")
 import GLOBALutils
+import os 
+import glob
+import pyfits
+
+def FileClassify(diri, log):
+
+	# define output lists
+	biases         = []
+	darks		   = []
+	flats          = []
+	flats_co	   = []
+	thar           = []
+	thar_co		   = []
+	sim_sci        = []
+	dar_sci		   = []
+
+	f = open(log,'w')
+
+	#Do not consider the images specified in dir+badfiles.txt
+	bad_files = []
+	if os.access(diri+'bad_files.txt',os.F_OK):
+		bf = open(diri+'bad_files.txt')
+		linesbf = bf.readlines()
+		for line in linesbf:
+			bad_files.append(diri+line[:-1])
+		bf.close()
+    
+	all_files = glob.glob(diri+"/*fits")
+	for archivo in all_files:
+		#print archivo
+		dump = False
+		for bf in bad_files:
+			if archivo == bf:
+				dump = True
+				break
+		if dump == False:
+			h = pyfits.open(archivo)
+			hd = pyfits.getheader(archivo)
+
+			if 'bias' in archivo:
+				biases.append(archivo)
+			elif 'dark' in archivo:
+				darks.append(archivo)
+			elif 'flat' in archivo:
+				if '1F' in archivo:
+					flats_co.append(archivo)
+				elif '2F' in archivo:
+					flats.append(archivo)
+			elif 'ThAr' in archivo and '300' in archivo:
+				if '1F' in archivo:
+					thar_co.append(archivo)
+				elif '2F' in archivo:
+					thar.append(archivo)
+			else:
+				if '1F' in archivo:
+					dar_sci.append(archivo)
+				else:
+					sim_sci.append(archivo)
+
+				#line = "%-15s %10s %10s %8.2f %4.2f %8s %11s %s\n" % (obname, ra, delta, texp, airmass, date, hour, archivo)
+				#f.write(line)
+
+	f.close()
+	biases, darks, flats, flats_co, thar, thar_co, sim_sci, dar_sci = \
+		np.array(biases), np.array(darks), np.array(flats), np.array(flats_co), np.array(thar), \
+		np.array(thar_co), np.array(sim_sci), np.array(dar_sci)
+	return biases, darks, flats, flats_co, thar, thar_co, sim_sci, dar_sci
+
+def make_flatOB(MasterFlat, c_co,exap=5):
+	nord_co = len(c_co)
+	flat = MasterFlat.T
+	img_out = flat.copy()
+	Centers = np.zeros((len(c_co),flat.shape[1]))
+	ejx = np.arange(flat.shape[1])
+	for o in range(nord_co):
+		Centers[o,:]=scipy.polyval(c_co[o],ejx)
+	for x in range(flat.shape[1]):
+		baso = np.min(flat[:,x])
+		for o in range(nord_co):
+			cen = np.around(Centers[o,x])
+			try:
+				bas = np.min(flat[cen-3*exap:cen+3*exap,x])
+			except:
+				bas = baso
+			img_out[cen-exap:cen+exap+1,x] = bas
+	return img_out
+
+def get_flatOB(MasterFlat, MasterFlat_co):
+	d1 = MasterFlat[1000]
+	d2 = MasterFlat_co[1000]
+	ref2 = np.arange(len(d2))
+	tck = scipy.interpolate.splrep(ref2,d2,k=3)
+	shfts = np.arange(-6.,6.,0.001)
+	ccfs = []
+	for shft in shfts:
+		ref = ref2 + shft
+		t2 = scipy.interpolate.splev(ref,tck)
+		ccfs.append(np.sum(t2*d1))
+	shft = shfts[np.argmax(ccfs)]
+
+	new_img = MasterFlat_co.copy()
+	for x in range(MasterFlat_co.shape[0]):
+		d = MasterFlat_co[x]
+		ref = np.arange(len(d))
+		tck = scipy.interpolate.splrep(ref,d,k=1)
+		new_img[x] = MasterFlat[x] - scipy.interpolate.splev(ref+shft,tck)
+	return new_img
 
 def get_data(path):
     d = pyfits.getdata(path)
@@ -74,11 +181,16 @@ def mjd_fromheader(h):
     ut = float(ut[:2])+ float(ut[3:5])/60. + float(ut[6:])/3600.
     mjd_start = mjd + ut/24.0
 
+    print 'Warning!!! adding 5 hrs to comute MJD due to problem in header! CHECK in future!!'
+    mjd_start += 5./24.
+
+
     secinday = 24*3600.0
     fraction = 0.5
     texp     = h[0].header['EXPTIME'] #sec
 
-    mjd = mjd_start + (fraction * texp) / secinday
+    print 'Warning!!! assuming that the provided date is at the end of the exposure!!! Check in the future!!'
+    mjd = mjd_start - (fraction * texp) / secinday
 
     return mjd, mjd0
 
