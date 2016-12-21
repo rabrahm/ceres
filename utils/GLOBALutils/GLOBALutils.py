@@ -19,14 +19,15 @@ sys.path.append("../utils/OptExtract")
 import Marsh
 import CCF
 from pylab import *
-from rpy2 import robjects
-import rpy2.robjects.numpy2ri
+
 import time
-r = robjects.r
+
 from matplotlib.backends.backend_pdf import PdfPages
 
 global GDATA,P
 
+import statsmodels.api as sm
+lowess = sm.nonparametric.lowess
 
 # Some functions to be used by the pipeline
 class Constants:
@@ -2563,11 +2564,11 @@ def Lines_mBack(thar, sd, thres_rel=3, line_w=10):
     K = np.where((sd > 0) & (mask > 0))
 
     bkg = np.zeros( len(sd) )
-    bkg_T = np.array( r.lowess(X[K], thar[K].astype('double'),  f=0.2, iter=3) )
 
-    # interpolate linearly to all of X
-    Temp = np.array( r.approx(bkg_T[0],bkg_T[1],xout=X[L], method="linear", rule=2) )
-    bkg[L] = Temp[1]
+    bkg_T = lowess(thar[K].astype('double'), X[K],frac=0.2,it=3,,return_sorted=False)
+    bkg_interp = scipy.interpolate.inter1d(X[K],bkg_T)
+    bkg[L] = bkg_interp(X[L])
+
     return bkg
 
 def FindLines_simple_sigma(d,sd,thres=3):

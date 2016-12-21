@@ -9,9 +9,6 @@ import GLOBALutils
 
 from pylab import *
 
-from rpy2 import robjects
-import rpy2.robjects.numpy2ri
-r = robjects.r
 
 def FileClassify(dir, log,binning):
     """

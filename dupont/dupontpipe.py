@@ -39,11 +39,8 @@ from scipy import optimize
 from scipy import interpolate
 from numpy import radians as rad
 
-# interface to R
-from rpy2 import robjects
-import rpy2.robjects.numpy2ri
-r = robjects.r
-r.library("MASS")
+import statsmodels.api as sm
+lowess = sm.nonparametric.lowess
 
 # Recive input parameters
 parser = argparse.ArgumentParser()
@@ -1187,10 +1184,8 @@ if not JustExtract:
 			xc_av = GLOBALutils.Average_CCF(xc_full, sn, sn_min=3, Simple=True, start_order=0, W=W_ccf)
 			#Normalize the continuum of the CCF robustly with R     
 			yy = scipy.signal.medfilt(xc_av,11)
-			lowess = robjects.r("lowess")
-			approx = robjects.r("approx")
-			Temp = lowess(vels,yy,f=0.4,iter=10)
-			pred = np.array( approx(Temp[0],Temp[1],xout=vels, method="linear", rule=2) )[1]
+            pred = lowess(yy, vels,frac=0.4,it=10,return_sorted=False)
+            lowess_interp = scipy.interpolate.interp1d(vels,yy)
 			xc_av_orig = xc_av.copy()
 			xc_av /= pred
 			pred_rough = pred.copy()
@@ -1211,7 +1206,7 @@ if not JustExtract:
 			xc_av = GLOBALutils.Average_CCF(xc_full, sn, sn_min=3,\
 		                        Simple=True, W=W_ccf, start_order=0)
 
-			pred = np.array( approx(Temp[0],Temp[1],xout=vels, method="linear", rule=2) )[1]
+            pred = lowess_interp(vels)
 			xc_av /= pred
 
 			if sp_type == 'M5':

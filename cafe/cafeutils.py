@@ -12,9 +12,6 @@ base = "../"
 sys.path.append(base+"utils/GLOBALutils")
 import GLOBALutils
 
-from rpy2 import robjects
-import rpy2.robjects.numpy2ri
-r = robjects.r
 
 def getObName(h):
     """
