@@ -13,15 +13,7 @@ base = '../'
 sys.path.append(base+"utils/GLOBALutils")
 import GLOBALutils
 
-from rpy2 import robjects
-import rpy2.robjects.numpy2ri
 
-####### agregado por mi ####
-#import rpy2.robjects.numpy2ri
-#rpy2.robjects.numpy2ri.activate()
-############################
-r = robjects.r
-#r.library("MASS")
 
 def FileClassify(diri, log,mode='so',amps='a'):
 	"""

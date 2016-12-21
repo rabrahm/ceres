@@ -35,16 +35,8 @@ from matplotlib.backends.backend_pdf import PdfPages
 import ephem
 import jplephem
 
-# interface to R, not clear we'll use it
-from rpy2 import robjects
-import rpy2.robjects.numpy2ri
-try:
-	rpy2.robjects.numpy2ri.activate()
-except:
-	None
-import rpy2.robjects.numpy2ri
-r = robjects.r
-r.library("MASS")
+import statsmodels.api as sm
+lowess = sm.nonparametric.lowess
 
 parser = argparse.ArgumentParser()
 parser.add_argument('directorio')
@@ -845,12 +837,10 @@ for nlisti in range(len(new_list)):
             xc_av = GLOBALutils.Average_CCF(xc_full, sn, sn_min=3.0, Simple=True, W=W_ccf)
             # Normalize the continuum of the CCF robustly with R     
             yy = scipy.signal.medfilt(xc_av,11)
-            lowess = robjects.r("lowess")
-            approx = robjects.r("approx")
             I = np.where(np.isnan(yy))[0]
             if len(I)==0:
-                Temp = lowess(vels,yy,f=0.4,iter=10)
-                pred = np.array( approx(Temp[0],Temp[1],xout=vels, method="linear", rule=2) )[1]
+                pred = lowess(yy, vels,frac=0.4,it=10,return_sorted=False)
+                lowess_interp = scipy.interpolate.interp1d(vels,yy)
                 xc_av_orig = xc_av.copy()
                 xc_av /= pred
                 vel0_xc = vels[ np.argmin( xc_av ) ] 
@@ -864,7 +854,7 @@ for nlisti in range(len(new_list)):
 		                                  spec_order=9,iv_order=10,sn_order=8,max_vel_rough=300)
 
                 xc_av = GLOBALutils.Average_CCF(xc_full, sn, sn_min=3.0, Simple=True, W=W_ccf)
-                pred = np.array( approx(Temp[0],Temp[1],xout=vels, method="linear", rule=2) )[1]
+                pred = lowess_interp(vels)
                 xc_av /= pred
 
                 if sp_type == 'M5':
