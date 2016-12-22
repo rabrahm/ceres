@@ -250,11 +250,11 @@ def MedianCombine(ImgList, zero='none'):
     d1 = h[0].data
     h1 = h[0].header
     d1 = b_col(d1)
-    d1 = OverscanTrim(d1)
+    d1 = OverscanTrim(d1).astype('float')
 
     if zero != 'none':
 	z = pyfits.open(zero)[0]
-	d1 -= z.data
+	d1 -= z.data.astype('float')
     
     factor = 1.25
     if (n < 3):

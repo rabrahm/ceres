@@ -840,7 +840,7 @@ for nlisti in range(len(new_list)):
             I = np.where(np.isnan(yy))[0]
             if len(I)==0:
                 pred = lowess(yy, vels,frac=0.4,it=10,return_sorted=False)
-                lowess_interp = scipy.interpolate.interp1d(vels,yy)
+                tck1 = scipy.interpolate.splrep(vels,pred,k=1)
                 xc_av_orig = xc_av.copy()
                 xc_av /= pred
                 vel0_xc = vels[ np.argmin( xc_av ) ] 
@@ -854,7 +854,7 @@ for nlisti in range(len(new_list)):
 		                                  spec_order=9,iv_order=10,sn_order=8,max_vel_rough=300)
 
                 xc_av = GLOBALutils.Average_CCF(xc_full, sn, sn_min=3.0, Simple=True, W=W_ccf)
-                pred = lowess_interp(vels)
+                pred = scipy.interpolate.splev(vels,tck1)
                 xc_av /= pred
 
                 if sp_type == 'M5':

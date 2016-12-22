@@ -288,8 +288,8 @@ def get_them(sc,exap,ncoef,maxords=-1,startfrom=0,nsigmas=10.,mode=1,endat=-1):
 		    x = ejx[pos[i]-exap2:]
 		    y = d[pos[i]-exap2:]
 	    else:	
-		    x = ejx[pos[i]-exap2:pos[i]+exap2+1]
-		    y = d[pos[i]-exap2:pos[i]+exap2+1]
+		    x = ejx[int(pos[i]-exap2):int(pos[i]+exap2+1)]
+		    y = d[int(pos[i]-exap2):int(pos[i]+exap2+1)]
 	    tx1 = np.arange(x[0]-dev,x[0],1)
 	    tx2 = np.arange(x[-1]+1,x[-1]+dev+1,1)
 	    ty1 = np.zeros(len(tx1))
@@ -344,14 +344,14 @@ def get_them(sc,exap,ncoef,maxords=-1,startfrom=0,nsigmas=10.,mode=1,endat=-1):
 
 		while j < len(pos):
 		    if pos[j]-exap2 < 0:
-			    x = ejx[:pos[j]+exap2+1]
-			    y = d[:pos[j]+exap2+1]
+			    x = ejx[:int(pos[j]+exap2+1)]
+			    y = d[:int(pos[j]+exap2+1)]
 		    elif pos[j]+exap2+1 > len(d):
-			    x = ejx[pos[j]-exap2:]
-			    y = d[pos[j]-exap2:]
+			    x = ejx[int(pos[j]-exap2):]
+			    y = d[int(pos[j]-exap2):]
 		    else:	
-			    x = ejx[pos[j]-exap2:pos[j]+exap2+1]
-			    y = d[pos[j]-exap2:pos[j]+exap2+1]
+			    x = ejx[int(pos[j]-exap2):int(pos[j]+exap2+1)]
+			    y = d[int(pos[j]-exap2):int(pos[j]+exap2+1)]
 
 		    if mode==1:
 			    if len(x) < 4:
@@ -436,14 +436,14 @@ def get_them(sc,exap,ncoef,maxords=-1,startfrom=0,nsigmas=10.,mode=1,endat=-1):
 		    dev = exap2/4.
 		while j < len(pos):
 		    if pos[j]-exap2 < 0:
-			    x = ejx[:pos[j]+exap2+1]
-			    y = d[:pos[j]+exap2+1]
+			    x = ejx[:int(pos[j]+exap2+1)]
+			    y = d[:int(pos[j]+exap2+1)]
 		    elif pos[j]+exap2+1 > len(d):
-			    x = ejx[pos[j]-exap2:]
-			    y = d[pos[j]-exap2:]
+			    x = ejx[int(pos[j]-exap2):]
+			    y = d[int(pos[j]-exap2):]
 		    else:	
-			    x = ejx[pos[j]-exap2:pos[j]+exap2+1]
-			    y = d[pos[j]-exap2:pos[j]+exap2+1]
+			    x = ejx[int(pos[j]-exap2):int(pos[j]+exap2+1)]
+			    y = d[int(pos[j]-exap2):int(pos[j]+exap2+1)]
 
 		    if mode == 1:
 			    if len(x) < 4:
@@ -2130,7 +2130,7 @@ def LineFit_SingleSigma(X, Y, B, mu, sigma, weight):
     p0 = np.zeros(2*n+1)
     p0[0] = sigma[0]
     for i in range(n):
-        p0[i*2+1] = Y[round(mu[i])-X[0]]
+        p0[i*2+1] = Y[int(round(mu[i])-X[0])]
         p0[i*2+2] = mu[i]
 
     # perform fit
@@ -2565,9 +2565,9 @@ def Lines_mBack(thar, sd, thres_rel=3, line_w=10):
 
     bkg = np.zeros( len(sd) )
 
-    bkg_T = lowess(thar[K].astype('double'), X[K],frac=0.2,it=3,,return_sorted=False)
-    bkg_interp = scipy.interpolate.inter1d(X[K],bkg_T)
-    bkg[L] = bkg_interp(X[L])
+    bkg_T = lowess(thar[K].astype('double'), X[K],frac=0.2,it=3,return_sorted=False)
+    tck1 = scipy.interpolate.splrep(X[K],bkg_T,k=1)
+    bkg[L] = scipy.interpolate.splev(X[L],tck1)
 
     return bkg
 

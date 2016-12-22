@@ -9,7 +9,10 @@ import sys
 from pylab import *
 sys.path.append("../utils/GLOBALutils")
 import GLOBALutils
+import pyfits
 
+import statsmodels.api as sm
+lowess = sm.nonparametric.lowess
 
 def FileClassify(diri, log):
     """
@@ -273,7 +276,7 @@ def get_cont(x,y,n=1,sl=1.,sh=5.):
 def get_cont2(x,y,sl=2.,sh=5.):
 	orilen = len(x)
 	xo = x.copy()
-	
+	yo = y.copy()
 	#J1 = np.where((x>5870) & (x<5910))[0]
 	#x = np.delete(x,J1)
 	#y = np.delete(y,J1)
@@ -283,10 +286,12 @@ def get_cont2(x,y,sl=2.,sh=5.):
 	#y = np.delete(y,J2)
 	
 	yy     = scipy.signal.medfilt(y,11)
-	lowess = robjects.r("lowess")
-	approx = robjects.r("approx")
-	Temp = lowess(x,yy,f=0.1,iter=10)
-	pred = np.array( approx(Temp[0],Temp[1],xout=x, method="linear", rule=2) )[1]
+	#lowess = robjects.r("lowess")
+	#approx = robjects.r("approx")
+	#Temp = lowess(x,yy,f=0.1,iter=10)
+	#pred = np.array( approx(Temp[0],Temp[1],xout=x, method="linear", rule=2) )[1]
+
+	pred = lowess(yy, x,frac=0.2,it=10,return_sorted=False)
 
 	res = y - pred
 	IH = np.where(res>0)[0]
@@ -300,16 +305,18 @@ def get_cont2(x,y,sl=2.,sh=5.):
 	if len(J)==0 or len(x)< .3*orilen:
 		cond=False
 	#cond = False
+
 	while cond:
 		x = np.delete(x,J)
 		y = np.delete(y,J)
 
 		yy     = scipy.signal.medfilt(y,11)
-		lowess = robjects.r("lowess")
-		approx = robjects.r("approx")
-		Temp = lowess(x,yy,f=0.2,iter=10)
-		pred = np.array( approx(Temp[0],Temp[1],xout=x, method="linear", rule=2) )[1]
-
+		#lowess = robjects.r("lowess")
+		#approx = robjects.r("approx")
+		#Temp = lowess(x,yy,f=0.2,iter=10)
+		#pred = np.array( approx(Temp[0],Temp[1],xout=x, method="linear", rule=2) )[1]
+		pred = lowess(yy, x,frac=0.2,it=10,return_sorted=False)
+		
 		res = y - pred
 		IH = np.where(res>0)[0]
 		IL = np.where(res<0)[0]
@@ -321,7 +328,13 @@ def get_cont2(x,y,sl=2.,sh=5.):
 		cond = True
 		if len(J)==0 or len(x)< .1*orilen:
 			cond=False
-	pred = np.array( approx(Temp[0],Temp[1],xout=xo, method="linear", rule=2) )[1]
+	#pred = np.array( approx(Temp[0],Temp[1],xout=xo, method="linear", rule=2) )[1]
+	tck1 = scipy.interpolate.splrep(x,pred,k=1)
+	pred = scipy.interpolate.splev(xo,tck1)
+	#plot(xo,yo)
+	#plot(xo,pred)
+	#show()
+	#pred = lowess(yy, x,frac=0.4,it=10,return_sorted=False)
 	return pred,x,y
 
 def bspline(points, n=100, degree=3, periodic=False):
