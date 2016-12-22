@@ -13,12 +13,9 @@ from scipy.signal import medfilt
 from scipy import interpolate
 import copy
 
-from rpy2 import robjects
-import rpy2.robjects.numpy2ri
-rpy2.robjects.numpy2ri.activate()
 
 from pylab import *
-r = robjects.r
+
 
 
 def milk_comb(ImgList, darks, zero='Bias.fits'):

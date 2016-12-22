@@ -13,15 +13,9 @@ base = '../'
 sys.path.append(base+"utils/GLOBALutils")
 import GLOBALutils
 
-from rpy2 import robjects
-import rpy2.robjects.numpy2ri
 
-####### agregado por mi ####
-#import rpy2.robjects.numpy2ri
-#rpy2.robjects.numpy2ri.activate()
-############################
-r = robjects.r
-#r.library("MASS")
+import statsmodels.api as sm
+lowess = sm.nonparametric.lowess
 
 def gauss2(params,x):
 	amp1 = params[0]
@@ -320,11 +314,9 @@ def Lines_mBack(thar, sd,  thres_rel=3, pl=False):
     K = np.where((sd > 0) & (mask > 0))
 
     bkg = np.zeros( len(sd) )
-    bkg_T = np.array( r.lowess(X[K], thar[K].astype('double'),  f=0.2, iter=3) )
-
-    # interpolate linearly to all of X
-    Temp = np.array( r.approx(bkg_T[0],bkg_T[1],xout=X[L], method="linear", rule=2) )
-    bkg[L] = Temp[1]
+    bkg_T = lowess(thar[K].astype('double'), X[K],frac=0.2,it=3,return_sorted=False)
+    tck1 = scipy.interpolate.splrep(X[K],bkg_T,k=1)
+    bkg[L] = scipy.interpolate.splev(X[L],tck1)
 
     return bkg
 

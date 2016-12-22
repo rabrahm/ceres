@@ -11,11 +11,8 @@ import glob
 import tempfile
 import StringIO
 import pycurl
-from rpy2 import robjects
-import rpy2.robjects.numpy2ri
 from pylab import *
-r = robjects.r
-#r.library("MASS")
+
 
 def is_there(string, word):
 	l=len(word)
