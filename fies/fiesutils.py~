@@ -89,7 +89,6 @@ def FileClassify(diri, log,binning=1,mode='F1', dark_corr=False):
 		if dump == False and isdark == False:
 			h = pyfits.open(archivo)
 			hd = pyfits.getheader(archivo)
-			print archivo
 			if int(h[0].header['DETXBIN']) == binning and int(h[0].header['DETYBIN']) == binning and (mode in h[0].header['FIFMSKNM']) and h[0].header['IMAGETYP'] != 'COUNTTEST':
 				print archivo, h[0].header['IMAGETYP'], h[0].header['SHSTAT'], h[0].header['EXPTIME'], h[0].header['OBJECT'], h[0].header['TCSTGT'] 
 				if h[0].header['IMAGETYP'].replace(' ','') == '' or h[0].header['IMAGETYP'] == 'science':

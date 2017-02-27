@@ -378,7 +378,6 @@ for i in range(nord_ob):
 #thars = thars[:3]
 thar_times = []
 for fsim in thars:
-    print fsim
     hthar = pyfits.open( fsim )
     dthar = pyfits.getdata( fsim ) - MasterBias
     dthar = np.fliplr(dthar.T)

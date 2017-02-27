@@ -47,6 +47,7 @@ def FileClassify(dir, log,binning):
                 break
     
         h = pyfits.open(archivo)
+	print h[0].header['BINNING']
         if dump == False and h[0].header['BINNING']==binning:
             if h[0].header['EXPTYPE'] == 'Object' and h[0].header['OBJECT'] != 'ThAr' and h[0].header['OBJECT'] != 'WideFlat':
                 science.append(archivo)

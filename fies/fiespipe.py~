@@ -443,10 +443,6 @@ for i in range(len(ThAr_ref_dates)):
 					for j in range(nlines):
 						pixel_centers_0.append(float(w[2*j+1])*1./float(binning))
 				pixel_centers_0 = np.array(pixel_centers_0).astype('int')
-				plot(thar_order)
-				plot(pixel_centers_0,thar_order[pixel_centers_0],'ro')
-				print order, order_s
-				show()
 				ml = np.array(pixel_centers_0) - 2
 				mh = np.array(pixel_centers_0) + 2
 

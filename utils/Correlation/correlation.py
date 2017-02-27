@@ -621,7 +621,7 @@ def CCF(spec, model_path='/dummy/path/',doplot = False, plot_dir = '/home/rabrah
 				tck = interpolate.splrep(anchos,numpy.array(vsini),k=3,s=0)
 				calrot = interpolate.splev(sig2,tck,der=0)
 				difs = (numpy.array(vsini) - calrot)**2
-				AI = numpy.where(difs == numpy.min(difs))[0]
+				AI = int(numpy.where(difs == numpy.min(difs))[0])
 				rot = vsini[AI]
 			else:
 				rot = vsini[0]
