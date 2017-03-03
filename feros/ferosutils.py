@@ -126,7 +126,7 @@ def b_col(d):
 	      [ 608.,4097.,1298.],\
 	      [   0., 608.,1299.],\
 	      [ 608.,4097.,1299.]]
-	ps = ps.astype('int')
+	ps = np.array(ps).astype('int')
 	for i in range(len(ps)):
 		d2[ps[i][0]:ps[i][1],ps[i][2]] = 1
 	ej = np.arange(d.shape[1])
