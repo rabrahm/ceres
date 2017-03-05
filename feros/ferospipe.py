@@ -1218,8 +1218,8 @@ if (not JustExtract):
                     ml_v = av_m - mask_hw_wide
                     mh_v = av_m + mask_hw_wide            
                     known_sigma = True
-                else:
-                    cond = False
+            else:
+                cond = False
 
         BSerr = -999.00
 
