@@ -1214,10 +1214,10 @@ if (not JustExtract):
                 disp = np.floor(p1gau[2])
                 if (disp < 3.0): 
                     disp = 3.0
-                    mask_hw_wide = av_m * disp / (GLOBALutils.Constants.c/1.0e3)
-                    ml_v = av_m - mask_hw_wide
-                    mh_v = av_m + mask_hw_wide            
-                    known_sigma = True
+                mask_hw_wide = av_m * disp / (GLOBALutils.Constants.c/1.0e3)
+                ml_v = av_m - mask_hw_wide
+                mh_v = av_m + mask_hw_wide            
+                known_sigma = True
             else:
                 cond = False
 
