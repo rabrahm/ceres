@@ -3,7 +3,7 @@
 # JPL DE403 ephemerides.
 
 #Update this line!
-PY_PREFIX := /usr/local
+PY_PREFIX := /anaconda/
 
 #You might also need to update these other three lines
 SWIG = swig
