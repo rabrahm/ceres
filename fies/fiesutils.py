@@ -13,6 +13,60 @@ sys.path.append(base+"utils/GLOBALutils")
 import GLOBALutils
 
 
+def get_thar_offsets(lines_thar, order_dir='wavcals/', pref='order_', suf='.iwdat', delt_or=10, del_width=200.,binning=1):
+	start_or = int(.5*delt_or)
+	xcs = []
+	for ii in range(delt_or,len(lines_thar)-delt_or):
+			thar_order = lines_thar[ii]
+			xct = []
+			for order in range(ii-start_or,ii+start_or):
+				order_s = str(order)
+				if (order < 10):
+					order_s = '0' + order_s
+				if os.access(order_dir+pref+order_s+suf,os.F_OK):
+					f = open(order_dir+pref+order_s+suf,'r')
+					llins = f.readlines()
+					if True:
+						pixel_centers_0 = []
+						for line in llins:
+							w = line.split()
+							nlines = int(w[0])
+							for j in range(nlines):
+								pixel_centers_0.append(float(w[2*j+1])*1./float(binning))
+						pixel_centers_0 = np.array(pixel_centers_0).astype('int')
+						#plot(thar_order)
+						#plot(pixel_centers_0,thar_order[pixel_centers_0],'ro')
+						#print order, order_s
+						#show()
+						ml = np.array(pixel_centers_0) - 2
+						mh = np.array(pixel_centers_0) + 2
+						if len(ml)>0:
+							xc,offs = GLOBALutils.XCorPix( thar_order, ml, mh, del_width=del_width)
+						else:
+							xc = np.zeros(len(offs))
+
+				if len(xct) == 0:
+					xct = xc.copy()
+				else:
+					xct = np.vstack((xct,xc))
+						
+			if len(xcs) == 0:
+				xcs = xct.copy()
+			else:
+				xcs += xct
+	maxes, maxvels = [],[]
+	for i in range(xcs.shape[0]):
+		maxes.append(xcs[i].max())
+		maxvels.append(offs[np.argmax(xcs[i])])
+		#plot(offs,xcs[i])
+	#show()
+
+	maxes,maxvels = np.array(maxes),np.array(maxvels)
+	orders_offset = -start_or + np.argmax(maxes)
+	rough_shift = maxvels[np.argmax(maxes)]
+
+	return orders_offset, rough_shift
+
 def ra_from_sec(ra,time=True):
 	ra = float(ra)
 	sign = ' '
@@ -47,11 +101,17 @@ def FileClassify(diri, log,binning=1,mode='F1', dark_corr=False):
 	flats          = []
 	ThAr_ref       = []
 	ThAr_ref_dates = []
+	ThAr_co       = []
+	ThAr_co_dates = []
+	ThAr_sim       = []
+	ThAr_sim_dates = []
 	flat_ref_dates = []
 	bias_ref_dates = []
 	obnames        = []
 	exptimes       = []
-	darks		   = []
+	darks          = []
+	flats_co	       = []
+	flats_co_dates  = []
 
 	sdarks = []
 	if dark_corr and os.access(diri+'/darks.txt',os.F_OK):
@@ -89,10 +149,26 @@ def FileClassify(diri, log,binning=1,mode='F1', dark_corr=False):
 		if dump == False and isdark == False:
 			h = pyfits.open(archivo)
 			hd = pyfits.getheader(archivo)
-			print archivo
 			if int(h[0].header['DETXBIN']) == binning and int(h[0].header['DETYBIN']) == binning and (mode in h[0].header['FIFMSKNM']) and h[0].header['IMAGETYP'] != 'COUNTTEST':
-				print archivo, h[0].header['IMAGETYP'], h[0].header['SHSTAT'], h[0].header['EXPTIME'], h[0].header['OBJECT'], h[0].header['TCSTGT'] 
-				if h[0].header['IMAGETYP'].replace(' ','') == '' or h[0].header['IMAGETYP'] == 'science':
+				print archivo, h[0].header['IMAGETYP'], h[0].header['SHSTAT'], h[0].header['EXPTIME'], h[0].header['OBJECT'], h[0].header['TCSTGT'], int(h[0].header['DETYBIN'])
+				
+				if ((mode=='F3' or mode=='F4') and h[0].header['FICARMID'] == 6 and h[0].header['FILMP4'] == 0 and h[0].header['FILMP7']==1)\
+				   or (mode=='F1' and h[0].header['FICARMID'] == 2 and h[0].header['FILMP4'] == 0 and h[0].header['FILMP7']==1):
+					ThAr_ref.append(archivo)
+					mjd, mjd0 = mjd_fromheader2(h)
+					ThAr_ref_dates.append( mjd )
+
+				elif h[0].header['FICARMID'] == 6 and h[0].header['FILMP4'] == 1 and h[0].header['FILMP7']==0:
+					ThAr_co.append(archivo)
+					mjd, mjd0 = mjd_fromheader2(h)
+					ThAr_co_dates.append( mjd )
+					
+				elif h[0].header['FICARMID'] == 6 and h[0].header['FILMP4'] == 1 and h[0].header['FILMP7']==1:
+					ThAr_sim.append(archivo)
+					mjd, mjd0 = mjd_fromheader2(h)
+					ThAr_sim_dates.append( mjd )
+
+				elif ((mode=='F3' or mode=='F4') and h[0].header['FICARMID'] == 2) or (mode == 'F1' and h[0].header['FICARMID'] == 5):
 					sim_sci.append(archivo)
 					obname = h[0].header['OBJECT']
 					obnames.append( obname )
@@ -104,8 +180,12 @@ def FileClassify(diri, log,binning=1,mode='F1', dark_corr=False):
 					date   =  h[0].header['DATE-OBS']		    
 					hour   = date[11:]
 					date    = date[:10]
-					exptimes.append( texp ) 
-					line = "%-15s %10s %10s %8.2f %4.2f %8s %11s %s\n" % (obname, ra, delta, texp, airmass, date, hour, archivo)
+					exptimes.append( texp )
+					if  h[0].header['FILMP4'] == 1:
+						simult = 'SIMULT'
+					else:
+						simult = 'NO_SIMULT'
+					line = "%-15s %10s %10s %8.2f %4.2f %8s %11s %s %s\n" % (obname, ra, delta, texp, airmass, date, hour, archivo, simult)
 					f.write(line)
 				elif h[0].header['IMAGETYP'] == 'BIAS':
 					biases.append(archivo)
@@ -115,12 +195,23 @@ def FileClassify(diri, log,binning=1,mode='F1', dark_corr=False):
 					flats.append(archivo)
 					mjd, mjd0 = mjd_fromheader2(h)
 					flat_ref_dates.append( mjd )
+					if h[0].header['FICARMID'] == 6 and h[0].header['FILMP1'] == 1 and h[0].header['FILMP6']==0:
+						flats_co.append(archivo)
+						mjd, mjd0 = mjd_fromheader2(h)
+						flats_co_dates.append( mjd )
+					else:
+						flats.append(archivo)
+						mjd, mjd0 = mjd_fromheader2(h)
+						flat_ref_dates.append( mjd )
+						sc = pyfits.getdata(archivo)
+						#plot(sc[1000])
 				elif h[0].header['IMAGETYP'] == 'WAVE':
 					ThAr_ref.append(archivo)
 					mjd, mjd0 = mjd_fromheader2(h)
 					ThAr_ref_dates.append( mjd )
+
 		
-    
+    	#show()
 	flat_ref_dates = np.array(flat_ref_dates)
 	flats = np.array(flats)
 	IS = np.argsort(flat_ref_dates)
@@ -138,7 +229,7 @@ def FileClassify(diri, log,binning=1,mode='F1', dark_corr=False):
 	#	print 'bias',biases[i], bias_ref_dates[i]
 	f.close()
 
-	return biases, np.array(flats), np.array(ThAr_ref), sim_sci, np.array(ThAr_ref_dates), obnames, exptimes, np.array(darks)
+	return biases, np.array(flats), np.array(ThAr_ref), sim_sci, np.array(ThAr_ref_dates), obnames, exptimes, np.array(darks), np.array(flats_co), np.array(flats_co_dates),np.array(ThAr_sim), np.array(ThAr_sim_dates),np.array(ThAr_co), np.array(ThAr_co_dates)
 
 def get_darktimes(darks):
 	times = []

@@ -51,6 +51,7 @@ parser.add_argument('-reffile',default='default')
 parser.add_argument('-dirout',default='default')
 parser.add_argument('-binning', default=1)
 parser.add_argument('-fibre',default='default')
+#parser.add_argument('-simult', action="store_true", default=False)
 
 args = parser.parse_args()
 DoClass     = args.do_class
@@ -58,6 +59,7 @@ avoid_plot  = args.avoid_plot
 dirin       = args.directorio
 object2do   = args.o2do
 JustExtract = args.just_extract
+#simult      = args.simult
 npools      = int(args.npools)
 reffile     = args.reffile
 dirout      = args.dirout
@@ -87,7 +89,7 @@ force_flat_extract = False
 force_sci_extract  = False
 force_thar_extract = False	
 force_tharxc       = False
-force_thar_wavcal  = False
+force_thar_wavcal  = True
 force_spectral_file_build = True
 force_stellar_pars = True
 dumpargon          = False
@@ -100,7 +102,7 @@ MRMS               = 90   # max rms in m/s, global wav solution
 
 trace_degree       = 4
 Marsh_alg          = 0
-ext_aperture       = 5
+ext_aperture       = 4
 NSigma_Marsh       = 5
 NCosmic_Marsh      = 5
 S_Marsh            = 0.4
@@ -115,27 +117,26 @@ npar_wsol = (min(ncoef_x,ncoef_m) + 1) * (2*max(ncoef_x,ncoef_m) - min(ncoef_x,n
 models_path = base+"data/COELHO_MODELS/R_40000b/"
 order_dir   = base+"fies/wavcals/"
 
-n_useful = 79
+n_useful = 80
 ro0      = 79
 
-bacap=7
-orders_offset = 0
-if binning == 2:
-	ext_aperture = 4
-	min_extract_col = int(np.around(min_extract_col/2.))
-	max_extract_col = int(np.around(max_extract_col/2.))
-	bacap = 4
-	orders_offset = 2
-
+bacap=8
 startfrom = 0
 if mode == 'F1':
 	resol = 25000
 	MRMS  = 200.
+	ext_aperture = 6
 elif mode == 'F3':
-	resol = 46000
+	resol = 50000
 elif mode == 'F4':
 	resol = 67000
 	startfrom = 10
+
+if binning == 2:
+	ext_aperture /= 2
+	min_extract_col = int(np.around(min_extract_col/2.))
+	max_extract_col = int(np.around(max_extract_col/2.))
+	bacap /= bacap
 #############################
 
 # file containing the log
@@ -146,7 +147,7 @@ print "\tRAW data is in ",dirin
 print "\tProducts of reduction will be in",dirout
 print '\n'
 
-biases, flats, ThAr_ref, sim_sci, ThAr_ref_dates, obnames, exptimes, darks = fiesutils.FileClassify(dirin,log,binning=binning, mode=mode, dark_corr=dark_corr)
+biases, flats, ThAr_ref, sim_sci, ThAr_ref_dates, obnames, exptimes, darks, flats_co, flats_co_dates, ThAr_sim, ThAr_sim_dates, ThAr_co, ThAr_co_dates = fiesutils.FileClassify(dirin,log,binning=binning, mode=mode, dark_corr=dark_corr)
 IS = np.argsort(ThAr_ref_dates)
 ThAr_ref_dates = ThAr_ref_dates[IS]
 ThAr_ref = ThAr_ref[IS]
@@ -171,12 +172,17 @@ else:
 if (pre_process == 1):
 	# median combine Biases
 	print "\tGenerating Master calibration frames..."
-	MasterBias, RO_bias, GA_bias = fiesutils.MedianCombine(biases, binning=binning)
+	if len(biases)>0:
+		MasterBias, RO_bias, GA_bias = fiesutils.MedianCombine(biases, binning=binning)
+	else:
+		MasterBias = np.zeros(fiesutils.OverscanTrim(pyfits.getdata(flats[0]),binning=binning).shape)
+		RO_bias = 0.
+		GA_bias = 1.
+	print "\t\t-> Masterbias: done!"
 	hdu = pyfits.PrimaryHDU( MasterBias )
 	if (os.access(dirout+'MasterBias.fits',os.F_OK)):
 		os.remove(dirout+'MasterBias.fits')
 	hdu.writeto(dirout+'MasterBias.fits')
-	print "\t\t-> Masterbias: done!"
 
 	dark_names = []
 	dark_utimes = []
@@ -199,16 +205,30 @@ if (pre_process == 1):
 	if (os.access(dirout+'Flat.fits',os.F_OK)):
 		os.remove(dirout+'Flat.fits')
 	hdu.writeto(dirout+'Flat.fits')
+
+
+	if len(flats_co)>0:
+		Flat_co, RO_fl_co, GA_fl_co = fiesutils.MedianCombine(flats_co, zero=dirout+'MasterBias.fits',binning=binning)
+		hdu = pyfits.PrimaryHDU(Flat_co)
+		if (os.access(dirout+'Flat_co.fits',os.F_OK)):
+			os.remove(dirout+'Flat_co.fits')
+		hdu.writeto(dirout+'Flat_co.fits')
+	else:
+		c_co = []
+		nord_co = 0
 	print "\t\t-> Masterflats: done!"
 
 	print "\tTracing echelle orders..."
 	c_all,nord = GLOBALutils.get_them(Flat.T, ext_aperture, trace_degree, maxords=-1, mode=1,nsigmas=5.)
 	c_all,nord = GLOBALutils.good_orders(c_all,nord,Flat.shape[1],Flat.shape[0],ext_aperture)
 	print '\t\t'+ str(nord)+' orders found.'
-
+	if len(flats_co)>0:
+		c_co, nord_co = GLOBALutils.get_them(Flat_co.T, ext_aperture, trace_degree, maxords=-1, mode=1,nsigmas=5.)
+		c_co, nord_co = GLOBALutils.good_orders(c_co,nord_co,Flat_co.shape[1],Flat_co.shape[0],ext_aperture)
+		print '\t\t'+ str(nord_co)+' comparison orders found.'
 	# pickle traces
-	trace_dict = {'c_all':c_all,
-                  'nord':nord,
+	trace_dict = {'c_all':c_all, 'c_co':c_co, 
+                  'nord':nord, 'nord_co':nord_co,
                   'GA_bias': GA_bias, 'RO_bias' : RO_bias,
                   'GA_fl': GA_fl, 'RO_fl': RO_fl,
                   'dark_names':dark_names, 'dark_utimes':dark_utimes}
@@ -218,6 +238,8 @@ else:
 	trace_dict = pickle.load( open( dirout+"trace.pkl", 'r' ) )
 	c_all = trace_dict['c_all']
 	nord  = trace_dict['nord']
+	c_co = trace_dict['c_co']
+	nord_co  = trace_dict['nord_co']
 	# recover GA*, RO*
 	GA_bias = trace_dict['GA_bias']
 	RO_bias = trace_dict['RO_bias']
@@ -229,11 +251,15 @@ else:
 	# recover flats & master bias
 	h = pyfits.open(dirout+'Flat.fits')
 	Flat = h[0].data
+	if len(c_co)>0:
+		h = pyfits.open(dirout+'Flat_co.fits')
+		Flat_co = h[0].data
 	h = pyfits.open(dirout+'MasterBias.fits')
 	MasterBias = h[0].data
 
 print '\n\tExtraction of Flat calibration frames:'
-
+if len(c_co)>0:
+	c_tot = GLOBALutils.Mesh(c_all,c_co)
 P_fits      = dirout + 'P.fits'
 S_flat_fits = dirout +'flat.fits'
 S_flat      = np.zeros((nord, 3, Flat.shape[1]) )
@@ -284,8 +310,61 @@ else:
     P    = pyfits.getdata( P_fits )
     S_flat = pyfits.getdata( S_flat_fits )
 
+if nord_co>0:
+	P_co_fits      = dirout + 'P_co.fits'
+	S_flat_co_fits = dirout +'flat_co.fits'
+	S_flat_co      = np.zeros((nord_co, 3, Flat_co.shape[1]) )
+
+	if ( os.access(P_co_fits,os.F_OK) == False ) or \
+	   ( os.access(S_flat_co_fits,os.F_OK) == False ) or \
+	   (force_flat_extract):
+	    print "\t\tNo extracted flat comparison spectra found or extraction forced, extracting and saving..."
+
+	    Centers = np.zeros((len(c_co),Flat_co.shape[0]))
+	    for i in range(nord_co):
+		Centers[i,:]=scipy.polyval(c_co[i,:],np.arange(len(Centers[i,:])))
+
+	    bac = GLOBALutils.get_scat(Flat_co.T,Centers,span=bacap)
+	    fl = Flat_co.T - bac
+	    #plot(fl[:,1000])
+	    #plot(np.around(Centers[:,1000]).astype('int'),fl[np.around(Centers[:,1000].astype('int')),1000],'ro')
+	    #show()
+	    #print gfd
+	    bacfile = dirout + 'BAC_FLAT_CO.fits'
+	    if (os.access(bacfile,os.F_OK)):
+		    os.remove( bacfile )
+	    hdbac = pyfits.PrimaryHDU( bac )
+	    hdbac.writeto(bacfile)
+
+	    print "\t\tWill extract",nord_co,"orders for comparison fibre..."
+	    P_co = GLOBALutils.obtain_P(fl,c_co,ext_aperture,RO_fl,\
+		                            GA_fl,NSigma_Marsh, S_Marsh, \
+		            N_Marsh, Marsh_alg, min_extract_col,\
+		            max_extract_col, npools)
+
+	    if (os.access(P_co_fits,os.F_OK)):
+		os.remove( P_co_fits )
+	    hdu = pyfits.PrimaryHDU( P_co )
+	    hdu.writeto( P_co_fits )
+
+	    S_flat_co  = GLOBALutils.optimal_extraction(fl,P_co,c_co,ext_aperture,RO_fl,GA_fl,\
+		      S_Marsh,10*NCosmic_Marsh,min_extract_col,max_extract_col,npools)
+	    S_flat_co = S_flat_co[::-1]
+	    S_flat_co = GLOBALutils.invert(S_flat_co)
+	    if (os.access(S_flat_co_fits,os.F_OK)):
+		os.remove( S_flat_co_fits )
+	    hdu = pyfits.PrimaryHDU( S_flat_co )
+	    hdu.writeto( S_flat_co_fits )
+
+	else:
+	    print "\t\tExtracted flat object spectra found, loading..."
+	    P_co    = pyfits.getdata( P_co_fits )
+	    S_flat_co = pyfits.getdata( S_flat_co_fits )
+
 # Normalize flat field spectra.
 S_flat_n, Snorms = GLOBALutils.FlatNormalize_single( S_flat, mid = int(.5*S_flat.shape[2]) )
+if nord_co>0:
+	S_flat_co_n, Snorms_co = GLOBALutils.FlatNormalize_single( S_flat_co, mid = int(.5*S_flat_co.shape[2]) )
 
 print '\n\tExtraction of ThAr calibration frames:'
 
@@ -293,15 +372,17 @@ print '\n\tExtraction of ThAr calibration frames:'
 for fsim in ThAr_ref:
 	thar_fits        = dirout + fsim.split('/')[-1][:-4]+'spec.fits.S'
 	thar_simple_fits = dirout + fsim.split('/')[-1][:-4]+'spec.simple.fits.S'
-
 	if ( os.access(thar_simple_fits,os.F_OK) == False ) or ( force_thar_extract ):
 		hthar = pyfits.open( fsim )
 		dthar = fiesutils.OverscanTrim( hthar[1].data, binning=binning ) - MasterBias
 		Centers = np.zeros((len(c_all),dthar.shape[0]))
 		for i in range(nord):
 			Centers[i,:]=scipy.polyval(c_all[i,:],np.arange(len(Centers[i,:])))
-		bac = GLOBALutils.get_scat(dthar.T,Centers,span=bacap)
+		bac = GLOBALutils.get_scat(dthar.T,Centers,span=ext_aperture,option=1,allow_neg=True)
 		sdthar = dthar.T - bac
+		#plot(dthar.T[:,1000])
+		#plot(bac[:,1000])
+		#show()
 		print "\t\tNo previous extraction or extraction forced for ThAr file", fsim, "extracting..."
 		thar_S  = np.zeros( (nord,3,dthar.shape[0]) )
 		thar_Ss = np.zeros( (nord,dthar.shape[0]) )
@@ -323,6 +404,96 @@ for fsim in ThAr_ref:
 		hdu.writeto( thar_simple_fits )
 	else:
 		print "\t\tThAr file", fsim, "all ready extracted, loading..."
+
+# Extract all ThAr files
+for fsim in ThAr_co:
+	thar_co_fits        = dirout + fsim.split('/')[-1][:-4]+'spec.co.fits.S'
+	thar_co_simple_fits = dirout + fsim.split('/')[-1][:-4]+'spec.co.simple.fits.S'
+	if ( os.access(thar_co_simple_fits,os.F_OK) == False ) or ( force_thar_extract ):
+		hthar = pyfits.open( fsim )
+		dthar = fiesutils.OverscanTrim( hthar[1].data, binning=binning ) - MasterBias
+		Centers = np.zeros((len(c_co),dthar.shape[0]))
+		for i in range(nord_co):
+			Centers[i,:]=scipy.polyval(c_co[i,:],np.arange(len(Centers[i,:])))
+		bac = GLOBALutils.get_scat(dthar.T,Centers,span=ext_aperture+2)
+		sdthar = dthar.T - bac
+		print "\t\tNo previous extraction or extraction forced for ThAr file", fsim, "extracting..."
+		thar_S  = np.zeros( (nord_co,3,dthar.shape[0]) )
+		thar_Ss = np.zeros( (nord_co,dthar.shape[0]) )
+
+		tR,tG = fiesutils.get_RONGAIN(hthar[1].header)
+		#print tR,tG
+		thar_Ss = GLOBALutils.simple_extraction(sdthar,c_co,ext_aperture,\
+                                                  min_extract_col,max_extract_col,npools)
+		thar_Ss = thar_Ss[::-1]
+		thar_Ss = GLOBALutils.invert(thar_Ss)
+		if (os.access(thar_co_fits,os.F_OK)):
+			os.remove( thar_co_fits )
+		if (os.access(thar_co_simple_fits,os.F_OK)):
+			os.remove( thar_co_simple_fits )
+
+		hdu = pyfits.PrimaryHDU( thar_S )
+		hdu.writeto( thar_co_fits )
+		hdu = pyfits.PrimaryHDU( thar_Ss )
+		hdu.writeto( thar_co_simple_fits )
+	else:
+		print "\t\tThAr file", fsim, "all ready extracted, loading..."
+
+for fsim in ThAr_sim:
+		thar_fits        = dirout + fsim.split('/')[-1][:-4]+'spec.fits.S'
+		thar_simple_fits = dirout + fsim.split('/')[-1][:-4]+'spec.simple.fits.S'
+		thar_co_fits        = dirout + fsim.split('/')[-1][:-4]+'spec.co.fits.S'
+		thar_co_simple_fits = dirout + fsim.split('/')[-1][:-4]+'spec.co.simple.fits.S'
+		if ( os.access(thar_simple_fits,os.F_OK) == False ) or ( force_thar_extract ):
+			hthar = pyfits.open( fsim )
+			dthar = fiesutils.OverscanTrim( hthar[1].data, binning=binning ) - MasterBias
+			Centers = np.zeros((len(c_tot),dthar.shape[0]))
+			ccc = c_tot.copy()
+
+			for i in range(Centers.shape[0]):
+				Centers[i,:]=scipy.polyval(ccc[i,:],np.arange(len(Centers[i,:])))
+
+			bac = GLOBALutils.get_scat(dthar.T,Centers,span=ext_aperture,option=1)
+			sdthar = dthar.T - bac
+
+			print "\t\tNo previous extraction or extraction forced for simultaneous ThAr file", fsim, "extracting..."
+			thar_S  = np.zeros( (nord,3,dthar.shape[0]) )
+			thar_Ss = np.zeros( (nord,dthar.shape[0]) )
+			thar_S_co  = np.zeros( (nord_co,3,dthar.shape[0]) )
+			thar_S_co  = np.zeros( (nord_co,3,dthar.shape[0]) )
+
+			tR,tG = fiesutils.get_RONGAIN(hthar[1].header)
+			#print tR,tG
+			thar_Ss = GLOBALutils.simple_extraction(sdthar,c_all,ext_aperture,\
+		                                          min_extract_col,max_extract_col,npools)
+			thar_Ss_co = GLOBALutils.simple_extraction(sdthar,c_co,ext_aperture,\
+		                                          min_extract_col,max_extract_col,npools)
+			thar_Ss = thar_Ss[::-1]
+			thar_Ss = GLOBALutils.invert(thar_Ss)
+			if (os.access(thar_fits,os.F_OK)):
+				os.remove( thar_fits )
+			if (os.access(thar_simple_fits,os.F_OK)):
+				os.remove( thar_simple_fits )
+
+			thar_Ss_co = thar_Ss_co[::-1]
+			thar_Ss_co = GLOBALutils.invert(thar_Ss_co)
+			if (os.access(thar_co_fits,os.F_OK)):
+				os.remove( thar_co_fits )
+			if (os.access(thar_co_simple_fits,os.F_OK)):
+				os.remove( thar_co_simple_fits )
+
+			hdu = pyfits.PrimaryHDU( thar_S )
+			hdu.writeto( thar_fits )
+			hdu = pyfits.PrimaryHDU( thar_Ss )
+			hdu.writeto( thar_simple_fits )
+
+			hdu = pyfits.PrimaryHDU( thar_S_co )
+			hdu.writeto( thar_co_fits )
+			hdu = pyfits.PrimaryHDU( thar_Ss_co )
+			hdu.writeto( thar_co_simple_fits )
+		else:
+			print "\t\tThAr file", fsim, "all ready extracted, loading..."
+
 """
 p0    = np.zeros( npar_wsol )
 #p0[0] =  (int(.5*n_useful)+ro0) * Global_ZP 
@@ -401,20 +572,17 @@ show()
 print p1
 """
 
-print "\n\tWavelength solution of ThAr calibration spectra:"
-
-for i in range(len(ThAr_ref_dates)):
-	rough_shift = 0.
-	wavsol_pkl = dirout + ThAr_ref[i].split('/')[-1][:-4]+'wavsolpars.pkl'
-	h = pyfits.open(ThAr_ref[i])
-	hd = pyfits.getheader(ThAr_ref[i])
+print "\n\tWavelength solution of ThAr calibration spectra of object fibre:"
+for fsim in ThAr_ref:
+	wavsol_pkl = dirout + fsim.split('/')[-1][:-4]+'wavsolpars.pkl'
+	h = pyfits.open(fsim)
+	hd = pyfits.getheader(fsim)
 	ron,gain = fiesutils.get_RONGAIN(h[0].header)
-	#force_thar_wavcal = True
 	if ( os.access(wavsol_pkl,os.F_OK) == False ) or (force_thar_wavcal):
-		print "\t\tWorking on initial ThAr file", ThAr_ref[i] 
-		hthar = pyfits.open( ThAr_ref[i] )
+		print "\t\tWorking on simple ThAr file", fsim
+		hthar = pyfits.open( fsim )
 		mjd, mjd0 = fiesutils.mjd_fromheader2( hthar )
-		thar_fits = dirout + ThAr_ref[i].split('/')[-1][:-4]+'spec.simple.fits.S'
+		thar_fits = dirout + fsim.split('/')[-1][:-4]+'spec.simple.fits.S'
 		thar_S = pyfits.getdata( thar_fits )
 		lines_thar  = thar_S.copy()
 
@@ -425,41 +593,19 @@ for i in range(len(ThAr_ref_dates)):
 		All_Sigmas        = np.array([])
 		All_Intensities   = np.array([])
 		All_residuals     = np.array([])
+		
+		orders_offset, rough_shift = fiesutils.get_thar_offsets(lines_thar,binning=binning, delt_or=20)
+		print 'orders_ofset:',orders_offset
+		print 'rough_shift:',rough_shift
 
-		xcs = []
-		for order in range(startfrom,nord):
+		orderi = 0
+		if orders_offset < 0:
+			orderi = - orders_offset
+		orderf = nord - 1
+		if orderf + orders_offset >= n_useful:
+			orderf = n_useful - orders_offset - 1
 
-			order_s = str(order+orders_offset-startfrom)
-			if (order + orders_offset-startfrom < 10):
-				order_s = '0' + str(order+orders_offset-startfrom)
-			f = open(order_dir+'order_'+order_s+'.iwdat','r')
-			llins = f.readlines()
-			if len(llins)>5:
-				thar_order = lines_thar[order]
-				pixel_centers_0 = []
-				for line in llins:
-					w = line.split()
-					nlines = int(w[0])
-					for j in range(nlines):
-						pixel_centers_0.append(float(w[2*j+1])*1./float(binning))
-				pixel_centers_0 = np.array(pixel_centers_0).astype('int')
-				plot(thar_order)
-				plot(pixel_centers_0,thar_order[pixel_centers_0],'ro')
-				print order, order_s
-				show()
-				ml = np.array(pixel_centers_0) - 2
-				mh = np.array(pixel_centers_0) + 2
-
-				xc,offs = GLOBALutils.XCorPix( thar_order, ml, mh, del_width=200.)
-				if len(xcs)==0:
-					xcs = xc.copy()
-				else:
-					xcs = xcs + xc
-		plot(offs,xcs)
-		show()
-		rough_shift = offs[np.argmax(xcs)]
-
-		for order in range(lines_thar.shape[0]):
+		for order in range(orderi, orderf+1):
 			#print order
 			order_s = str(order+orders_offset)
 			if (order + orders_offset < 10):
@@ -481,7 +627,7 @@ for i in range(len(ThAr_ref_dates)):
 	                	rmsmax=500, minlines=10, FixEnds=False,Dump_Argon=dumpargon, Dump_AllLines=True, line_width=6, Cheby=use_cheby,porder=3,rough_shift=rough_shift,binning=binning,del_width=5.,do_xc=False)
 				#plot(wavelengths, residuals,'.')	
 				#show()		            
-				if (order == int(.5*nord)): 	
+				if (order == int(.5*n_useful)): 	
 					if (use_cheby):
 						Global_ZP = GLOBALutils.Cheby_eval( coeffs_pix2wav,  0.5*len(thar_order), len(thar_order) )
 					else:
@@ -496,49 +642,384 @@ for i in range(len(ThAr_ref_dates)):
 				All_residuals     = np.append( All_residuals, residuals )
 		#show()
 		p0    = np.zeros( npar_wsol )
-		p0[0] =  int(.5*nord) * Global_ZP 
+		p0[0] =  int(.5*n_useful) * Global_ZP 
 		p1, G_pix, G_ord, G_wav, II, rms_ms, G_res = GLOBALutils.Fit_Global_Wav_Solution(All_Pixel_Centers, All_Wavelengths,\
 						     All_Orders, np.ones(All_Intensities.shape), p0, Cheby=use_cheby,       \
-						     order0=ro0+orders_offset, ntotal=nord, maxrms=MRMS, Inv=Inverse_m, minlines=300,  \
+						     order0=ro0+orders_offset, ntotal=n_useful, maxrms=MRMS, Inv=Inverse_m, minlines=300,  \
+						     npix=len(thar_order),nx=ncoef_x,nm=ncoef_m)
+		pdict = {'orders_offset':orders_offset,'rough_shift':rough_shift,'p1':p1,'mjd':mjd, 'G_pix':G_pix, 'G_ord':G_ord, 'G_wav':G_wav, 'II':II, 'rms_ms':rms_ms,\
+                         'G_res':G_res, 'All_Centroids':All_Centroids, 'All_Wavelengths':All_Wavelengths, \
+			 'All_Orders':All_Orders, 'All_Pixel_Centers':All_Pixel_Centers, 'All_Sigmas':All_Sigmas}
+
+		pickle.dump( pdict, open(wavsol_pkl, 'w' ) )
+	else:
+		print "\t\tUsing previously computed wavelength solution in file",wavsol_pkl
+		pdict = pickle.load(open(wavsol_pkl,'r'))
+
+print "\n\tWavelength solution of ThAr calibration spectra of comparison fibre:"
+for fsim in ThAr_co:
+	wavsol_pkl = dirout + fsim.split('/')[-1][:-4]+'wavsolpars.pkl'
+	h = pyfits.open(fsim)
+	mjd, mjd0 = fiesutils.mjd_fromheader2( h )
+	hd = pyfits.getheader(fsim)
+	ron,gain = fiesutils.get_RONGAIN(h[0].header)
+	if ( os.access(wavsol_pkl,os.F_OK) == False ) or (force_thar_wavcal):
+		print "\t\tWorking on simple ThAr file", fsim
+		hthar = pyfits.open( fsim )
+
+		thar_fits = dirout + fsim.split('/')[-1][:-4]+'spec.co.simple.fits.S'
+		thar_S = pyfits.getdata( thar_fits )
+		lines_thar  = thar_S.copy()
+
+		All_Pixel_Centers = np.array([])
+		All_Wavelengths   = np.array([])
+		All_Orders        = np.array([])
+		All_Centroids     = np.array([])
+		All_Sigmas        = np.array([])
+		All_Intensities   = np.array([])
+		All_residuals     = np.array([])
+		
+		orders_offset, rough_shift = fiesutils.get_thar_offsets(lines_thar,binning=binning)
+		print 'orders_ofset:',orders_offset
+		print 'rough_shift:',rough_shift
+
+		orderi = 0
+		if orders_offset < 0:
+			orderi = - orders_offset
+		orderf = nord_co - 1
+		if orderf + orders_offset >= n_useful:
+			orderf = n_useful - orders_offset - 1
+
+		for order in range(orderi,orderf+1):
+			#print order
+			order_s = str(order+orders_offset)
+			if (order + orders_offset < 10):
+				order_s = '0' + str(order+orders_offset)
+			f = open(order_dir+'order_'+order_s+'.iwdat','r')
+			llins = f.readlines()
+			if len(llins)>5:
+				thar_order_orig = lines_thar[order]
+				#IV              = iv_thar_ob_R[order,:]
+				L = np.where(thar_order_orig != 0)[0]
+				IV = 1. / (thar_order_orig / gain + (ron/gain)**2 )
+				IV[L] = 0.
+				wei             = np.ones(len(thar_order_orig))  #np.sqrt( IV )
+				bkg = scipy.signal.medfilt(thar_order_orig,101)
+				thar_order      = thar_order_orig - bkg
+
+				coeffs_pix2wav, coeffs_pix2sigma, pixel_centers, wavelengths, rms_ms, residuals, centroids,sigmas, intensities \
+	                = GLOBALutils.Initial_Wav_Calibration( order_dir+'order_'+order_s+'.iwdat', thar_order, order, wei, \
+	                	rmsmax=500, minlines=10, FixEnds=False,Dump_Argon=dumpargon, Dump_AllLines=True, line_width=6, Cheby=use_cheby,porder=3,rough_shift=rough_shift,binning=binning,del_width=5.,do_xc=False)
+				#plot(wavelengths, residuals,'.')	
+				#show()		            
+				if (order == int(.5*n_useful)): 	
+					if (use_cheby):
+						Global_ZP = GLOBALutils.Cheby_eval( coeffs_pix2wav,  0.5*len(thar_order), len(thar_order) )
+					else:
+						Global_ZP = scipy.polyval( coeffs_pix2wav, 0.0 )
+
+				All_Pixel_Centers = np.append( All_Pixel_Centers, pixel_centers )
+				All_Wavelengths   = np.append( All_Wavelengths, wavelengths )
+				All_Orders        = np.append( All_Orders, np.zeros( len(pixel_centers) ) + order)
+				All_Centroids     = np.append( All_Centroids, centroids)
+				All_Sigmas        = np.append( All_Sigmas, sigmas)
+				All_Intensities   = np.append( All_Intensities, intensities )
+				All_residuals     = np.append( All_residuals, residuals )
+		#show()
+		p0    = np.zeros( npar_wsol )
+		p0[0] =  int(.5*n_useful) * Global_ZP 
+		p1, G_pix, G_ord, G_wav, II, rms_ms, G_res = GLOBALutils.Fit_Global_Wav_Solution(All_Pixel_Centers, All_Wavelengths,\
+						     All_Orders, np.ones(All_Intensities.shape), p0, Cheby=use_cheby,       \
+						     order0=ro0+orders_offset, ntotal=n_useful, maxrms=MRMS, Inv=Inverse_m, minlines=300,  \
 						     npix=len(thar_order),nx=ncoef_x,nm=ncoef_m)
 
-		#for i in np.unique(G_ord):
+		I = np.argmin((ThAr_ref_dates - mjd)**2)
+		pdict = {'orders_offset_co':orders_offset,'rough_shift_co':rough_shift,'p1_co':p1,'mjd_co':mjd,\
+			 'G_pix_co':G_pix, 'G_ord_co':G_ord, 'G_wav_co':G_wav, 'II_co':II, 'rms_ms_co':rms_ms,\
+                         'G_res_co':G_res, 'All_Centroids_co':All_Centroids, 'All_Wavelengths_co':All_Wavelengths,\
+			 'All_Orders_co':All_Orders, 'All_Pixel_Centers_co':All_Pixel_Centers, 'All_Sigmas_co':All_Sigmas,\
+			 'ref_thar_ob':ThAr_ref[I]}
+
+		pickle.dump( pdict, open(wavsol_pkl, 'w' ) )
+	else:
+		print "\t\tUsing previously computed wavelength solution in file",wavsol_pkl
+		pdict = pickle.load(open(wavsol_pkl,'r'))
+
+for fsim in ThAr_sim:
+	wavsol_pkl = dirout + fsim.split('/')[-1][:-4]+'wavsolpars.pkl'
+	h = pyfits.open(fsim)
+	hd = pyfits.getheader(fsim)
+	ron,gain = fiesutils.get_RONGAIN(h[0].header)
+	if ( os.access(wavsol_pkl,os.F_OK) == False ) or (force_thar_wavcal):
+		print "\t\tWorking on sim ThAr file", fsim
+		hthar = pyfits.open( fsim )
+		mjd, mjd0 = fiesutils.mjd_fromheader2( hthar )
+		thar_fits = dirout + fsim.split('/')[-1][:-4]+'spec.simple.fits.S'
+		thar_S = pyfits.getdata( thar_fits )
+		lines_thar  = thar_S.copy()
+
+		All_Pixel_Centers = np.array([])
+		All_Wavelengths   = np.array([])
+		All_Orders        = np.array([])
+		All_Centroids     = np.array([])
+		All_Sigmas        = np.array([])
+		All_Intensities   = np.array([])
+		All_residuals     = np.array([])
+		xcs = []
+		
+		orders_offset, rough_shift = fiesutils.get_thar_offsets(lines_thar,binning=binning)
+		print 'orders_ofset:',orders_offset
+		print 'rough_shift:',rough_shift
+
+		orderi = 0
+		if orders_offset < 0:
+			orderi = - orders_offset
+		orderf = nord - 1
+		if orderf + orders_offset >= n_useful:
+			orderf = n_useful - orders_offset - 1
+
+		for order in range(orderi,orderf+1):
+			#print order
+			order_s = str(order+orders_offset)
+			if (order + orders_offset < 10):
+				order_s = '0' + str(order+orders_offset)
+			f = open(order_dir+'order_'+order_s+'.iwdat','r')
+			llins = f.readlines()
+			if len(llins)>5:
+				thar_order_orig = lines_thar[order]
+				#IV              = iv_thar_ob_R[order,:]
+				L = np.where(thar_order_orig != 0)[0]
+				IV = 1. / (thar_order_orig / gain + (ron/gain)**2 )
+				IV[L] = 0.
+				wei             = np.ones(len(thar_order_orig))  #np.sqrt( IV )
+				bkg = scipy.signal.medfilt(thar_order_orig,101)
+				thar_order      = thar_order_orig - bkg
+
+				coeffs_pix2wav, coeffs_pix2sigma, pixel_centers, wavelengths, rms_ms, residuals, centroids,sigmas, intensities \
+	                = GLOBALutils.Initial_Wav_Calibration( order_dir+'order_'+order_s+'.iwdat', thar_order, order, wei, \
+	                	rmsmax=500, minlines=10, FixEnds=False,Dump_Argon=dumpargon, Dump_AllLines=True, line_width=6, Cheby=use_cheby,porder=3,rough_shift=rough_shift,binning=binning,del_width=5.,do_xc=False)
+				#plot(wavelengths, residuals,'.')	
+				#show()		            
+				if (order == int(.5*n_useful)): 	
+					if (use_cheby):
+						Global_ZP = GLOBALutils.Cheby_eval( coeffs_pix2wav,  0.5*len(thar_order), len(thar_order) )
+					else:
+						Global_ZP = scipy.polyval( coeffs_pix2wav, 0.0 )
+
+				All_Pixel_Centers = np.append( All_Pixel_Centers, pixel_centers )
+				All_Wavelengths   = np.append( All_Wavelengths, wavelengths )
+				All_Orders        = np.append( All_Orders, np.zeros( len(pixel_centers) ) + order)
+				All_Centroids     = np.append( All_Centroids, centroids)
+				All_Sigmas        = np.append( All_Sigmas, sigmas)
+				All_Intensities   = np.append( All_Intensities, intensities )
+				All_residuals     = np.append( All_residuals, residuals )
+		#show()
+		p0    = np.zeros( npar_wsol )
+		p0[0] =  int(.5*n_useful) * Global_ZP 
+		p1, G_pix, G_ord, G_wav, II, rms_ms, G_res = GLOBALutils.Fit_Global_Wav_Solution(All_Pixel_Centers, All_Wavelengths,\
+						     All_Orders, np.ones(All_Intensities.shape), p0, Cheby=use_cheby,       \
+						     order0=ro0+orders_offset, ntotal=n_useful, maxrms=MRMS, Inv=Inverse_m, minlines=300,  \
+						     npix=len(thar_order),nx=ncoef_x,nm=ncoef_m)
+		"""
+		equis = np.arange(len(thar_order))
+		for order in range(lines_thar.shape[0]):
+			m   = order + ro0 + orders_offset
+			chebs  = GLOBALutils.Calculate_chebs(equis, m, npix=len(equis),\
+				order0=ro0 + orders_offset, ntotal=nord, Inverse=Inverse_m,nx=ncoef_x,nm=ncoef_m)
+			WavSol = (1.0/float(m)) * GLOBALutils.Joint_Polynomial_Cheby(p1,chebs,ncoef_x,ncoef_m) 
+			plot(WavSol, lines_thar[order])
+		show()
+		"""
+
+			
 		#	I = np.where(G_ord == i)[0]
-		#	plot(G_wav[I],G_res[I],'.')
-		#	plot(np.median(G_wav[I]),np.median(G_res[I]),'ko')
+		#	plot(G_pix[I],G_wav[I],'.')
 		#show()
 
-		pdict = {'p1':p1,'mjd':mjd, 'G_pix':G_pix, 'G_ord':G_ord, 'G_wav':G_wav, 'II':II, 'rms_ms':rms_ms,\
-                     'G_res':G_res, 'All_Centroids':All_Centroids, 'All_Wavelengths':All_Wavelengths, 'All_Orders':All_Orders, 'All_Pixel_Centers':All_Pixel_Centers, 'All_Sigmas':All_Sigmas}
-		pickle.dump( pdict, open( wavsol_pkl, 'w' ) )
+		thar_co_fits = dirout + fsim.split('/')[-1][:-4]+'spec.co.simple.fits.S'
+		thar_S = pyfits.getdata( thar_co_fits )
+		lines_thar  = thar_S.copy()
+
+		All_Pixel_Centers_co = np.array([])
+		All_Wavelengths_co   = np.array([])
+		All_Orders_co        = np.array([])
+		All_Centroids_co     = np.array([])
+		All_Sigmas_co        = np.array([])
+		All_Intensities_co   = np.array([])
+		All_residuals_co     = np.array([])
+
+		orders_offset_co, rough_shift_co = fiesutils.get_thar_offsets(lines_thar,binning=binning)
+		print 'orders_ofset_co:',orders_offset_co
+		print 'rough_shift_co:',rough_shift_co
+
+		orderi = 0
+		if orders_offset_co < 0:
+			orderi = - orders_offset_co
+		orderf = nord_co - 1
+		if orderf + orders_offset_co >= n_useful:
+			orderf = n_useful - orders_offset_co - 1
+
+		for order in range(orderi,orderf+1):
+			#print order
+			order_s = str(order+orders_offset_co)
+			if (order + orders_offset_co < 10):
+				order_s = '0' + str(order+orders_offset_co)
+			f = open(order_dir+'order_'+order_s+'.iwdat','r')
+			llins = f.readlines()
+			if len(llins)>5:
+					thar_order_orig = lines_thar[order]
+					#IV              = iv_thar_ob_R[order,:]
+					L = np.where(thar_order_orig != 0)[0]
+					IV = 1. / (thar_order_orig / gain + (ron/gain)**2 )
+					IV[L] = 0.
+					wei             = np.ones(len(thar_order_orig))  #np.sqrt( IV )
+					bkg = scipy.signal.medfilt(thar_order_orig,101)
+					thar_order      = thar_order_orig - bkg
+
+					coeffs_pix2wav, coeffs_pix2sigma, pixel_centers, wavelengths, rms_ms, residuals, centroids,sigmas, intensities \
+			        = GLOBALutils.Initial_Wav_Calibration( order_dir+'order_'+order_s+'.iwdat', thar_order, order, wei, \
+			        	rmsmax=500, minlines=10, FixEnds=False,Dump_Argon=dumpargon, Dump_AllLines=True, line_width=6, Cheby=use_cheby,porder=3,rough_shift=rough_shift,binning=binning,del_width=5.,do_xc=False)
+					#plot(wavelengths, residuals,'.')	
+					#show()		            
+					if (order == int(.5*n_useful)): 	
+						if (use_cheby):
+							Global_ZP = GLOBALutils.Cheby_eval( coeffs_pix2wav,  0.5*len(thar_order), len(thar_order) )
+						else:
+							Global_ZP = scipy.polyval( coeffs_pix2wav, 0.0 )
+
+					All_Pixel_Centers_co = np.append( All_Pixel_Centers_co, pixel_centers )
+					All_Wavelengths_co   = np.append( All_Wavelengths_co, wavelengths )
+					All_Orders_co        = np.append( All_Orders_co, np.zeros( len(pixel_centers) ) + order)
+					All_Centroids_co     = np.append( All_Centroids_co, centroids)
+					All_Sigmas_co        = np.append( All_Sigmas_co, sigmas)
+					All_Intensities_co   = np.append( All_Intensities_co, intensities )
+					All_residuals_co     = np.append( All_residuals_co, residuals )
+
+		p0    = np.zeros( npar_wsol )
+		p0[0] =  int(.5*n_useful) * Global_ZP 
+		p1_co, G_pix_co, G_ord_co, G_wav_co, II_co, rms_ms_co, G_res_co = \
+			GLOBALutils.Fit_Global_Wav_Solution(All_Pixel_Centers_co, All_Wavelengths_co,\
+				All_Orders_co, np.ones(All_Intensities_co.shape), p0, Cheby=use_cheby,\
+				order0=ro0+orders_offset_co, ntotal=n_useful, maxrms=MRMS, Inv=Inverse_m,\
+				minlines=300, npix=len(thar_order),nx=ncoef_x,nm=ncoef_m)
+
+		pdict = {'orders_offset':orders_offset,'orders_offset_co':orders_offset_co, 'rough_shift':rough_shift,\
+			 'rough_shift_co':rough_shift_co,'p1':p1,'mjd':mjd, 'G_pix':G_pix, 'G_ord':G_ord, 'G_wav':G_wav, 'II':II, 'rms_ms':rms_ms,\
+                         'G_res':G_res, 'All_Centroids':All_Centroids, 'All_Wavelengths':All_Wavelengths, \
+			 'All_Orders':All_Orders, 'All_Pixel_Centers':All_Pixel_Centers, 'All_Sigmas':All_Sigmas,\
+			 'p1_co':p1_co, 'G_pix_co':G_pix_co, 'G_ord_co':G_ord_co, 'G_wav_co':G_wav_co, 'II_co':II_co,\
+			 'rms_ms_co':rms_ms_co, 'G_res':G_res, 'All_Centroids':All_Centroids, 'All_Wavelengths':All_Wavelengths,\
+			 'All_Orders_co':All_Orders_co, 'All_Pixel_Centers_co':All_Pixel_Centers_co, 'All_Sigmas_co':All_Sigmas_co}
+		pickle.dump( pdict, open(wavsol_pkl, 'w' ) )
 
 	else:
 		print "\t\tUsing previously computed wavelength solution in file",wavsol_pkl
 		pdict = pickle.load(open(wavsol_pkl,'r'))
 
-wavsol_pkl = dirout + ThAr_ref[0].split('/')[-1][:-4]+'wavsolpars.pkl'
-dct        = pickle.load(open(wavsol_pkl,'r'))
-p_ref = dct['p1']
-mjds_thar,shifts = [],[]
+if len(ThAr_sim)>0:
+	wavsol_pkl = dirout + ThAr_sim[0].split('/')[-1][:-4]+'wavsolpars.pkl'
+	dct        = pickle.load(open(wavsol_pkl,'r'))
+	p_ref = dct['p1']
+	p_ref_co = dct['p1_co']
+	orders_offset = dct['orders_offset']
+	orders_offset_co = dct['orders_offset_co']
+	rough_shift = dct['rough_shift']
+	rough_shift_co = dct['rough_shift_co']
+else:
+	if  len(ThAr_ref)>0 and  len(ThAr_co)>0:
+		wavsol_pkl = dirout + ThAr_co[0].split('/')[-1][:-4]+'wavsolpars.pkl'
+		dct        = pickle.load(open(wavsol_pkl,'r'))
+		wavsol_ob_pkl = dirout + dct['ref_thar_ob'].split('/')[-1][:-4]+'wavsolpars.pkl'
+		dct_ob     = pickle.load(open(wavsol_ob_pkl,'r'))	
+		p_ref_co   = dct['p1_co']	
+		p_ref      = dct_ob['p1']
+		orders_offset = dct_ob['orders_offset']
+		orders_offset_co = dct['orders_offset_co']
+		rough_shift = dct_ob['rough_shift']
+		rough_shift_co = dct['rough_shift_co']
+
+	elif len(ThAr_ref)>0:
+		wavsol_pkl = dirout + ThAr_ref[0].split('/')[-1][:-4]+'wavsolpars.pkl'
+		dct        = pickle.load(open(wavsol_pkl,'r'))
+		p_ref = dct['p1']
+		orders_offset = dct['orders_offset']
+		rough_shift = dct['rough_shift']
+	
+mjds_thar,shifts,shifts_co = [],[],[]
 print '\n\tDetermination of instrumental drift through the night...'
-for i in range(len(ThAr_ref_dates)):
-	hthar = pyfits.open( ThAr_ref[i] )
+for i in range(len(ThAr_sim)):
+	hthar = pyfits.open( ThAr_sim[i] )
 	mjd, mjd0 = fiesutils.mjd_fromheader2( hthar )
-	wavsol_pkl = dirout + ThAr_ref[i].split('/')[-1][:-4]+'wavsolpars.pkl'
-	dthar = pyfits.getdata( ThAr_ref[i] )
+	wavsol_pkl = dirout + ThAr_sim[i].split('/')[-1][:-4]+'wavsolpars.pkl'
+	dthar = pyfits.getdata( ThAr_sim[i] )
 	npix = dthar.shape[0]
 	dct = pickle.load(open(wavsol_pkl,'r'))
 	p_shift, pix_centers, orders, wavelengths, I, rms_ms, residuals  = \
 		    GLOBALutils.Global_Wav_Solution_vel_shift(dct['G_pix'], dct['G_wav'], dct['G_ord'],\
-		                                        np.ones(len(dct['G_ord'])), p_ref, order0=ro0 + orders_offset, npix=npix,\
-		                                        Cheby=use_cheby, ntotal=nord, maxrms=MRMS, Inv=Inverse_m, minlines=300, nx=ncoef_x,nm=ncoef_m)
+			np.ones(len(dct['G_ord'])), p_ref, order0=ro0 + orders_offset, npix=npix,\
+			Cheby=use_cheby, ntotal=n_useful, maxrms=MRMS, Inv=Inverse_m, minlines=300, nx=ncoef_x,nm=ncoef_m)
+	p_shift_co, pix_centers_co, orders_co, wavelengths_co, I_co, rms_ms_co, residuals_co  = \
+		    GLOBALutils.Global_Wav_Solution_vel_shift(dct['G_pix_co'], dct['G_wav_co'], dct['G_ord_co'],\
+			np.ones(len(dct['G_ord_co'])), p_ref_co, order0=ro0 + orders_offset_co, npix=npix,\
+			Cheby=use_cheby, ntotal=n_useful, maxrms=MRMS, Inv=Inverse_m, minlines=300, nx=ncoef_x,nm=ncoef_m)
 
-	if rms_ms / np.sqrt(float(len(orders))) < 10.:
+	if rms_ms / np.sqrt(float(len(orders))) < 10. and rms_ms_co / np.sqrt(float(len(orders_co))) < 10.:
 		shifts.append(p_shift[0])
+		shifts_co.append(p_shift_co[0])
 		mjds_thar.append(mjd)
 
+used_thars = []
+for i in range(len(ThAr_co)):
+	hthar = pyfits.open( ThAr_co[i] )
+	mjd, mjd0 = fiesutils.mjd_fromheader2( hthar )
+	wavsol_pkl = dirout + ThAr_co[i].split('/')[-1][:-4]+'wavsolpars.pkl'
+	dthar = pyfits.getdata( ThAr_co[i] )
+	npix = dthar.shape[0]
+	dct = pickle.load(open(wavsol_pkl,'r'))
+
+	wavsol_ob_pkl = dirout + dct['ref_thar_ob'].split('/')[-1][:-4]+'wavsolpars.pkl'
+	dct_ob     = pickle.load(open(wavsol_ob_pkl,'r'))	
+	used_thars.append(dct['ref_thar_ob'])
+
+	p_shift, pix_centers, orders, wavelengths, I, rms_ms, residuals  = \
+		    GLOBALutils.Global_Wav_Solution_vel_shift(dct_ob['G_pix'], dct_ob['G_wav'], dct_ob['G_ord'],\
+			np.ones(len(dct_ob['G_ord'])), p_ref, order0=ro0 + orders_offset, npix=npix,\
+			Cheby=use_cheby, ntotal=n_useful, maxrms=MRMS, Inv=Inverse_m, minlines=300, nx=ncoef_x,nm=ncoef_m)
+	p_shift_co, pix_centers_co, orders_co, wavelengths_co, I_co, rms_ms_co, residuals_co  = \
+		    GLOBALutils.Global_Wav_Solution_vel_shift(dct['G_pix_co'], dct['G_wav_co'], dct['G_ord_co'],\
+			np.ones(len(dct['G_ord_co'])), p_ref_co, order0=ro0 + orders_offset_co, npix=npix,\
+			Cheby=use_cheby, ntotal=n_useful, maxrms=MRMS, Inv=Inverse_m, minlines=300, nx=ncoef_x,nm=ncoef_m)
+
+	if rms_ms / np.sqrt(float(len(orders))) < 10. and rms_ms_co / np.sqrt(float(len(orders_co))) < 10.:
+		shifts.append(p_shift[0])
+		shifts_co.append(p_shift_co[0])
+		mjds_thar.append(mjd)
+used_thars = np.array(used_thars)
+
+for i in range(len(ThAr_ref_dates)):
+	if not ThAr_ref[i] in used_thars:
+		hthar = pyfits.open( ThAr_ref[i] )
+		mjd, mjd0 = fiesutils.mjd_fromheader2( hthar )
+		wavsol_pkl = dirout + ThAr_ref[i].split('/')[-1][:-4]+'wavsolpars.pkl'
+		dthar = pyfits.getdata( ThAr_ref[i] )
+		npix = dthar.shape[0]
+		dct = pickle.load(open(wavsol_pkl,'r'))
+		p_shift, pix_centers, orders, wavelengths, I, rms_ms, residuals  = \
+			    GLOBALutils.Global_Wav_Solution_vel_shift(dct['G_pix'], dct['G_wav'], dct['G_ord'],\
+				                                np.ones(len(dct['G_ord'])), p_ref, order0=ro0 + orders_offset, npix=npix,\
+				                                Cheby=use_cheby, ntotal=n_useful, maxrms=MRMS, Inv=Inverse_m, minlines=300, nx=ncoef_x,nm=ncoef_m)
+
+		if rms_ms / np.sqrt(float(len(orders))) < 10.:
+			shifts.append(p_shift[0])
+			shifts_co.append(p_shift[0])
+			mjds_thar.append(mjd)
+
 mjds_thar,shifts = np.array(mjds_thar),np.array(shifts)
+I = np.argsort(mjds_thar)
+mjds_thar  = mjds_thar[I]
+shifts     = shifts[I]
 shv = (1e-6*shifts)*299792458.0
+
 if len(shifts)>1:
 	tck_v = scipy.interpolate.splrep(mjds_thar,shv,k=1)
 	tck_shift = scipy.interpolate.splrep(mjds_thar,shifts,k=1)
@@ -606,12 +1087,27 @@ for fsim in new_list:
 	#P_new       = GLOBALutils.shift_P(P,drift,c_new,ext_aperture)
 	#print 'ydrift:',drift
 
+	simult = False
+	if h[0].header['FILMP4'] == 1:
+		simult = True
+
 	bacfile = dirout + 'BAC_' + fsim.split('/')[-1][:-4]+'fits'
 	if os.access(bacfile,os.F_OK)==False:
-		Centers = np.zeros((len(c_all),data.shape[0]))
-		for i in range(nord):
-			Centers[i,:]=scipy.polyval(c_all[i,:],np.arange(len(Centers[i,:])))
-		bac = GLOBALutils.get_scat(data.T,Centers,span=bacap)
+		if simult:
+			Centers = np.zeros((len(c_tot),dthar.shape[0]))
+			ccc = c_tot.copy()
+		else:
+			Centers = np.zeros((len(c_all),dthar.shape[0]))
+			ccc = c_all.copy()
+
+		for i in range(Centers.shape[0]):
+			Centers[i,:]=scipy.polyval(ccc[i,:],np.arange(len(Centers[i,:])))
+
+		if simult:
+			bac = GLOBALutils.get_scat(data.T,Centers,span=ext_aperture,option=1)
+		else:
+			bac = GLOBALutils.get_scat(data.T,Centers,span=bacap)
+
 		if (os.access(bacfile,os.F_OK)):
 			os.remove( bacfile )
 		hdbac = pyfits.PrimaryHDU( bac )
@@ -702,9 +1198,55 @@ for fsim in new_list:
 		sci_S  = pyfits.getdata( sci_fits )
 		sci_Ss = pyfits.getdata( sci_fits_simple )
 
+	if simult:
+		sci_co_fits        = dirout + fsim.split('/')[-1][:-4]+'spec.co.fits.S'
+		sci_co_simple_fits = dirout + fsim.split('/')[-1][:-4]+'spec.co.simple.fits.S'
+		if ( os.access(sci_co_fits,os.F_OK) == False ) or ( os.access(sci_co_simple_fits,os.F_OK) == False ) or \
+			( force_sci_extract ):
+
+			print "\t\t\tNo previous extraction or extraction forced for comparison orders of science file", fsim, "extracting..."
+			sci_co_Ss = GLOBALutils.simple_extraction(data,c_co,ext_aperture,\
+		                                          min_extract_col,max_extract_col,npools)
+			sci_co_S  = GLOBALutils.optimal_extraction(data,P_co,c_co,ext_aperture,\
+		                                           ronoise,gain,S_Marsh,NCosmic_Marsh,\
+		                                           min_extract_col,max_extract_col,npools)
+
+			sci_co_Ss = sci_co_Ss[::-1]
+			sci_co_Ss = GLOBALutils.invert(sci_co_Ss)
+
+			for iii in range(3):
+				sci_co_St =  sci_co_S[:,iii].copy()
+				sci_co_St = sci_co_St[::-1]
+				sci_co_S[:,iii] = sci_co_St
+			sci_co_S = GLOBALutils.invert(sci_co_S)
+		    
+			if (os.access(sci_co_fits,os.F_OK)):
+				os.remove( sci_co_fits )
+			if (os.access(sci_co_simple_fits,os.F_OK)):
+				os.remove( sci_co_simple_fits )
+
+			hdu = pyfits.PrimaryHDU( sci_co_S )
+			hdu.writeto( sci_co_fits )
+			hdu = pyfits.PrimaryHDU( sci_co_Ss )
+			hdu.writeto( sci_co_simple_fits )
+	
+
+		else:
+			print '\t\t\t '+fsim+" has already been extracted, reading in product fits files..."
+			sci_co_S  = pyfits.getdata( sci_co_fits )
+			sci_co_Ss = pyfits.getdata( sci_co_simple_fits )
+
+
 	fout = 'proc/' + obname + '_' + h[0].header['DATE-OBS'] + '_sp.fits'
 	if ( os.access(dirout+fout ,os.F_OK) == False ) or (force_spectral_file_build):
-		spec = np.zeros((11, nord, data.shape[1]))
+		orderi = 0
+		if orders_offset < 0:
+			orderi = - orders_offset
+		orderf = nord - 1
+		if orderf + orders_offset >= n_useful:
+			orderf = n_useful - orders_offset - 1
+
+		spec = np.zeros((11, orderf - orderi + 1, data.shape[1]))
 		hdu  = pyfits.PrimaryHDU( spec )
 		hdu = GLOBALutils.update_header(hdu,'HIERARCH MJD', mjd)
 		hdu = GLOBALutils.update_header(hdu,'HIERARCH MBJD', mbjd)
@@ -724,19 +1266,97 @@ for fsim in new_list:
 		hdu = GLOBALutils.update_header(hdu,'HIERARCH OBS ALTITUDE',altitude)
 		hdu = GLOBALutils.update_header(hdu,'HIERARCH TARG AIRMASS START',h[0].header['AIRMASS'])
 		hdu = GLOBALutils.update_header(hdu,'HIERARCH MOON VEL',refvel)
+		hdu = GLOBALutils.update_header(hdu,'HIERARCH SIMULT',simult)
 
 	print '\t\tWavelength calibration:'
-	print "\t\t\tInstrumental drift:",(1e-6*p_shift)*299792458.0
+
+	if simult and (len(ThAr_co)>0 or len(ThAr_sim)>0):
+		lines_thar  = sci_co_S[:,1,:].copy()
+
+		All_Pixel_Centers_co = np.array([])
+		All_Wavelengths_co   = np.array([])
+		All_Orders_co        = np.array([])
+		All_Centroids_co     = np.array([])
+		All_Sigmas_co        = np.array([])
+		All_Intensities_co   = np.array([])
+		All_residuals_co     = np.array([])
+
+		orderi = 0
+		if orders_offset_co < 0:
+			orderi = - orders_offset_co
+		orderf = nord_co - 1
+		if orderf + orders_offset_co >= n_useful:
+			orderf = n_useful - orders_offset_co - 1
+
+		for order in range(orderi,orderf+1):
+			#print order
+			order_s = str(order+orders_offset_co)
+			if (order + orders_offset_co < 10):
+				order_s = '0' + str(order+orders_offset_co)
+			f = open(order_dir+'order_'+order_s+'.iwdat','r')
+			llins = f.readlines()
+			if len(llins)>5:
+					thar_order_orig = lines_thar[order]
+					#IV              = iv_thar_ob_R[order,:]
+					L = np.where(thar_order_orig != 0)[0]
+					IV = 1. / (thar_order_orig / gain + (ron/gain)**2 )
+					IV[L] = 0.
+					wei             = np.ones(len(thar_order_orig))  #np.sqrt( IV )
+					bkg = scipy.signal.medfilt(thar_order_orig,101)
+					thar_order      = thar_order_orig - bkg
+
+					coeffs_pix2wav, coeffs_pix2sigma, pixel_centers, wavelengths, rms_ms, residuals, centroids,sigmas, intensities \
+			        = GLOBALutils.Initial_Wav_Calibration( order_dir+'order_'+order_s+'.iwdat', thar_order, order, wei, \
+			        	rmsmax=500, minlines=10, FixEnds=False,Dump_Argon=dumpargon, Dump_AllLines=True, line_width=6, Cheby=use_cheby,porder=3,rough_shift=rough_shift,binning=binning,del_width=5.,do_xc=False)
+					#plot(wavelengths, residuals,'.')	
+					#show()		            
+					if (order == int(.5*n_useful)): 	
+						if (use_cheby):
+							Global_ZP = GLOBALutils.Cheby_eval( coeffs_pix2wav,  0.5*len(thar_order), len(thar_order) )
+						else:
+							Global_ZP = scipy.polyval( coeffs_pix2wav, 0.0 )
+
+					All_Pixel_Centers_co = np.append( All_Pixel_Centers_co, pixel_centers )
+					All_Wavelengths_co   = np.append( All_Wavelengths_co, wavelengths )
+					All_Orders_co        = np.append( All_Orders_co, np.zeros( len(pixel_centers) ) + order)
+					All_Centroids_co     = np.append( All_Centroids_co, centroids)
+					All_Sigmas_co        = np.append( All_Sigmas_co, sigmas)
+					All_Intensities_co   = np.append( All_Intensities_co, intensities )
+					All_residuals_co     = np.append( All_residuals_co, residuals )
+
+		p0    = np.zeros( npar_wsol )
+		p0[0] =  int(.5*n_useful) * Global_ZP 
+		p1_co, G_pix_co, G_ord_co, G_wav_co, II_co, rms_ms_co, G_res_co = \
+		GLOBALutils.Fit_Global_Wav_Solution(All_Pixel_Centers_co, All_Wavelengths_co,\
+				All_Orders_co, np.ones(All_Intensities_co.shape), p0, Cheby=use_cheby,\
+				order0=ro0+orders_offset_co, ntotal=n_useful, maxrms=MRMS, Inv=Inverse_m,\
+				minlines=300, npix=len(thar_order),nx=ncoef_x,nm=ncoef_m)
+
+		p_shift, pix_centers_co, orders_co, wavelengths_co, I_co, rms_ms_co, residuals_co  = \
+		    GLOBALutils.Global_Wav_Solution_vel_shift(G_pix_co, G_wav_co, G_ord_co,\
+			np.ones(len(G_ord_co)), p_ref_co, order0=ro0 + orders_offset_co, npix=len(thar_order),\
+			Cheby=use_cheby, ntotal=n_useful, maxrms=MRMS, Inv=Inverse_m, minlines=300, nx=ncoef_x,nm=ncoef_m)
+
+	else:
+		if len(shifts)>1:
+			p_shift = scipy.interpolate.splev(mjd,tck_shift)
+		else:
+			p_shift = 0.
+
+	orderi = 0
+	if orders_offset < 0:
+		orderi = - orders_offset
+	orderf = nord - 1
+	if orderf + orders_offset >= n_useful:
+		orderf = n_useful - orders_offset - 1
+
+	print "\t\t\tInstrumental drift:",(1e-6*p_shift)*299792458.0, 'm/s'
 	# Apply new wavelength solution including barycentric correction
 	equis = np.arange( data.shape[1] )
-	if len(shifts)>1:
-		p_shift = scipy.interpolate.splev(mjd,tck_shift)
-	else:
-		p_shift = 0.
-	order = 0
-	while order < nord:
-		m   = order + ro0
-		chebs  = GLOBALutils.Calculate_chebs(equis, m, npix=data.shape[1], order0=ro0, ntotal=nord, Inverse=Inverse_m,nx=ncoef_x,nm=ncoef_m)
+	order = orderi
+	while order < orderf+1:
+		m   = order + ro0 + orders_offset
+		chebs  = GLOBALutils.Calculate_chebs(equis, m, npix=sci_S.shape[2], order0=ro0 + orders_offset, ntotal=n_useful, Inverse=Inverse_m,nx=ncoef_x,nm=ncoef_m)
 		WavSol = GLOBALutils.ToVacuum( lbary_ltopo * (1.0 + 1.0e-6*p_shift) * (1.0/float(m)) * \
 		     GLOBALutils.Joint_Polynomial_Cheby(p_ref,chebs,ncoef_x,ncoef_m) )
 
@@ -1037,4 +1657,3 @@ for fsim in new_list:
 		spec = pyfits.getdata( fout )
     
 f_res.close()
-

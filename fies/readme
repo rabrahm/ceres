@@ -1,0 +1,20 @@
+** Rafael Brahm 2017-04-27 **
+
+This version of the FIES-CERES pipeline was developed for the old CCD.
+It can only process data obtained before 30/09/2016.
+
+It has been tested for the following configurations (could work with other configurations too):
+  -> med resolution fibre (F3) with 1x1 binning.
+  -> med resolution fibre (F3) + ThAr comparison fibre with 1x1 binning.
+  -> low resolution fibre (F1) with 2x2 binning.
+
+For running it:
+
+  $ python fiespipe.py <path_to_raw_data> -fibre <fibre> -binning <bin>
+
+ + the standard CERES options.
+
+ for example:
+
+  $ python fiespipe.py /data/echelle/fies/raw/20160904/ -fibre F1 -binning 2 -npools 16 -do_class 
+  $ python fiespipe.py /data/echelle/fies/raw/NOT_20110525_simul_thar/ -fibre F3 -binning 1 -npools 16 -do_class
