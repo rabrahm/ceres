@@ -613,7 +613,7 @@ def get_mask(sc,coefs,spa):
 			mask[traces[j,i]-spa:traces[j,i]+spa+1,i] = 1
 	return mask
 
-def get_scat(sc,lim,span = 7, typ='median', allow_neg=False):
+def get_scat(sc,lim,span = 7, typ='median', allow_neg=False,option=0):
 	scat = np.zeros(sc.shape)
 	ejeX = np.arange(sc.shape[0])
 
@@ -632,8 +632,10 @@ def get_scat(sc,lim,span = 7, typ='median', allow_neg=False):
 				else:
 					ejx=ejeX[lims[j]- 2 * span:lims[j]-span+1]
 					ejy=sc[lims[j]- 2 * span:lims[j]-span+1,y]
+				
+
 			else:
-				if lims[j-1] + span >= sc.shape[0]:
+				if lims[j-1] + span >= sc.shape[0] or lims[j-1] + span < 0:
 					ejx,ejy = [],[]
 
 				elif lims[j] - span + 1 > sc.shape[0]:
@@ -644,11 +646,19 @@ def get_scat(sc,lim,span = 7, typ='median', allow_neg=False):
 				else:
 					ejx=ejeX[lims[j-1] + span:lims[j]- span + 1 ]
 					ejy=sc[lims[j-1] + span:lims[j]- span + 1, y]
+
+				if option == 1 and len(ejx) == 0:
+					tpos = int(np.around(0.5*(lims[j-1] + lims[j])))
+					if tpos >= 0 and tpos < sc.shape[0]:
+						ejx = np.array([ejeX[tpos]])
+						ejy = np.array([sc[tpos,y]])
+
 			#plot(sc[:,y])
 			#plot(lims[j],sc[lims[j],y],'ro')
 			#plot(ejx,ejy)
 			#show()
 			#print fd
+
 			if len(ejy)>0:
 				if typ== 'median':
 					value = np.median(ejy)
@@ -669,7 +679,7 @@ def get_scat(sc,lim,span = 7, typ='median', allow_neg=False):
 					nejY = np.hstack((nejY,value))
 				if j == 1 and len(nejY)>1:
 					nejY[0] = nejY[1]
-		#show()
+
 		if lims[-1]+span >= sc.shape[0]:
 			ejx,ejy = [],[]
 		elif lims[-1]+2*span > sc.shape[0]:
