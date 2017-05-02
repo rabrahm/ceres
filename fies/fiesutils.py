@@ -147,47 +147,13 @@ def FileClassify(diri, log,binning=1,mode='F1', dark_corr=False):
 				isdark=True
 
 		if dump == False and isdark == False:
+			#print archivo
 			h = pyfits.open(archivo)
 			hd = pyfits.getheader(archivo)
 			if int(h[0].header['DETXBIN']) == binning and int(h[0].header['DETYBIN']) == binning and (mode in h[0].header['FIFMSKNM']) and h[0].header['IMAGETYP'] != 'COUNTTEST':
 				print archivo, h[0].header['IMAGETYP'], h[0].header['SHSTAT'], h[0].header['EXPTIME'], h[0].header['OBJECT'], h[0].header['TCSTGT'], int(h[0].header['DETYBIN'])
-				
-				if ((mode=='F3' or mode=='F4') and h[0].header['FICARMID'] == 6 and h[0].header['FILMP4'] == 0 and h[0].header['FILMP7']==1)\
-				   or (mode=='F1' and h[0].header['FICARMID'] == 2 and h[0].header['FILMP4'] == 0 and h[0].header['FILMP7']==1):
-					ThAr_ref.append(archivo)
-					mjd, mjd0 = mjd_fromheader2(h)
-					ThAr_ref_dates.append( mjd )
 
-				elif h[0].header['FICARMID'] == 6 and h[0].header['FILMP4'] == 1 and h[0].header['FILMP7']==0:
-					ThAr_co.append(archivo)
-					mjd, mjd0 = mjd_fromheader2(h)
-					ThAr_co_dates.append( mjd )
-					
-				elif h[0].header['FICARMID'] == 6 and h[0].header['FILMP4'] == 1 and h[0].header['FILMP7']==1:
-					ThAr_sim.append(archivo)
-					mjd, mjd0 = mjd_fromheader2(h)
-					ThAr_sim_dates.append( mjd )
-
-				elif ((mode=='F3' or mode=='F4') and h[0].header['FICARMID'] == 2) or (mode == 'F1' and h[0].header['FICARMID'] == 5):
-					sim_sci.append(archivo)
-					obname = h[0].header['OBJECT']
-					obnames.append( obname )
-					ra     = ra_from_sec(h[0].header['RA']*3600.*24./360.)
-					delta  = ra_from_sec(h[0].header['DEC']*3600.)
-					airmass= float(h[0].header['AIRMASS'])
-					texp   = float(h[0].header['EXPTIME'])
-
-					date   =  h[0].header['DATE-OBS']		    
-					hour   = date[11:]
-					date    = date[:10]
-					exptimes.append( texp )
-					if  h[0].header['FILMP4'] == 1:
-						simult = 'SIMULT'
-					else:
-						simult = 'NO_SIMULT'
-					line = "%-15s %10s %10s %8.2f %4.2f %8s %11s %s %s\n" % (obname, ra, delta, texp, airmass, date, hour, archivo, simult)
-					f.write(line)
-				elif h[0].header['IMAGETYP'] == 'BIAS':
+				if h[0].header['IMAGETYP'] == 'BIAS':
 					biases.append(archivo)
 					mjd, mjd0 = mjd_fromheader2(h)
 					bias_ref_dates.append( mjd )
@@ -210,6 +176,42 @@ def FileClassify(diri, log,binning=1,mode='F1', dark_corr=False):
 					mjd, mjd0 = mjd_fromheader2(h)
 					ThAr_ref_dates.append( mjd )
 
+
+				elif ((mode=='F3' or mode=='F4') and h[0].header['FICARMID'] == 6 and h[0].header['FILMP4'] == 0 and h[0].header['FILMP7']==1)\
+				   or (mode=='F1' and h[0].header['FICARMID'] == 2 and h[0].header['FILMP4'] == 0 and h[0].header['FILMP7']==1):
+					ThAr_ref.append(archivo)
+					mjd, mjd0 = mjd_fromheader2(h)
+					ThAr_ref_dates.append( mjd )
+
+				elif h[0].header['FICARMID'] == 6 and h[0].header['FILMP4'] == 1 and h[0].header['FILMP7']==0:
+					ThAr_co.append(archivo)
+					mjd, mjd0 = mjd_fromheader2(h)
+					ThAr_co_dates.append( mjd )
+					
+				elif h[0].header['FICARMID'] == 6 and h[0].header['FILMP4'] == 1 and h[0].header['FILMP7']==1:
+					ThAr_sim.append(archivo)
+					mjd, mjd0 = mjd_fromheader2(h)
+					ThAr_sim_dates.append( mjd )
+
+				elif (mode=='F3' and h[0].header['FICARMID'] == 2) or (mode == 'F1' and h[0].header['FICARMID'] == 5) or (mode=='F4' and h[0].header['FICARMID'] == 5):
+					sim_sci.append(archivo)
+					obname = h[0].header['OBJECT']
+					obnames.append( obname )
+					ra     = ra_from_sec(h[0].header['RA']*3600.*24./360.)
+					delta  = ra_from_sec(h[0].header['DEC']*3600.)
+					airmass= float(h[0].header['AIRMASS'])
+					texp   = float(h[0].header['EXPTIME'])
+
+					date   =  h[0].header['DATE-OBS']		    
+					hour   = date[11:]
+					date    = date[:10]
+					exptimes.append( texp )
+					if  h[0].header['FILMP4'] == 1:
+						simult = 'SIMULT'
+					else:
+						simult = 'NO_SIMULT'
+					line = "%-15s %10s %10s %8.2f %4.2f %8s %11s %s %s\n" % (obname, ra, delta, texp, airmass, date, hour, archivo, simult)
+					f.write(line)
 		
     	#show()
 	flat_ref_dates = np.array(flat_ref_dates)
@@ -260,9 +262,9 @@ def mjd_fromheader2(h):
 	return mjd, mjd0
 
 def get_RONGAIN(hd):
-	return 2.8, 0.737
+	return hd['RDNOISE'], hd['GAIN']
 
-def MedianCombine(ImgList, zero='none', binning=1):
+def MedianCombine(ImgList, zero='none', binning=1, oii=100, off=2148):
 	"""
 	Median combine a list of images
 	"""
@@ -275,7 +277,7 @@ def MedianCombine(ImgList, zero='none', binning=1):
 
 	d1 = h[1].data
 	h1 = h[1].header
-	d1 = OverscanTrim(d1, binning=binning)
+	d1 = OverscanTrim(d1, binning=binning,ii=oii, ff=off)
 	if zero != 'none':
 		z = pyfits.open(zero)[0]
 		d1 -= z.data
@@ -284,26 +286,26 @@ def MedianCombine(ImgList, zero='none', binning=1):
 	if (n < 3):
 		factor = 1
 
-	ron1,gain1 = get_RONGAIN(h[0].header)
+	ron1,gain1 = get_RONGAIN(h[1].header)
 
 	ron1 = factor * ron1 / np.sqrt(n)
 	if n>1:
 		for i in range(n-1):
 			td = pyfits.open(ImgList[i+1])
 			if zero == 'none':
-				d1 = np.dstack((d1,OverscanTrim(td[1].data, binning=binning)))
+				d1 = np.dstack((d1,OverscanTrim(td[1].data, binning=binning, ii=oii, ff=off)))
 		
 			else:
-				d1 = np.dstack((d1,OverscanTrim(td[1].data, binning=binning)-z.data))
+				d1 = np.dstack((d1,OverscanTrim(td[1].data, binning=binning, ii=oii, ff=off)-z.data))
 		d1 = np.median(d1,axis=2)
 	return d1, ron1, gain1
 
-def OverscanTrim(dat,binning=1):
+def OverscanTrim(dat,binning=1,ii=100,ff=2148):
 	"""
 	Overscan correct and Trim a refurbished FEROS image
 	"""
-	ff = 2098
-	ii = 50
+	#ff = 2098
+	#ii = 50
 	ff = int(np.around(ff/binning))
 	ii = int(np.around(ii/binning))
 	os = dat[:,ff:]

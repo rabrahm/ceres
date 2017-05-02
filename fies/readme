@@ -1,4 +1,12 @@
-** Rafael Brahm 2017-04-27 **
+** V1: Rafael Brahm 2017-05-01 **
+
+The new version of the FIES-CERES pipeline can handle data obtained with the new CCD installed
+on 30/09/2016. For the new CCD it has only been tested with F3 and F4 data but it should work with
+any fibre and binning factor. It is still able to process data obtained with the old CCD.
+The long term radial velocity precision of the FIES-CERES pipeline is stull unknown because
+it has not been tested with radial velocity standard starts observed at different epochs.
+
+** V0: Rafael Brahm 2017-04-27 **
 
 This version of the FIES-CERES pipeline was developed for the old CCD.
 It can only process data obtained before 30/09/2016.
@@ -18,3 +26,5 @@ For running it:
 
   $ python fiespipe.py /data/echelle/fies/raw/20160904/ -fibre F1 -binning 2 -npools 16 -do_class 
   $ python fiespipe.py /data/echelle/fies/raw/NOT_20110525_simul_thar/ -fibre F3 -binning 1 -npools 16 -do_class
+
+
