@@ -1314,8 +1314,8 @@ for fsim in new_list:
 	while order < orderf+1:
 		m   = order + ro0 + orders_offset
 		chebs  = GLOBALutils.Calculate_chebs(equis, m, npix=sci_S.shape[2], order0=ro0 + orders_offset, ntotal=n_useful, Inverse=Inverse_m,nx=ncoef_x,nm=ncoef_m)
-		WavSol = GLOBALutils.ToVacuum( lbary_ltopo * (1.0 + 1.0e-6*p_shift) * (1.0/float(m)) * \
-		     GLOBALutils.Joint_Polynomial_Cheby(p_ref,chebs,ncoef_x,ncoef_m) )
+		WavSol = lbary_ltopo * (1.0 + 1.0e-6*p_shift) * (1.0/float(m)) * \
+		     GLOBALutils.Joint_Polynomial_Cheby(p_ref,chebs,ncoef_x,ncoef_m)
 
 		spec[0,torder,:] = WavSol
 		spec[1,torder,:] = sci_S[order,1]
