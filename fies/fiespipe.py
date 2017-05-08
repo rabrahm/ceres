@@ -89,7 +89,7 @@ force_thar_extract = False
 force_tharxc       = False
 force_thar_wavcal  = False
 force_spectral_file_build = True
-force_stellar_pars = True
+force_stellar_pars = False
 dumpargon          = False
 dark_corr          = True
 minlines_glob      = 300
@@ -122,7 +122,7 @@ n_useful = 80
 ro0      = 79
 
 bacap=8
-startfrom = 0
+
 if mode == 'F1':
 	resol = 25000
 	MRMS  = 200.
@@ -131,7 +131,7 @@ elif mode == 'F3':
 	resol = 50000
 elif mode == 'F4':
 	resol = 67000
-	startfrom = 10
+
 
 if binning == 2:
 	ext_aperture /= 2
@@ -1314,7 +1314,7 @@ for fsim in new_list:
 	while order < orderf+1:
 		m   = order + ro0 + orders_offset
 		chebs  = GLOBALutils.Calculate_chebs(equis, m, npix=sci_S.shape[2], order0=ro0 + orders_offset, ntotal=n_useful, Inverse=Inverse_m,nx=ncoef_x,nm=ncoef_m)
-		WavSol = lbary_ltopo * (1.0 + 1.0e-6*p_shift) * (1.0/float(m)) * \
+		WavSol =  lbary_ltopo * (1.0 + 1.0e-6*p_shift) * (1.0/float(m)) * \
 		     GLOBALutils.Joint_Polynomial_Cheby(p_ref,chebs,ncoef_x,ncoef_m)
 
 		spec[0,torder,:] = WavSol

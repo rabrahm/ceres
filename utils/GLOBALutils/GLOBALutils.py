@@ -282,11 +282,11 @@ def get_them(sc,exap,ncoef,maxords=-1,startfrom=0,nsigmas=10.,mode=1,endat=-1):
 		dev = exap2/4.
 	for i in range(len(pos)):
 	    if pos[i]-exap2 < 0:
-		    x = ejx[:int(pos[i]+exap2+1)]
-		    y = d[:int(pos[i]+exap2+1)]
+		    x = ejx[:pos[i]+exap2+1]
+		    y = d[:pos[i]+exap2+1]
 	    elif pos[i]+exap2+1 > len(d):
-		    x = ejx[int(pos[i]-exap2):]
-		    y = d[int(pos[i]-exap2):]
+		    x = ejx[pos[i]-exap2:]
+		    y = d[pos[i]-exap2:]
 	    else:	
 		    x = ejx[int(pos[i]-exap2):int(pos[i]+exap2+1)]
 		    y = d[int(pos[i]-exap2):int(pos[i]+exap2+1)]
@@ -1947,7 +1947,7 @@ def Initial_Wav_Calibration(filename,spec,order,wei, porder=3, rmsmax=75, minlin
 			#print reto
 			#plot(X,reto,'r')
 			wavelenghts = np.append(wavelengths,wav)
-			for j in range(nlines):
+			for j in range(pix):
 				pixel_centers = np.append(pixel_centers,p1[3*j + 1])
 				sigmas        = np.append(sigmas,p1[3*j + 2])
 				wavelengths   = np.append(wavelengths,wav[j])

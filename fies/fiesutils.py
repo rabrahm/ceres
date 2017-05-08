@@ -147,7 +147,7 @@ def FileClassify(diri, log,binning=1,mode='F1', dark_corr=False):
 				isdark=True
 
 		if dump == False and isdark == False:
-			#print archivo
+			print archivo
 			h = pyfits.open(archivo)
 			hd = pyfits.getheader(archivo)
 			if int(h[0].header['DETXBIN']) == binning and int(h[0].header['DETYBIN']) == binning and (mode in h[0].header['FIFMSKNM']) and h[0].header['IMAGETYP'] != 'COUNTTEST':
@@ -193,7 +193,8 @@ def FileClassify(diri, log,binning=1,mode='F1', dark_corr=False):
 					mjd, mjd0 = mjd_fromheader2(h)
 					ThAr_sim_dates.append( mjd )
 
-				elif (mode=='F3' and h[0].header['FICARMID'] == 2) or (mode == 'F1' and h[0].header['FICARMID'] == 5) or (mode=='F4' and h[0].header['FICARMID'] == 5):
+				elif (mode=='F3' and h[0].header['FICARMID'] == 2) or (mode == 'F1' and h[0].header['FICARMID'] == 5)\
+				   or (mode=='F4' and (h[0].header['FICARMID'] == 5 or h[0].header['FICARMID'] == 4)):
 					sim_sci.append(archivo)
 					obname = h[0].header['OBJECT']
 					obnames.append( obname )
