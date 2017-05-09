@@ -1,0 +1,5 @@
+***  VBT V01 Rafael Brahm 2017-05-09 ***
+
+This version of the CERES pipeline for the echelle of the VBT can only
+process data with grating angles of 71.726 and 72.429. In addition it
+is currently not able to compute RVs using the iodine-cell technique.

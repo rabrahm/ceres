@@ -16,7 +16,6 @@ import copy
 
 from pylab import *
 
-
 def get_thar_offsets(lines_thar, order_dir='wavcals/', pref='order_', suf='.iwdat', ior=20,fior=45, delt_or=3, del_width=200.,binning=1):
 	xcs = []
 	for ii in range(ior,fior):
