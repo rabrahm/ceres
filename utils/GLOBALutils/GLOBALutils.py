@@ -1947,7 +1947,7 @@ def Initial_Wav_Calibration(filename,spec,order,wei, porder=3, rmsmax=75, minlin
 			#print reto
 			#plot(X,reto,'r')
 			wavelenghts = np.append(wavelengths,wav)
-			for j in range(pix):
+			for j in range(len(pix)):
 				pixel_centers = np.append(pixel_centers,p1[3*j + 1])
 				sigmas        = np.append(sigmas,p1[3*j + 2])
 				wavelengths   = np.append(wavelengths,wav[j])
