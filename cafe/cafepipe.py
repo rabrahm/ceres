@@ -279,7 +279,7 @@ I2 = np.where(ThAr_ref_dates > new_times.max())[0]
 if len(I2)>0:
     I2 = I2[0]
 else:
-    I1 = len(ThAr_ref_dates)
+    I2 = len(ThAr_ref_dates)
 ThAr_ref_dates = ThAr_ref_dates[I1:I2+1]
 ThAr_ref = ThAr_ref[I1:I2+1]
 
