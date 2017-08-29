@@ -961,4 +961,3 @@ for nlisti in range(len(new_list)):
             hdu.writeto( dirout + fout )
 
 f_res.close()
-

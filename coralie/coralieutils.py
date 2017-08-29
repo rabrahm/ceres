@@ -135,6 +135,7 @@ def FileClassify(dir, log):
     obnames_FP = []
     exptimes = []
     exptimes_FP = []
+    flats = []
     f = open(log,'w')
 
     bad_files = []
@@ -176,6 +177,8 @@ def FileClassify(dir, log):
 		    ob_flats.append(archivo)
 		elif h[0].header['HIERARCH ESO TPL TYPE'] == 'FFC':
 		    co_flats.append(archivo)
+		elif h[0].header['HIERARCH ESO TPL TYPE'] == 'FF2':
+		    flats.append(archivo)
 		elif h[0].header['HIERARCH ESO TPL TYPE'] == 'LOCO':
 		    ob_loc.append(archivo)
 		elif h[0].header['HIERARCH ESO TPL TYPE'] == 'LOCC':
@@ -190,7 +193,7 @@ def FileClassify(dir, log):
 		    ThFP_ref_dates.append( mjd )
     f.close()
 
-    return biases, ob_flats, co_flats, ob_loc, co_loc, ThAr_ref, FP_ref, simThAr_sci, simFP_sci, ThAr_ref_dates, ThFP_ref_dates, obnames, obnames_FP, exptimes, exptimes_FP
+    return biases, ob_flats, co_flats, ob_loc, co_loc, ThAr_ref, FP_ref, simThAr_sci, simFP_sci, ThAr_ref_dates, ThFP_ref_dates, obnames, obnames_FP, exptimes, exptimes_FP,flats
 
 def mjd_fromheader(h):
     """

@@ -129,7 +129,7 @@ print '\n'
 # classification of input images according to header info
 biases, ob_flats, co_flats, ob_loc, co_loc, ThAr_ref, ThFP_ref,\
         simThAr_sci,sim_FP_sci,ThAr_ref_dates,ThFP_ref_dates,obnames,\
-	obnames_FP,exptimes, exptimes_FP = coralieutils.FileClassify(dirin,log)
+	obnames_FP,exptimes, exptimes_FP, flats = coralieutils.FileClassify(dirin,log)
 
 # Pre-process
 if ( (os.access(dirout+'FlatOb.fits',os.F_OK) == False) or \
@@ -152,26 +152,61 @@ if (pre_process == 1):
         os.remove(dirout+'MasterBias.fits')
     hdu.writeto(dirout+'MasterBias.fits')
     print "\t\t-> Masterbias: done!"
-    # median combine list of ob flats
-    Flat_ob, RO_ob, GA_ob = coralieutils.MedianCombine(ob_flats,ZF=MasterBias)
-    # save this file for later reference
-    hdu = pyfits.PrimaryHDU( Flat_ob )
-    if (os.access(dirout+'FlatOb.fits',os.F_OK)):
-        os.remove(dirout+'FlatOb.fits')
-    hdu.writeto(dirout+'FlatOb.fits')
 
-    # median combine list of co flats
-    Flat_co,RO_co,GA_co = coralieutils.MedianCombine(co_flats,ZF=MasterBias)
-    hdu = pyfits.PrimaryHDU(Flat_co)
-    if (os.access(dirout+'FlatCo.fits',os.F_OK)):
-        os.remove(dirout+'FlatCo.fits')
-    hdu.writeto(dirout+'FlatCo.fits')
+    if len(flats) > 0:
+    	    # median combine list of co flats2
+	    Flat,RO_flat,GA_flat = coralieutils.MedianCombine(flats,ZF=MasterBias)
+	    hdu = pyfits.PrimaryHDU(Flat)
+	    if (os.access(dirout+'Flat.fits',os.F_OK)):
+		os.remove(dirout+'Flat.fits')
+	    hdu.writeto(dirout+'Flat.fits')
+
+    if len(ob_flats) > 0:
+	    # median combine list of ob flats
+	    Flat_ob, RO_ob, GA_ob = coralieutils.MedianCombine(ob_flats,ZF=MasterBias)
+	    # save this file for later reference
+	    hdu = pyfits.PrimaryHDU( Flat_ob )
+	    if (os.access(dirout+'FlatOb.fits',os.F_OK)):
+		os.remove(dirout+'FlatOb.fits')
+	    hdu.writeto(dirout+'FlatOb.fits')
+    else:
+	Flat_ob = Flat
+
+    if len(co_flats) > 0:
+	    # median combine list of co flats
+	    Flat_co,RO_co,GA_co = coralieutils.MedianCombine(co_flats,ZF=MasterBias)
+	    hdu = pyfits.PrimaryHDU(Flat_co)
+	    if (os.access(dirout+'FlatCo.fits',os.F_OK)):
+		os.remove(dirout+'FlatCo.fits')
+	    hdu.writeto(dirout+'FlatCo.fits')
+    else:
+	Flat_co = Flat
+
+
+
     print "\t\t-> Masterflats: done!"
-    
     # Find orders & traces
     print "\tTracing echelle orders..."
-    c_ob, nord_ob = GLOBALutils.get_them(Flat_ob, 8, trace_degree,maxords=-1,mode=1)
-    c_co, nord_co = GLOBALutils.get_them(Flat_co, 8, trace_degree,maxords=-1,startfrom=300,mode=1)
+
+    if len(ob_flats)>0 and len(co_flats)>0:
+	    c_ob, nord_ob = GLOBALutils.get_them(Flat_ob, 8, trace_degree,maxords=-1,mode=1)
+	    c_co, nord_co = GLOBALutils.get_them(Flat_co, 8, trace_degree,maxords=-1,startfrom=300,mode=1)
+    else:
+        c_all, nord_all = GLOBALutils.get_them(Flat, 4, trace_degree,maxords=-1,mode=1,nsigmas=3)
+	GA_co,GA_ob = GA_flat, GA_flat
+	RO_co,RO_ob = RO_flat, RO_flat
+
+	c_ob = c_all[:22]
+	c_co = c_all[22]
+	i = 23
+	while i < len(c_all)-1:
+		c_ob = np.vstack((c_ob,c_all[i]))
+		c_co = np.vstack((c_co,c_all[i+1]))
+		i+=2
+	nord_co, nord_ob = len(c_co),len(c_ob)
+        print '\t', nord_ob, 'object orders found...'
+        print '\t', nord_co, 'comparison orders found...'
+
 
     trace_dict = {'c_ob':c_ob,
                   'c_co':c_co,
@@ -192,20 +227,31 @@ else:
     GA_co = trace_dict['GA_co']
     RO_co = trace_dict['RO_co']
     # recover flats & master bias
-    h = pyfits.open(dirout+'FlatOb.fits')
-    Flat_ob = h[0].data
-    h = pyfits.open(dirout+'FlatCo.fits')
-    Flat_co = h[0].data
+    if len(ob_flats)>0:
+    	h = pyfits.open(dirout+'FlatOb.fits')
+    	Flat_ob = h[0].data
+    else:
+	h = pyfits.open(dirout+'Flat.fits')
+    	Flat_ob = h[0].data
+    if len(co_flats)>0:
+        h = pyfits.open(dirout+'Flat.fits')
+        Flat_co = h[0].data
+    else:
+	h = pyfits.open(dirout+'Flat.fits')
+    	Flat_co = h[0].data
     h = pyfits.open(dirout+'MasterBias.fits')
     MasterBias = h[0].data
 
-c_all = GLOBALutils.Mesh(c_ob,c_co)
+
+if len(flats) == 0:
+	c_all = GLOBALutils.Mesh(c_ob,c_co)
 print '\n\tExtraction of Flat calibration frames:'
 # Extract flat spectra, object
 P_ob_fits = dirout + 'P_ob.fits'
 S_flat_ob_fits = dirout +'S_flat_ob.fits'
 P_ob = np.zeros( Flat_ob.shape )
 S_flat_ob = np.zeros((nord_ob, 3, Flat_ob.shape[1]) )
+
 if ( os.access(P_ob_fits,os.F_OK) == False ) or ( os.access(S_flat_ob_fits,os.F_OK) == False ) or \
    (force_flat_extract):
     print "\t\tNo extracted flat object spectra found or extraction forced, extracting and saving..."
@@ -1089,8 +1135,8 @@ for nlisti in range(len(new_list)):
                 p1_m,XCmodel_m,p1gau_m,XCmodelgau_m,Ls2_m = p1,XCmodel,p1gau,XCmodelgau,Ls2
                 moon_flag = 0
 
-            bspan = GLOBALutils.calc_bss(vels,xc_av)
-            SP = bspan[0]
+            SP = GLOBALutils.calc_bss2(vels,xc_av,p1gau)
+            #SP = bspan[0]
 
             #print 'Bisector span:', SP
             if (not known_sigma):

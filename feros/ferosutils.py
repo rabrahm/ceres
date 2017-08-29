@@ -368,4 +368,3 @@ def get_dark(time,dnames,dtimes):
 		print np.median(sc1*time/dtimes[1]),np.median(sc0*time/dtimes[0])
 		print np.median(darko)
 		return darko
-

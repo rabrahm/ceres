@@ -1529,4 +1529,3 @@ for fsim in new_list:
 
 f_res.close()
 np.savetxt(drift_file,drift_out)
-

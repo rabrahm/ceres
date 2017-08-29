@@ -130,7 +130,7 @@ def getcoords(obname,mjd,filen='/data/echelle/feros/coords.txt'):
 		print '\t\tWarning! Problem with reference coordinates files.'
 	return RA,DEC
 
-def get_them(sc,exap,ncoef,maxords=-1,startfrom=0,nsigmas=10.,mode=1,endat=-1):
+def get_them(sc,exap,ncoef,maxords=-1,startfrom=0,nsigmas=10.,mode=1,endat=-1,nc2=2):
     def fitfunc(p,x):
 	ret = p[0] + p[1] * np.exp(-.5*((x-p[2])/p[3])**2)
 	return ret
@@ -327,7 +327,7 @@ def get_them(sc,exap,ncoef,maxords=-1,startfrom=0,nsigmas=10.,mode=1,endat=-1):
     mat = np.zeros((len(ref),sc.shape[1]))
     mat[:,medc] = ref
     i = medc -1
-
+	
     while i >=0:
 	#print i
 	d = sc[:,i]
@@ -359,11 +359,13 @@ def get_them(sc,exap,ncoef,maxords=-1,startfrom=0,nsigmas=10.,mode=1,endat=-1):
 			    else:
 				    tx1 = np.arange(x[0]-dev,x[0],1)
 				    tx2 = np.arange(x[-1]+1,x[-1]+dev+1,1)
-				    ty1 = np.zeros(len(tx1))
-				    ty2 = np.zeros(len(tx2))
+				    ty1 = np.zeros(len(tx1)) + y.min()
+				    ty2 = np.zeros(len(tx2)) + y.min()
 				    x = np.hstack((tx1,x,tx2))
 				    y = np.hstack((ty1,y,ty2))
 				    p, success =  scipy.optimize.leastsq(errfunc, [y.min(),y.max()-y.min(),x.mean(),dev], args=(y,x))
+				    #plot(x,y)
+				    #plot(x,fitfunc(p,x))
 			    	    tref.append(p[2])
 		    else:
 			    if len(x) < 7:
@@ -371,8 +373,8 @@ def get_them(sc,exap,ncoef,maxords=-1,startfrom=0,nsigmas=10.,mode=1,endat=-1):
 			    else:
 				    tx1 = np.arange(x[0]-dev,x[0],1)
 				    tx2 = np.arange(x[-1]+1,x[-1]+dev+1,1)
-				    ty1 = np.zeros(len(tx1))
-				    ty2 = np.zeros(len(tx2))
+				    ty1 = np.zeros(len(tx1)) + y.min()
+				    ty2 = np.zeros(len(tx2)) + y.min()
 				    x = np.hstack((tx1,x,tx2))
 				    y = np.hstack((ty1,y,ty2))
 				    y -= y.min()
@@ -381,11 +383,13 @@ def get_them(sc,exap,ncoef,maxords=-1,startfrom=0,nsigmas=10.,mode=1,endat=-1):
 		    		    p, success =  scipy.optimize.leastsq(res_gauss2, guess, args=(y,x))
 			    	    tref.append(0.5*(p[2]+p[3]))
 		    j+=1
-
+	#show()
 	oref = ref.copy()
 	tref = np.array(tref)
 	dif = tref-ref
-	coef = np.polyfit(ref,dif,2)
+	coef = np.polyfit(ref,dif,nc2)
+	#plot(ref,dif,'ro')
+	#plot(oref,np.polyval(coef,oref))
 	coef2 = np.polyfit(np.arange(len(dif)),dif,1)
 	#if i < 500:
 	#	plot(np.arange(len(dif)),dif,'.')
@@ -404,13 +408,13 @@ def get_them(sc,exap,ncoef,maxords=-1,startfrom=0,nsigmas=10.,mode=1,endat=-1):
 	    im  = np.argmax(np.absolute(residuals))
 	    dif = np.delete(dif,im)
 	    ref = np.delete(ref,im)
-	    coef = np.polyfit(ref,dif,2)
+	    coef = np.polyfit(ref,dif,nc2)
 	    residuals = dif - np.polyval(coef,ref)
 	    rms = np.sqrt(np.var(residuals))
 	    I = np.where(np.absolute(residuals)>3*rms)[0]
 	    if len(I)==0:
 		cond = False
-	
+	#plot(oref,np.polyval(coef,oref))
 	cdif = np.polyval(coef,oref)
 	ref = oref + cdif
 	#plot(ref,np.polyval(coef,ref))
@@ -451,8 +455,8 @@ def get_them(sc,exap,ncoef,maxords=-1,startfrom=0,nsigmas=10.,mode=1,endat=-1):
 			    else:
 				    tx1 = np.arange(x[0]-dev,x[0],1)
 		   		    tx2 = np.arange(x[-1]+1,x[-1]+dev+1,1)
-		   		    ty1 = np.zeros(len(tx1))
-		   		    ty2 = np.zeros(len(tx2))
+		   		    ty1 = np.zeros(len(tx1)) + y.min()
+		   		    ty2 = np.zeros(len(tx2)) + y.min()
 		   		    x = np.hstack((tx1,x,tx2))
 		   		    y = np.hstack((ty1,y,ty2))
 				    p, success =  scipy.optimize.leastsq(errfunc, [y.min(),y.max()-y.min(),x.mean(),dev], args=(y,x))
@@ -463,8 +467,8 @@ def get_them(sc,exap,ncoef,maxords=-1,startfrom=0,nsigmas=10.,mode=1,endat=-1):
 			    else:
 				    tx1 = np.arange(x[0]-dev,x[0],1)
 		   		    tx2 = np.arange(x[-1]+1,x[-1]+dev+1,1)
-		   		    ty1 = np.zeros(len(tx1))
-		   		    ty2 = np.zeros(len(tx2))
+		   		    ty1 = np.zeros(len(tx1)) + y.min()
+		   		    ty2 = np.zeros(len(tx2)) + y.min()
 		   		    x = np.hstack((tx1,x,tx2))
 		   		    y = np.hstack((ty1,y,ty2))
 				    y -= y.min()
@@ -479,7 +483,7 @@ def get_them(sc,exap,ncoef,maxords=-1,startfrom=0,nsigmas=10.,mode=1,endat=-1):
 	tref = np.array(tref)
 	dif = tref-ref
 
-	coef = np.polyfit(ref,dif,2)
+	coef = np.polyfit(ref,dif,nc2)
 
 	residuals = dif - np.polyval(coef,ref)
 	rms = np.sqrt(np.var(residuals))
@@ -491,7 +495,7 @@ def get_them(sc,exap,ncoef,maxords=-1,startfrom=0,nsigmas=10.,mode=1,endat=-1):
 	    im  = np.argmax(np.absolute(residuals))
 	    dif = np.delete(dif,im)
 	    ref = np.delete(ref,im)
-	    coef = np.polyfit(ref,dif,2)
+	    coef = np.polyfit(ref,dif,nc2)
 	    residuals = dif - np.polyval(coef,ref)
 	    rms = np.sqrt(np.var(residuals))
 	    I = np.where(np.absolute(residuals)>3*rms)[0]
@@ -1064,8 +1068,11 @@ def retrace(dat, c_all,span=9):
 			vec = vec.astype('int')+i
 			IN = np.where((vec>0) & (vec<dat.shape[0]))[0]
 			mat[vec[IN],j] = 1.0
-
-		CCF.append(np.add.reduce(np.add.reduce((mat*dat))[med - 100 : med + 101]))
+		#print np.add.reduce((mat*dat))[med - 100 : med + 101]
+		vvv = np.add.reduce((mat*dat))[med - 100 : med + 101]
+		II = np.where(np.isnan(vvv)==False)[0]
+		vvv = vvv[II]
+		CCF.append(np.add.reduce(vvv))
 		pix.append(i)
 		
 
@@ -1075,7 +1082,9 @@ def retrace(dat, c_all,span=9):
 	
 	CCF -= np.min(CCF)
 	CCF /= np.max(CCF)
-
+	#print CCF
+	#plot(pix,CCF)
+	#show()
 	im = np.where(CCF == CCF.max())[0][0]
 	
 	jj = im
@@ -2572,14 +2581,14 @@ def Lines_mBack(thar, sd, thres_rel=3, line_w=10):
     # New, final background estimnate
     X = np.array( range( len( d ) ) )
     K = np.where((sd > 0) & (mask > 0))
-
-    bkg = np.zeros( len(sd) )
-
-    bkg_T = lowess(thar[K].astype('double'), X[K],frac=0.2,it=3,return_sorted=False)
-    tck1 = scipy.interpolate.splrep(X[K],bkg_T,k=1)
-    bkg[L] = scipy.interpolate.splev(X[L],tck1)
-
-    return bkg
+    if len(K[0])>0:
+        bkg = np.zeros( len(sd) ) 
+        bkg_T = lowess(thar[K].astype('double'), X[K],frac=0.2,it=3,return_sorted=False)
+        tck1 = scipy.interpolate.splrep(X[K],bkg_T,k=1)
+        bkg[L] = scipy.interpolate.splev(X[L],tck1)
+        return bkg
+    else:
+	return np.zeros( len(sd) )
 
 def FindLines_simple_sigma(d,sd,thres=3):
     """
@@ -2970,6 +2979,62 @@ def calc_bss(vels, xc_av, bot_i=0.1, bot_f=0.4, top_i=0.6, top_f=0.85):
 		der_top = 0
 		slope = 0
 	return span,der_bottom,der_top, slope, stat
+
+def calc_bss2(vels,xc,coef, bot_i=0.15, bot_f=0.4, top_i=0.6, top_f=0.9, dt=0.01):
+	try:
+		
+		I1 = np.where((vels>coef[1]-3*coef[2]) & (vels<coef[1]) )[0]
+		I2 = np.where((vels<coef[1]+3*coef[2]) & (vels>coef[1]) )[0]
+		I3 = np.where(vels<coef[1]-4*coef[2])[0]
+		I4 = np.where(vels>coef[1]+4*coef[2])[0]
+		I = np.hstack((I3,I4))
+		base = np.median(xc[I])
+
+		xc = base - xc
+		xc /= xc.max()
+
+
+		v1,x1 = vels[I1],xc[I1]
+		v2,x2 = vels[I2],xc[I2]
+		#plot(v1,x1)
+		#plot(v2,x2)
+		#show()
+		dp = top_f
+		vect = []
+		while dp >= top_i:
+			lb = np.where(x1>dp)[0][0]
+			m = (v1[lb] - v1[lb-1])/(x1[lb]-x1[lb-1])
+			n = v1[lb] - m*x1[lb]
+			bs1 = m*dp+n
+
+			lb = np.where(x2>dp)[0][-1]
+			m = (v2[lb] - v2[lb+1])/(x2[lb]-x2[lb+1])
+			n = v2[lb] - m*x2[lb]
+			bs2 = m*dp+n
+			vect.append(0.5*(bs2+bs1))
+			dp-=dt
+		vect = np.array(vect)
+
+		dp = bot_f
+		vecb = []
+		while dp >= bot_i:
+
+			lb = np.where(x1>dp)[0][0]
+			m = (v1[lb] - v1[lb-1])/(x1[lb]-x1[lb-1])
+			n = v1[lb] - m*x1[lb]
+			bs1 = m*dp+n
+
+			lb = np.where(x2>dp)[0][-1]
+			m = (v2[lb] - v2[lb+1])/(x2[lb]-x2[lb+1])
+			n = v2[lb] - m*x2[lb]
+			bs2 = m*dp+n
+			vecb.append(0.5*(bs2+bs1))
+			dp-=dt
+		vecb = np.array(vecb)
+
+		return np.median(vecb) - np.median(vect) 
+	except:
+		return -999.0
 
 def gauss_samp(p,l,mu):
 	A,B,sig = p[0],p[1],p[2]

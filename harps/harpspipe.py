@@ -475,6 +475,7 @@ for fsim in ThAr_ref:
     dtharR = harpsutils.OverscanTrim( hthar[2].data ) - MasterBias[:,:,1]
     print 'one'
     bacfile = dirout + 'BACR_' + fsim.split('/')[-1][:-4]+'fits'
+   
     if os.access(bacfile,os.F_OK) == False:
         CentersR = np.zeros((len(c_all2),dtharR.shape[1]))
         for i in range(len(c_all2)):
@@ -977,7 +978,7 @@ for i in range(len(sim_sci)):
         new_list_obnames.append( obname )
         new_list_texp.append( texp )
 	new_list_cotypes.append( co_type )
-    if object2do == 'new':
+    elif object2do == 'new':
 	h = pyfits.open(fsim)
 	fout = 'proc/'+ obname + '_' + h[0].header['DATE-OBS'] + 'sp.fits'
         if not os.access(dirout + fout,os.F_OK):
@@ -1042,14 +1043,18 @@ for nlisti in range(len(new_list)):
     
     if cotype != 'WAVE':
 	spanR,spanB = 20,10
+	c1_temp = c_ob1
+	c2_temp = c_ob2
     else:
 	spanR,spanB = 10,7
+	c1_temp = c_all1
+	c2_temp = c_all2
 	
     bacfile = dirout + 'BACR_' + fsim.split('/')[-1][:-4]+'fits'
     if os.access(bacfile,os.F_OK) == False:
-        CentersR = np.zeros((len(c_ob2),dataR.shape[1]))
-        for i in range(len(c_ob2)):
-            CentersR[i,:]=np.polyval(c_ob2[i],np.arange(dataR.shape[1]))
+        CentersR = np.zeros((len(c2_temp),dataR.shape[1]))
+        for i in range(len(c2_temp)):
+            CentersR[i,:]=np.polyval(c2_temp[i],np.arange(dataR.shape[1]))
         bacR = GLOBALutils.get_scat(dataR,CentersR,span=20)
         if (os.access(bacfile,os.F_OK)):
             os.remove( bacfile )
@@ -1059,10 +1064,12 @@ for nlisti in range(len(new_list)):
         bacR = pyfits.getdata(bacfile)
 
     bacfile = dirout + 'BACB_' + fsim.split('/')[-1][:-4]+'fits'
-    if os.access(bacfile,os.F_OK) == False:
-        CentersB = np.zeros((len(c_ob1),dataB.shape[1]))
-        for i in range(len(c_ob1)):
-            CentersB[i,:]=np.polyval(c_ob1[i],np.arange(dataB.shape[1]))
+    if os.access(bacfile,os.F_OK) == False  or True:
+        CentersB = np.zeros((len(c1_temp),dataB.shape[1]))
+        for i in range(len(c1_temp)):
+            CentersB[i,:]=np.polyval(c1_temp[i],np.arange(dataB.shape[1]))
+	tcen = CentersB[-1]
+	CentersB = np.vstack((CentersB,tcen+16.))
         bacB = GLOBALutils.get_scat(dataB,CentersB,span=10)
         if (os.access(bacfile,os.F_OK)):
             os.remove( bacfile )
@@ -1071,8 +1078,13 @@ for nlisti in range(len(new_list)):
     else:
         bacB = pyfits.getdata(bacfile)
 
+    #plot(dataB[:,100])
+    #plot(bacB[:,100])
+    #show()
+    #print gfd
     dataR = dataR - bacR
     dataB = dataB - bacB
+
 
     ron1,gain1 = h[1].header['HIERARCH ESO DET OUT1 RON'],h[1].header['HIERARCH ESO DET OUT1 GAIN']
     ron2,gain2 = h[2].header['HIERARCH ESO DET OUT1 RON'],h[2].header['HIERARCH ESO DET OUT1 GAIN']
@@ -1551,8 +1563,8 @@ for nlisti in range(len(new_list)):
                 p1_m,XCmodel_m,p1gau_m,XCmodelgau_m,Ls2_m = p1,XCmodel,p1gau,XCmodelgau,Ls2
                 moon_flag = 0
 
-            bspan = GLOBALutils.calc_bss(vels,xc_av)
-            SP = bspan[0]
+            SP = GLOBALutils.calc_bss2(vels,xc_av,p1gau)
+            #SP = bspan[0]
         	
             if (not known_sigma):
                 disp = np.floor(p1gau[2])

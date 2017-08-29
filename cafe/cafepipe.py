@@ -279,7 +279,8 @@ I2 = np.where(ThAr_ref_dates > new_times.max())[0]
 if len(I2)>0:
     I2 = I2[0]
 else:
-    I2 = len(ThAr_ref_dates) - 1
+    I2 = len(ThAr_ref_dates)
+
 ThAr_ref_dates = ThAr_ref_dates[I1:I2+1]
 ThAr_ref = ThAr_ref[I1:I2+1]
 
@@ -329,13 +330,14 @@ thar_fits = dirout + ThAr_ref[0].split('/')[-1][:-4]+'spec.simple.fits.S'
 thar_Ss   = pyfits.getdata(thar_fits)
 
 for i in range(40,60,1):
-	ccf_max, shift = GLOBALutils.cor_thar(thar_Ss[i],span=10,filename=order_dir+'order_103.iwdat')
+	ccf_max, shift = GLOBALutils.cor_thar(thar_Ss[i],span=40,filename=order_dir+'order_103.iwdat')
 	if ccf_max > maxxc:
 		maxxc      = ccf_max
 		rough_shift = shift
 		or50       =  i
 difo = 103 - or50
-
+#show()
+#print gfds
 print "\n\tWavelength solution of ThAr calibration spectra:"
 
 for i in range(len(ThAr_ref_dates)):
@@ -434,32 +436,33 @@ for i in range(len(ThAr_ref_dates)):
 
 mjds_thar,shifts,temps = np.array(mjds_thar),np.array(shifts),np.array(temps)-temps[0]
 shv = (1e-6*shifts)*299792458.0
-tck_v = scipy.interpolate.splrep(mjds_thar,shv,k=1)
-tck_shift = scipy.interpolate.splrep(mjds_thar,shifts,k=1)
-temp = np.arange(mjds_thar[0],mjds_thar[-1],0.0001)
+if len(mjds_thar) > 1:
+	tck_v = scipy.interpolate.splrep(mjds_thar,shv,k=1)
+	tck_shift = scipy.interpolate.splrep(mjds_thar,shifts,k=1)
+	temp = np.arange(mjds_thar[0],mjds_thar[-1],0.0001)
 
-mjdsh_thar = (mjds_thar - int(temp.min())) * 24.
-thour = (temp - int(temp.min())) * 24.
-thours = (new_times - int(temp.min())) * 24.
-pp = PdfPages(dirout + 'proc/ThAr_shifts.pdf')
-plot(mjdsh_thar,shv,'ro')
-plot(thour,scipy.interpolate.splev(temp,tck_v),'b')
-for i in range(len(thours)):
-	axvline(x=thours[i],color ='g')
-xlabel('UT [hours]')
-ylabel('ThAr vel drift [m/s]')
-savefig(dirout + 'proc/ThAr_shifts.pdf')
-pp.savefig()
-clf()
-plot(shv,temps,'ro')
-xlabel('ThAr velocity drift [m/s]')
-ylabel('TEMP')
-pp.savefig()
-pp.close()
-clf()
+	mjdsh_thar = (mjds_thar - int(temp.min())) * 24.
+	thour = (temp - int(temp.min())) * 24.
+	thours = (new_times - int(temp.min())) * 24.
+	pp = PdfPages(dirout + 'proc/ThAr_shifts.pdf')
+	plot(mjdsh_thar,shv,'ro')
+	plot(thour,scipy.interpolate.splev(temp,tck_v),'b')
+	for i in range(len(thours)):
+		axvline(x=thours[i],color ='g')
+	xlabel('UT [hours]')
+	ylabel('ThAr vel drift [m/s]')
+	savefig(dirout + 'proc/ThAr_shifts.pdf')
+	pp.savefig()
+	clf()
+	plot(shv,temps,'ro')
+	xlabel('ThAr velocity drift [m/s]')
+	ylabel('TEMP')
+	pp.savefig()
+	pp.close()
+	clf()
 
-thout = np.vstack((mjdsh_thar,shv)).T
-np.savetxt(dirout + 'proc/ThAr_shifts.dat',thout)
+	thout = np.vstack((mjdsh_thar,shv)).T
+	np.savetxt(dirout + 'proc/ThAr_shifts.dat',thout)
 
 # Does any image have a special requirement for dealing with the moonlight?
 if os.access(dirin + 'moon_corr.txt', os.F_OK):
@@ -630,7 +633,10 @@ for fsim in new_list:
 	print "\t\t\tInstrumental drift:",(1e-6*p_shift)*299792458.0
         # Apply new wavelength solution including barycentric correction
         equis = np.arange( data.shape[1] )
-	p_shift = scipy.interpolate.splev(mjd,tck_shift)
+	if len(mjds_thar) > 1:
+		p_shift = scipy.interpolate.splev(mjd,tck_shift)
+	else:
+		p_shift = 0.
 	order = ro0
 	ind   = 0
         while order < ro0 + n_useful:

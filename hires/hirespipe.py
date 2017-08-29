@@ -99,7 +99,7 @@ MRMS               = 50   # max rms in m/s, global wav solution
 
 trace_degree       = 4
 Marsh_alg          = 0
-ext_aperture       = 30
+ext_aperture       = 15
 NSigma_Marsh       = 5
 NCosmic_Marsh      = 5
 S_Marsh            = 0.4
@@ -163,7 +163,7 @@ if (pre_process == 1):
     d = hiresutils.OverscanTrim(d,hdu[chip].header['DATASEC'])
     d = d.T
     print "\tTracing echelle orders..."
-    c_all, nord = GLOBALutils.get_them(d,ext_aperture,trace_degree,mode=1)
+    c_all, nord = GLOBALutils.get_them(d,ext_aperture+5,trace_degree,mode=1,nsigmas=10,nc2=1)
     print '\t\t'+str(nord)+' orders found...'
 
     # pickle traces
@@ -522,6 +522,7 @@ for fsim in new_list:
         equis = np.arange( data.shape[1] )        
         for order in range(nord):
             #order = 16
+	    #print order
             m = order + ro0
             chebs = GLOBALutils.Calculate_chebs(equis, m, npix=data.shape[1],\
 		    order0=ro0, ntotal=nord, Inverse=Inverse_m,nx=ncoef_x,nm=ncoef_m)
@@ -719,8 +720,9 @@ for fsim in new_list:
                 p1_m,XCmodel_m,p1gau_m,XCmodelgau_m,Ls2_m = p1,XCmodel,p1gau,XCmodelgau,Ls2
                 moon_flag = 0
 
-            bspan = GLOBALutils.calc_bss(vels,xc_av)
-            SP = bspan[0]
+	    print 'what!!'
+            SP = GLOBALutils.calc_bss2(vels,xc_av,p1gau)
+            #SP = bspan[0]
 
             #print p1gau[1]
             if (not known_sigma):
@@ -816,4 +818,3 @@ for fsim in new_list:
         hdu.writeto( dirout + fout )
 
 f_res.close()
-

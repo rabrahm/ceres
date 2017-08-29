@@ -559,7 +559,9 @@ for i in range(len(sorted_ThAr_Ne_dates)):
 #print gfd
 ThAr_all       = np.hstack(( np.array(ThArNe_ref), np.array(ThAr_Ne_ref) ))
 ThAr_all_dates = np.hstack(( np.array(ThAr_ref_dates), np.array(ThAr_Ne_ref_dates) ))
-
+p_shifts = []
+p_mjds   = []
+"""
 if len(ThAr_all)>0:
     Thar_shifts_out = dirout + 'ThAr_Ne_shifts.dat'
 
@@ -589,7 +591,7 @@ if len(ThAr_all)>0:
 
         i+=1
 
-
+"""
 ### start of science frame reductions ###
 new_list         = []
 new_list_obnames = []
@@ -650,7 +652,6 @@ else:
 
 spec_moon = np.array(spec_moon)
 use_moon  = np.array(use_moon)
-
 
 for fsim in comp_list:
 
@@ -1162,7 +1163,9 @@ if (not JustExtract):
             vels, xc_full, sn, nlines_ccf, W_ccf = \
                     GLOBALutils.XCor(spec, ml_v, mh_v, weight, 0, lbary_ltopo, vel_width=velw,vel_step=velsh,\
                                           spec_order=9,iv_order=10,sn_order=8,max_vel_rough=velw)
+
             xc_av = GLOBALutils.Average_CCF(xc_full, sn, sn_min=3., Simple=True, W=W_ccf)
+
             outt = np.vstack((vels,xc_av))
             yy     = scipy.signal.medfilt(xc_av,11)
             pred = lowess(yy, vels,frac=0.4,it=10,return_sorted=False)
@@ -1173,7 +1176,7 @@ if (not JustExtract):
             rvels, rxc_av, rpred, rxc_av_orig, rvel0_xc = vels.copy(), xc_av.copy(), pred.copy(), xc_av_orig.copy(), vel0_xc
             xc_av_rough = xc_av
             vels_rough  = vels
-
+	
             vel_width = np.maximum( 20.0, 6*disp )
 
             vels, xc_full, sn, nlines_ccf, W_ccf =\
@@ -1208,7 +1211,7 @@ if (not JustExtract):
 
             bspan = GLOBALutils.calc_bss(vels,xc_av)
             SP = bspan[0]
-
+	    SP2 = GLOBALutils.calc_bss2(vels,xc_av,p1gau)
             #print p1gau[1]
             if (not known_sigma):
                 disp = np.floor(p1gau[2])
@@ -1218,8 +1221,8 @@ if (not JustExtract):
                 ml_v = av_m - mask_hw_wide
                 mh_v = av_m + mask_hw_wide            
                 known_sigma = True
-            else:
-                cond = False
+	    else:
+                    cond = False
 
         BSerr = -999.00
 
@@ -1285,12 +1288,14 @@ if (not JustExtract):
             RVerr2 = 0.007	
 
         RV     = np.around(p1gau_m[1],4)  
-        BS     = np.around(SP,4)   
+        BS     = np.around(SP,4) 
+        BS2     = np.around(SP2,4)   
         RVerr2 = np.around(RVerr2,4)
         BSerr  = np.around(BSerr,4)
 
         print '\t\t\tRV = '+str(RV)+' +- '+str(RVerr2)
         print '\t\t\tBS = '+str(BS)+' +- '+str(BSerr)
+        print '\t\t\tBS2 = '+str(BS2)+' +- '+str(BSerr)
 
         bjd_out = 2400000.5 + mbjd
         T_eff_err = 100
