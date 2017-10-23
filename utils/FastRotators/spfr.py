@@ -469,7 +469,7 @@ def get_pars_fr(wavst,flxst,model_patht='/Users/rabrahm/data/COELHO2014/',npools
 	print bt,bg,bz,br, (t1-t0)/60.,'mins'
 
 
-	bt,bg,bz,br = 7000.,4.5, 0.2, 100.0
+	#bt,bg,bz,br = 7000.,4.5, 0.2, 100.0
 	gt = np.arange(bt-1000,bt+1001,250)
 	I = np.where((gt>=6000) & (gt<=10000))[0]
 	gt = gt[I]
