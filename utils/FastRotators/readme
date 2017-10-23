@@ -1,0 +1,25 @@
+** V1: Rafael Brahm 2017-10-23 **
+
+The spfr.py module contains tasks for getting RVs and atmospheric parameters for fast rotators.
+It uses as input the output spectra of CERES. Additionally it makes use of the COELHO 2014 synthetic library.
+
+For downloading the library you cun use the download_models function of spfr.
+
+Example for getting the atmospheric parameters for all the spectra in a directory
+	
+	python calc_pars.py /path_to_data/20150107_red/proc -npools 6
+
+Example for getting the atmospheric parameters for a specific spectrum:
+
+	python calc_pars.py /path_to_data/20150107_red/proc/output_ceres_spectrum.fits -npools 6
+
+Where the npools parameter correspond to the number of cores that will be used. It usually take ~20 mins to get the parameters for a single spectrum using 4 cores.
+
+Example for getting the RVs:
+	
+	python calc_rv.py /path_to_data/20150107_red/proc/output_ceres_spectrum.fits -pars 8000,4.0,-0.1,120
+
+Where the -pars parameters are the comma separated atmospheric parameters of the synthetic spectrum that will be used as template for the cross-correlation function.
+
+All the outputs are saved in the the "FR" directory created inside the input directory (/path_to_data/20150107_red/proc/)
+
