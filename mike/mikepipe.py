@@ -299,6 +299,19 @@ for fsim in thars:
             os.remove( thar_fits_simple )           
         hdu = pyfits.PrimaryHDU( thar_Ss )
         hdu.writeto( thar_fits_simple )
+    else:
+	thar_Ss = pyfits.getdata(thar_fits_simple)
+
+"""
+maxxc = 0
+for i in range(10,20,1):
+	ccf_max, shift = GLOBALutils.cor_thar(thar_Ss[i],span=100,filename=order_dir+'order_15.iwdat')
+	if ccf_max > maxxc:
+		maxxc      = ccf_max
+		rough_shift = shift
+		or15       =  i
+difo = 15 - or15
+show()
 
 print "\n\tWavelength solution of ThAr calibration spectra:"
 sorted_thar_dates = np.argsort( thar_dates )
@@ -388,12 +401,12 @@ for i in range(len(thars)):
                                                 np.ones(All_Intensities.shape), p0, Cheby=use_cheby,\
                                                 maxrms=150, Inv=Inverse_m,minlines=300,order0=37, \
                                                 ntotal=n_useful,npix=len(thar_order),nx=ncoef_x,nm=ncoef_m)
-	"""
-        p1, G_pix, G_ord, G_wav, II, rms_ms, G_res = \
-            utils.Fit_Global_Wav_Solution(All_Pixel_Centers, All_Wavelengths, All_Orders,\
-                                                     np.ones(All_Intensities.shape), p0, Cheby=use_cheby,\
-                                                     maxrms=150, Inv=Inverse_m,minlines=300,nords=n_useful,length=len(thar_order))
-	"""
+	
+    #    p1, G_pix, G_ord, G_wav, II, rms_ms, G_res = \
+    #        utils.Fit_Global_Wav_Solution(All_Pixel_Centers, All_Wavelengths, All_Orders,\
+    #                                                 np.ones(All_Intensities.shape), p0, Cheby=use_cheby,\
+    #                                                 maxrms=150, Inv=Inverse_m,minlines=300,nords=n_useful,length=len(thar_order))
+	
 	if rms_ms/np.sqrt(float(len(G_wav))) < 10:
 		good_arcs.append(thars[index])
 
@@ -450,7 +463,7 @@ for i in range(len(good_arcs)):
 	arc_mjds.append(pdict['mjd'])
 pshs,arc_mjds = np.array(pshs),np.array(arc_mjds)
 tck_sh = scipy.interpolate.splrep(arc_mjds,pshs,k=1)
-
+"""
 ### start of science frame reductions ###
 print '\n\tThe following targets will be processed:'
 new_list = []

@@ -19,7 +19,7 @@ sys.path.append("../utils/OptExtract")
 import Marsh
 import CCF
 from pylab import *
-
+from PyAstronomy import pyasl
 import time
 
 from matplotlib.backends.backend_pdf import PdfPages
@@ -1290,8 +1290,14 @@ def obtain_P(data, trace_coeffs, Aperture, RON, Gain, NSigma, S, N, Marsh_alg,mi
     global GDATA
     GDATA = data
     npars_paralel = []
+
+    if 'int' in str(type(min_col)) or 'float' in str(type(min_col)):
+    	min_col = np.zeros(len(trace_coeffs)) + int(min_col)
+    if 'int' in str(type(max_col)) or 'float' in str(type(max_col)):
+    	max_col = np.zeros(len(trace_coeffs)) + int(max_col)
+
     for i in range(len(trace_coeffs)):
-        npars_paralel.append([trace_coeffs[i,:],Aperture,RON,Gain,NSigma,S,N,Marsh_alg,min_col,max_col])
+        npars_paralel.append([trace_coeffs[i,:],Aperture,RON,Gain,NSigma,S,N,Marsh_alg,int(min_col[i]),int(max_col[i])])
     p = Pool(npools)
     spec = np.array((p.map(PCoeff2, npars_paralel)))
     p.terminate()
@@ -1346,27 +1352,36 @@ def getSimpleSpectrum2(pars):
     return FinalMatrix 
 
 def simple_extraction(data,coefs,ext_aperture,min_extract_col,max_extract_col,npools):
-    global GDATA
-    GDATA = data
-    npars_paralel = []
-    for i in range(len(coefs)):
-        npars_paralel.append([coefs[i,:],ext_aperture,min_extract_col,max_extract_col])
-    p = Pool(npools)
-    spec = np.array((p.map(getSimpleSpectrum2, npars_paralel)))
-    p.terminate()
-    return spec
+	global GDATA
+	GDATA = data
+	npars_paralel = []
+	if 'int' in str(type(min_extract_col)) or 'float' in str(type(min_extract_col)):
+		min_extract_col = np.zeros(len(coefs)) + int(min_extract_col)
+	if 'int' in str(type(max_extract_col)) or 'float' in str(type(max_extract_col)):
+		max_extract_col = np.zeros(len(coefs)) + int(max_extract_col)
+	for i in range(len(coefs)):
+		npars_paralel.append([coefs[i,:],ext_aperture,int(min_extract_col[i]),int(max_extract_col[i])])
+	p = Pool(npools)
+	spec = np.array((p.map(getSimpleSpectrum2, npars_paralel)))
+	p.terminate()
+	return spec
 
 def optimal_extraction(data,Pin,coefs,ext_aperture,RON,GAIN,MARSH,COSMIC,min_extract_col,max_extract_col,npools):
-    global GDATA,P
-    P = Pin
-    GDATA = data
-    npars_paralel = []
-    for i in range(len(coefs)):
-	npars_paralel.append([coefs[i,:],ext_aperture,RON,GAIN,MARSH,COSMIC,min_extract_col,max_extract_col])
-    p = Pool(npools)
-    spec = np.array((p.map(getSpectrum2, npars_paralel)))
-    p.terminate()
-    return spec
+	global GDATA,P
+	P = Pin
+	GDATA = data
+	npars_paralel = []
+	if 'int' in str(type(min_extract_col)) or 'float' in str(type(min_extract_col)):
+		min_extract_col = np.zeros(len(coefs)) + int(min_extract_col)
+	if 'int' in str(type(max_extract_col)) or 'float' in str(type(max_extract_col)):
+		max_extract_col = np.zeros(len(coefs)) + int(max_extract_col)
+
+	for i in range(len(coefs)):
+		npars_paralel.append([coefs[i,:],ext_aperture,RON,GAIN,MARSH,COSMIC,int(min_extract_col[i]),int(max_extract_col[i])])
+	p = Pool(npools)
+	spec = np.array((p.map(getSpectrum2, npars_paralel)))
+	p.terminate()
+	return spec
 
 # CCF functions
 def get_herms(horder):
@@ -1870,10 +1885,10 @@ def fit_these_lines(waves_ob,filename,spec,order,wei, rough_shift = 0.0, del_wid
 
 
 def Initial_Wav_Calibration(filename,spec,order,wei, porder=3, rmsmax=75, minlines=10, FixEnds=True,\
-                                Dump_Argon=False, Dump_AllLines=False, Cheby=False, rough_shift = 0.0, del_width=5.0, binning=1,line_width=4, fact=1,do_xc=True,sigmai=2.2):
+            Dump_Argon=False, Dump_AllLines=False, Cheby=False, rough_shift = 0.0,\
+            del_width=5.0, binning=1,line_width=4, fact=1,do_xc=True,sigmai=2.2,pixelization=False):
 
 	f = open(filename).readlines()
-
 	pixel_centers = array([])
 	wavelengths   = array([])
 	sigmas        = array([])
@@ -1887,6 +1902,7 @@ def Initial_Wav_Calibration(filename,spec,order,wei, porder=3, rmsmax=75, minlin
 			nlines = int(w[0])
 			for j in range(nlines):
 				pixel_centers_0.append(float(w[2*j+1])*fact/float(binning) + rough_shift)
+
 		ml = array(pixel_centers_0) - 2
 		mh = array(pixel_centers_0) + 2
 		xc,offs = XCorPix( spec, ml, mh, del_width=del_width)
@@ -1894,78 +1910,72 @@ def Initial_Wav_Calibration(filename,spec,order,wei, porder=3, rmsmax=75, minlin
 		delta   = offs[ind_max] 
 	else:
 		delta=0.
-	#if order>-1:
-	#	refx = np.arange(len(spec))
-	#	plot(refx - rough_shift, spec)
-	#	pixel_centers_0 = np.around(pixel_centers_0).astype('int')
-	#	I = np.where((pixel_centers_0>0) & (pixel_centers_0<2048))[0]
-	#	plot(pixel_centers_0[I]- rough_shift,spec[pixel_centers_0[I]],'go')
-	#	show()
-	#	#print vcx
+
 	#print "Computed offset for order ", order, " is ", delta
 	N_l = 0
-
 	bad_indices = []
 	bad_indices_ct = 0
 	#print order
 	#plot(spec)
 	for line in f:
-		#print line
-		w = line.split()
-		# extract info, and fit line(s)
-		nlines = int(w[0])
-		pix = []
-		wav = []
-		for j in range(nlines):
-			if float(w[2*j+1])*fact/float(binning) + rough_shift+delta > 20 and float(w[2*j+1])*fact/float(binning) + rough_shift+delta < len(spec)-20:
-				pix.append(float(w[2*j+1])*fact/float(binning) + delta + rough_shift)
-				wav.append(float(w[2*j+2]))
-		if len(pix) > 0:
-			N_l += len(pix)
-			pix = np.array(pix)
-			#pix2=np.around(pix).astype('int')
-			#plot(pix2,spec[pix2],'ro')
-			wav = np.array(wav)
-			xmin = int(round(min(pix)))
-			xmax = int(round(max(pix)))
-			X = array(range(xmin-line_width,xmax+line_width+1))
-			Y = spec[xmin-line_width:xmax+line_width+1]
-			if (nlines == 1):
-				num       = np.sum(X*Y)
-				den       = np.sum(Y)
-				if (den > 0):
-					Cent = num/den
-				else:
-					Cent = -1
-			weight = wei[xmin-line_width:xmax+line_width+1]
-			kk = np.where( weight == 0)
-			# Input Spectrum is background subtracted ---> B=0
-			B = np.zeros(len(X))
-			mu = pix
-			sigma = np.zeros(nlines) + sigmai * fact / float(binning)
-			#plot(X,Y)
-			#show()
-			#print X, Y, B, mu, sigma, weight
-			p1, suc = LineFit_SingleSigma( X, Y, B, mu, sigma, weight)
-			#print p1
-			#if (suc<1) or (suc > 4):
-			#    print "Problem", order, X, delta
-			# collect fit information
-			#plot(X,Y)
-			reto =  p1[0]*np.exp((X-p1[1])**2/(-0.5*p1[2]**2))
-			#print reto
-			#plot(X,reto,'r')
-			wavelenghts = np.append(wavelengths,wav)
-			for j in range(len(pix)):
-				pixel_centers = np.append(pixel_centers,p1[3*j + 1])
-				sigmas        = np.append(sigmas,p1[3*j + 2])
-				wavelengths   = np.append(wavelengths,wav[j])
-				intensities   = np.append(intensities,p1[3*j])
-				if (nlines == 1):
-					centroids = np.append(centroids, Cent)
-				else:
-					centroids = np.append(centroids, -1)
-	#pixel_centers2 = np.around(pixel_centers).astype('int')
+		if line[0]!='#':
+			w = line.split()
+			# extract info, and fit line(s)
+			nlines = int(w[0])
+			pix = []
+			wav = []
+			for j in range(nlines):
+				if float(w[2*j+1])*fact/float(binning) + rough_shift+delta > 20 and \
+					float(w[2*j+1])*fact/float(binning) + rough_shift+delta < len(spec)-20:
+					pix.append(float(w[2*j+1])*fact/float(binning) + delta + rough_shift)
+					wav.append(float(w[2*j+2]))
+
+			if len(pix) > 0:
+				pix = np.array(pix)
+				wav = np.array(wav)
+				xmin = int(round(min(pix)))
+				xmax = int(round(max(pix)))
+				X = array(range(xmin-line_width,xmax+line_width+1))
+				Y = spec[xmin-line_width:xmax+line_width+1]
+				if len(np.where(Y!=0)[0])>0:
+					N_l += len(pix)
+					if (nlines == 1):
+						num       = np.sum(X*Y)
+						den       = np.sum(Y)
+						if (den > 0):
+							Cent = num/den
+						else:
+							Cent = -1
+
+					weight = wei[xmin-line_width:xmax+line_width+1]
+					kk = np.where( weight == 0)
+					# Input Spectrum is background subtracted ---> B=0
+					B = np.zeros(len(X))
+					mu = pix
+					sigma = np.zeros(nlines) + sigmai * fact / float(binning)
+
+					p1, suc = LineFit_SingleSigma( X, Y, B, mu, sigma, weight,pixelization=pixelization)
+					#print p1
+					#if (suc<1) or (suc > 4):
+					#    print "Problem", order, X, delta
+					# collect fit information
+					#reto =  fitfunc_temp(p1, X, len(pix),pixelization= pixelization)
+					#plot(X,reto,'r')
+					wavelenghts = np.append(wavelengths,wav)
+					for j in range(len(pix)):
+						pixel_centers = np.append(pixel_centers,p1[3*j + 1])
+						sigmas        = np.append(sigmas,p1[3*j + 2])
+						wavelengths   = np.append(wavelengths,wav[j])
+						intensities   = np.append(intensities,p1[3*j])
+						if (nlines == 1):
+							centroids = np.append(centroids, Cent)
+						else:
+							centroids = np.append(centroids, -1)
+
+	#print len(pixel_centers)
+	pixel_centers2 = np.around(pixel_centers).astype('int')
+	I = np.where((pixel_centers2>=0) & (pixel_centers2<len(spec)))
+	pixel_centers2 = pixel_centers2[I]
 	#plot(pixel_centers2,spec[pixel_centers2],'go')
 	#show()
 	#print gfd
@@ -2036,6 +2046,7 @@ def Initial_Wav_Calibration(filename,spec,order,wei, porder=3, rmsmax=75, minlin
 	#	    plot([0,4096],[-0.1,-0.1])
 	#	    #plot(np.arange(4096),Cheby_eval(coeffs_pix2wav,np.arange(4096),len(spec)))
 	#	    show()
+	#print order, len(pixel_centers), len(I)
 	return coeffs_pix2wav, coeffs_pix2sigma, pixel_centers[I], wavelengths[I], \
         rmsms, residuals, centroids[I], sigmas[I], intensities[I]
 
@@ -2120,8 +2131,25 @@ def Cheby_eval(p,x,npix):
         ret_val += p[order - i]*scipy.special.chebyt(i)(x_norm)
     
     return ret_val
+    
+def fitfunc_temp(p, x, n, pixelization=True):
+	
+	if pixelization:
+		lxo = len(x)
+		xo = x.copy()
+		x = np.arange(x[0]-0.5,x[-1]+0.5,0.01)
 
-def LineFit_SingleSigma(X, Y, B, mu, sigma, weight):
+	ret = np.zeros(len(x))
+	for i in range(n):
+		ret += ( p[i*2+1] * IntGaussian(x,p[i*2+2],p[0]) )
+
+	if pixelization:
+		ret = ret.reshape((lxo,100))
+		ret = np.mean(ret,axis=1)
+
+	return ret
+
+def LineFit_SingleSigma(X, Y, B, mu, sigma, weight,pixelization=False):
     """
     This function fits a series of Gaussians simultaneously, given a set
     of input pixels, sigmas, and intensities
@@ -2135,9 +2163,21 @@ def LineFit_SingleSigma(X, Y, B, mu, sigma, weight):
     n = len(mu)
 
     def fitfunc(p, x, n):
+
+	if pixelization:
+	    lxo = len(x)
+	    xo = x.copy()
+	    x = np.arange(x[0]-0.5,x[-1]+0.5,0.01)
+
         ret = np.zeros(len(x))
         for i in range(n):
             ret += ( p[i*2+1] * IntGaussian(x,p[i*2+2],p[0]) )
+
+	if pixelization:
+	    ret = ret.reshape((lxo,100))
+	    ret = np.mean(ret,axis=1)
+
+
         return ret
     errfunc = lambda p,x,n,y,weight: np.ravel( (fitfunc(p,x,n)-y)*weight )
 
@@ -2153,8 +2193,9 @@ def LineFit_SingleSigma(X, Y, B, mu, sigma, weight):
         p0[i*2+2] = mu[i]
 
     # perform fit
-    #plot(X,Y,'b')
+    #plot(X,Y-B,'b')
     p1, success = scipy.optimize.leastsq(errfunc,p0, args=(X,n,Y-B, weight))
+    #print p1
     #plot(X,fitfunc(p1,X,n),'r')
     # build output consistent with LineFit
     p_output = np.zeros(3*n)
@@ -2209,13 +2250,17 @@ def Fit_Global_Wav_Solution(pix_centers, wavelengths, orders, Wgt, p0, minlines=
     I = range( N_l )
 
     cond = 1
-    L = np.where( np.absolute(residuals_ms) > 3.0*rms_ms )
+    L = np.where( np.absolute(residuals_ms) > 4.0*rms_ms )
     if ( (len(L[0]) == 0) and (rms_ms < maxrms) ) or (N_l < minlines): 
         cond=0
     
     print "\t\t\tStart Global culling with ", N_l, " number of lines"
+    bad_wavs, bad_ords = [],[]
     while (cond):        
         index_worst = np.argmax( np.absolute(residuals) )
+	bad_wavs.append(wavelengths[I[index_worst]])
+	bad_ords.append(orders[I[index_worst]])
+	#print orders[I[index_worst]],wavelengths[I[index_worst]],rms_ms
         I.pop( index_worst )
         N_l -= 1
         if (Cheby):
@@ -2228,8 +2273,9 @@ def Fit_Global_Wav_Solution(pix_centers, wavelengths, orders, Wgt, p0, minlines=
 
         residuals_ms = 299792458.0 * residuals / wavelengths[I]
         rms_ms       = np.sqrt( np.var( residuals_ms ) ) 
-    
-        L = np.where( np.absolute(residuals_ms) > 3.*rms_ms )
+
+        L = np.where( np.absolute(residuals_ms) > 4.*rms_ms )
+    	#print rms_ms, maxrms, len(L[0])
         if ( (len(L[0]) == 0) and (rms_ms < maxrms) ) or (N_l < minlines): 
             cond=0
         #print "Eliminated line ", index_worst, " at order ", orders[index_worst]
@@ -2239,6 +2285,15 @@ def Fit_Global_Wav_Solution(pix_centers, wavelengths, orders, Wgt, p0, minlines=
     #	plot(wavelengths[I][III],residuals[III],'.')
     #	plot(np.median(wavelengths[I][III]),np.median(residuals[III]),'ko')
     #show()
+    """
+    bad_wavs,bad_ords = np.array(bad_wavs), np.array(bad_ords)
+    for i in np.unique(bad_ords):
+	J = np.where(bad_ords==i)[0]
+	tmpwvs,tmpords = bad_wavs[J],bad_ords[J]
+	ist = np.argsort(tmpwvs)
+	for j in ist:
+		print tmpords[j],tmpwvs[j]
+    """
     print "\t\t\tFinal RMS is ", rms_ms
     print "\t\t\tNumber of lines is ", N_l
     print "\t\t\t--> Achievable RV precision is ", rms_ms/np.sqrt(N_l)
@@ -2309,7 +2364,7 @@ def Global_Wav_Solution_vel_shift(pix_centers, wavelengths, orders, Wgt, p_ref, 
         residuals_ms = 299792458.0 * residuals / wavelengths[I]
         rms_ms       = np.sqrt( np.var( residuals_ms ) ) 
         #print 'p1',(1e-6*p1)*299792458.0
-        L = np.where( np.absolute(residuals_ms) > 3.5*rms_ms )
+        L = np.where( np.absolute(residuals_ms) > 4.*rms_ms )
         if ( (len(L[0]) == 0) and (rms_ms < maxrms) ) or (N_l < minlines): 
             cond=0
         #print "Eliminated line ", index_worst, " at order ", orders[index_worst]
@@ -2326,7 +2381,6 @@ def Global_Wav_Solution_vel_shift(pix_centers, wavelengths, orders, Wgt, p_ref, 
     #show()
 
     return p1, pix_centers[I], orders[I], wavelengths[I], I, rms_ms, residuals 
-
 
 def Calculate_chebs(x,m, order0=89, ntotal=70,npix=2048.,Inverse=False,nx=5,nm=6):
     #normalize x
@@ -3219,12 +3273,11 @@ def cor_thar(spec, span=10, filename='/data/echelle/ecpipe/DuPont/wavcals/',binn
 
 	CCF = np.array(CCF)
 	DEL = np.array(DEL)
-	#plot(DEL,CCF,'ro')
+	plot(DEL,CCF,'ro')
 	#show()
 	I = np.argmax(CCF)
 	#plot(DEL,CCF)
 	return CCF[I],DEL[I]
-
 
 def plot_CCF(xc_dict,moon_dict,path='XC.pdf'):
 
@@ -3545,3 +3598,182 @@ def simbad_coords(obname,mjd):
 		else:
 			dec = float(decd[0]) + float(decd[1])/60. + float(decd[2])/3600. +  (float(pmdec)/(3600*1000.))*((mjd-51544.5)/365.)
 	return sp,ra,dec,know
+
+def spec_ccf(sw,sf,mw,mf,vi,vf,dv):
+	mf = mf -1
+	mf = -mf
+	tck = interpolate.splrep(mw,mf,k=1)
+	v = vi
+	retccf = []
+	vels = []
+	while v<=vf:
+		swt = sw * (1 + v/299792.458)
+		mft = interpolate.splev(swt,tck)
+		mft -= np.mean(mft)
+		sft = sf - np.mean(sf)
+		#sft = sf.copy()
+		retccf.append(np.sum(mft*sft)/np.sqrt(np.sum(mft**2)*np.sum(sft**2)))
+		vels.append(v)
+		v+=dv
+	return np.array(vels),np.array(retccf)
+
+
+def RVforFR(data,teff=6750,logg=4.5,feh=-1.0,vsini=40.,model_path='../data/COELHO_MODELS/R_40000b/'):
+	def fitfunc(p,x):
+		ret = p[3] + p[0] * np.exp(-.5*((x-p[1])/p[2])**2)
+		return ret
+	errfunc = lambda p,x,y: np.ravel( (fitfunc(p,x)-y) )
+
+	if feh == -1:
+		sfeh = 'm10'
+	elif feh == -0.5:
+		sfeh = 'm05'
+	elif feh == 0:
+		sfeh = 'p00'
+	else:
+		sfeh = 'p05'
+
+
+	model = model_path+'/vsini_0.0/R_0.0_'+str(int(teff))+'_'+str(int(logg*10))+'_'+sfeh+'p00.ms.fits'
+	sc = pyfits.getdata(model)
+	hd = pyfits.getheader(model)
+	mw = np.arange(len(sc))*hd['CDELT1']+hd['CRVAL1']
+	#""""
+	I = np.where((mw>6520)&(mw<6600))[0]
+	sc[I] = 1.
+	I = np.where((mw>5888)&(mw<5897))[0]
+	sc[I] = 1.
+	I = np.where((mw>4310)&(mw<4360))[0]
+	sc[I] = 1.
+	I = np.where((mw>4070)&(mw<4130))[0]
+	sc[I] = 1.
+	I = np.where((mw>3875)&(mw<3900))[0]
+	sc[I] = 1.
+	I = np.where((mw>3920)&(mw<3945))[0]
+	sc[I] = 1.
+	I = np.where((mw>3955)&(mw<3980))[0]
+	sc[I] = 1.
+	I = np.where(mw<3850)[0]
+	sc[I] = 1.
+	#"""
+
+	mw = ToVacuum(mw)
+	ccftot = []
+
+	for i in range(data.shape[1]):
+		scf = data[5,i]
+		scw = data[0,i]
+		J = np.where(scf!=0)[0]
+		scw,scf = scw[J],scf[J]
+		I = np.where((mw>scw[0]-100) & (mw<scw[-1]+100))
+		tmf = pyasl.fastRotBroad(mw[I], sc[I], 0.5, vsini)
+		ccv,ccf = spec_ccf(scw,scf,mw[I],tmf,-1000,1000,10.)
+		ccf = np.array(ccf)
+		if len(ccftot)==0:
+			ccftot = ccf.copy()
+		else:
+			ccftot = np.vstack((ccftot,ccf))
+		#plot(ccv,ccf/np.sum(ccf))
+		#show()+
+	ccftot = np.mean(ccftot,axis=0)
+	ccftot += 1.
+
+
+	p0 = [-(1-ccftot.min()),ccv[np.argmin(ccftot)],vsini,ccftot[0]]
+	p1, success = scipy.optimize.leastsq(errfunc,p0, args=(ccv,ccftot))
+
+	#plot(ccv,ccftot)
+	#plot(ccv,fitfunc(p0,ccv))
+	#plot(ccv,fitfunc(p1,ccv))
+	#print p0
+	#print p1
+	#show()
+
+	return p1,ccv,ccftot,fitfunc(p1,ccv)
+
+
+def new_ccf(data,model_path):
+	teffs = [6000,6250,6500,6750,7000]
+	loggs = [3.0,3.5,4.0,4.5]
+	fehs  = [-1.0,-0.5,0.0,0.5]
+	rots  = [1.,10.,50.,100.,200.,300.]
+
+	mods,pars = [],[]
+	for tef in teffs:
+		stef = str(int(tef))
+		for log in loggs:
+			slog = str(int(log*10))
+			for feh in fehs:
+				if feh == -1:
+					sfeh = 'm10'
+				elif feh == -0.5:
+					sfeh = 'm05'
+				elif feh == 0.0:
+					sfeh = 'p00'
+				else:
+					sfeh = 'p05'
+				mod = '/vsini_0.0/R_0.0_'+stef+'_'+slog+'_'+sfeh+'p00.ms.fits'
+				mods.append(model_path+mod)
+				if len(pars) == 0:
+					pars = np.array([tef,log,feh])
+				else:
+					pars = np.vstack((pars,np.array([tef,log,feh])))
+	mods = np.array(mods)
+	mods = [model_path+'/vsini_0.0/R_0.0_6750_45_m10p00.ms.fits']
+	modmin = -1
+	mini   = 1000
+	rotmin = -1
+	for i in range(len(mods)):
+		model = mods[i]
+		par = pars[i]
+
+		sc = pyfits.getdata(model)
+		hd = pyfits.getheader(model)
+		mw = np.arange(len(sc))*hd['CDELT1']+hd['CRVAL1']
+		I = np.where((mw>6520)&(mw<6600))[0]
+		sc[I] = 1.
+		I = np.where((mw>5888)&(mw<5897))[0]
+		sc[I] = 1.
+		I = np.where((mw>4310)&(mw<4360))[0]
+		sc[I] = 1.
+		I = np.where((mw>4070)&(mw<4130))[0]
+		sc[I] = 1.
+		I = np.where((mw>3875)&(mw<3900))[0]
+		sc[I] = 1.
+		I = np.where((mw>3920)&(mw<3945))[0]
+		sc[I] = 1.
+		I = np.where((mw>3955)&(mw<3980))[0]
+		sc[I] = 1.
+		I = np.where(mw<3850)[0]
+		sc[I] = 1.
+
+		mw = ToVacuum(mw)
+
+		for rot in rots:
+			ccftot = []
+			for i in range(data.shape[1]):
+				scf = data[5,i]
+				scw = data[0,i]
+				J = np.where(scf!=0)[0]
+				scw,scf = scw[J],scf[J]
+				I = np.where((mw>scw[0]-100) & (mw<scw[-1]+100))
+				tmf = pyasl.fastRotBroad(mw[I], sc[I], 0.5, rot)
+				#plot(scw,scf)
+				#plot(mw[I],tmf)
+				#show()
+				ccv,ccf = spec_ccf(scw,scf,mw[I],tmf,-1000,1000,10.)
+				ccf = np.array(ccf)
+				if len(ccftot)==0:
+					ccftot = ccf.copy()
+				else:
+					ccftot += ccf
+				#plot(ccv,ccf/np.sum(ccf))
+				#show()
+			print model, rot, ccftot.min()
+			if ccftot.min() < mini:
+				mini = ccftot.min()
+				modmin = par
+				rotmin = rot
+			#plot(ccv,ccftot)
+	#show()
+	print modmin,rotmin,mini

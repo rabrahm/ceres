@@ -258,8 +258,8 @@ def CCF(spec, model_path='/dummy/path/',doplot = False, plot_dir = '/home/rabrah
 
 	#width_path = '/home/rabrahm/Desktop/corr2/'
 	#slines_path = '/home/rabrahm/Desktop/corr2/'
-	width_path = '/data/echelle/ecpipe/Correlation/'
-	slines_path = '/data/echelle/ecpipe/Correlation/'
+	width_path = '../utils/Correlation/'
+	slines_path = '../utils/Correlation/'
 	
 	SLi,SLf = numpy.loadtxt(slines_path+'lines2.dat',dtype=None,unpack=True)
 	

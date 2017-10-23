@@ -59,23 +59,6 @@ npools           = int(args.npools)
 object2do        = args.o2do
 reffile          = args.reffile
 
-if dirin[-1] != '/':
-    dirin = dirin + '/'
-
-if dirout == 'default':
-    dirout = dirin[:-1]+'_red/'
-
-if not os.access(dirout,os.F_OK):
-    os.system('mkdir '+dirout)
-if os.access(dirout+'proc',os.F_OK):
-    os.system('rm -r '+dirout+'proc')
-os.system('mkdir '+dirout+'proc')
-
-f_res = open(dirout+'proc/'+'results.txt','w')
-
-if reffile == 'default':
-    reffile = dirin+'reffile.txt'
-
 ####### GLOBAL VARIABLES #####
 ## perhaps put into options ##
 force_pre_process  = False
@@ -85,9 +68,9 @@ force_thar_wavcal  = False
 force_tharxc       = False
 force_sci_extract  = False
 force_stellar_pars = False
-force_trace	   = False
+force_trace	       = False
 dumpargon          = False
-force_spectral_file_build = True
+force_spectral_file_build = False
 dark_correction    = False
 
 bad_colummn        = True
@@ -112,6 +95,24 @@ ncoef_m            = 7
 npar_wsol = (min(ncoef_x,ncoef_m) + 1) * (2*max(ncoef_x,ncoef_m) - min(ncoef_x,ncoef_m) + 2) / 2
 nconts = np.array([2,2,3,3,2,3,3,3,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1])
 lim_iz = np.array([100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,150,200,250,300,350,400,450,500,500,800])
+
+
+if dirin[-1] != '/':
+    dirin = dirin + '/'
+
+if dirout == 'default':
+    dirout = dirin[:-1]+'_red/'
+
+if not os.access(dirout,os.F_OK):
+    os.system('mkdir '+dirout)
+if os.access(dirout+'proc',os.F_OK) and force_spectral_file_build:
+    os.system('rm -r '+dirout+'proc')
+os.system('mkdir '+dirout+'proc')
+
+f_res = open(dirout+'proc/'+'results.txt','w')
+
+if reffile == 'default':
+    reffile = dirin+'reffile.txt'
 
 models_path = base+"data/COELHO_MODELS/R_40000b/"
 order_dir   = base+"feros/wavcals/"
@@ -1156,92 +1157,90 @@ if (not JustExtract):
         mh_v = av_m + mask_hw_wide 
 
         print '\t\t\tComputing the CCF...'
+        if True:
+            cond = True
+            while (cond):
+                # first rough correlation to find the minimum
+                vels, xc_full, sn, nlines_ccf, W_ccf = \
+                        GLOBALutils.XCor(spec, ml_v, mh_v, weight, 0, lbary_ltopo, vel_width=velw,vel_step=velsh,\
+                                              spec_order=9,iv_order=10,sn_order=8,max_vel_rough=velw)
 
-        cond = True
-        while (cond):
-            # first rough correlation to find the minimum
-            vels, xc_full, sn, nlines_ccf, W_ccf = \
-                    GLOBALutils.XCor(spec, ml_v, mh_v, weight, 0, lbary_ltopo, vel_width=velw,vel_step=velsh,\
-                                          spec_order=9,iv_order=10,sn_order=8,max_vel_rough=velw)
+                xc_av = GLOBALutils.Average_CCF(xc_full, sn, sn_min=3., Simple=True, W=W_ccf)
+                outt = np.vstack((vels,xc_av))
+                yy     = scipy.signal.medfilt(xc_av,11)
+                pred = lowess(yy, vels,frac=0.4,it=10,return_sorted=False)
+                tck1 = scipy.interpolate.splrep(vels,pred,k=1)
+                xc_av_orig = xc_av.copy()
+                xc_av /= pred
+                vel0_xc = vels[ np.argmin( xc_av ) ]
+                rvels, rxc_av, rpred, rxc_av_orig, rvel0_xc = vels.copy(), xc_av.copy(), pred.copy(), xc_av_orig.copy(), vel0_xc
+                xc_av_rough = xc_av
+                vels_rough  = vels
+    	
+                vel_width = np.maximum( 20.0, 6*disp )
 
-            xc_av = GLOBALutils.Average_CCF(xc_full, sn, sn_min=3., Simple=True, W=W_ccf)
+                vels, xc_full, sn, nlines_ccf, W_ccf =\
+                        GLOBALutils.XCor(spec, ml_v, mh_v, weight, vel0_xc, lbary_ltopo, vel_width=vel_width,vel_step=0.2,\
+                                              spec_order=9,iv_order=10,sn_order=8,max_vel_rough=velw)
 
-            outt = np.vstack((vels,xc_av))
-            yy     = scipy.signal.medfilt(xc_av,11)
-            pred = lowess(yy, vels,frac=0.4,it=10,return_sorted=False)
-            tck1 = scipy.interpolate.splrep(vels,pred,k=1)
-            xc_av_orig = xc_av.copy()
-            xc_av /= pred
-            vel0_xc = vels[ np.argmin( xc_av ) ]
-            rvels, rxc_av, rpred, rxc_av_orig, rvel0_xc = vels.copy(), xc_av.copy(), pred.copy(), xc_av_orig.copy(), vel0_xc
-            xc_av_rough = xc_av
-            vels_rough  = vels
-	
-            vel_width = np.maximum( 20.0, 6*disp )
+                xc_av = GLOBALutils.Average_CCF(xc_full, sn, sn_min=3., Simple=True, W=W_ccf)
+                pred = scipy.interpolate.splev(vels,tck1)
+                xc_av /= pred
 
-            vels, xc_full, sn, nlines_ccf, W_ccf =\
-                    GLOBALutils.XCor(spec, ml_v, mh_v, weight, vel0_xc, lbary_ltopo, vel_width=vel_width,vel_step=0.2,\
-                                          spec_order=9,iv_order=10,sn_order=8,max_vel_rough=velw)
+                if sp_type == 'M5':
+                    moon_sig = 2.5
+                elif sp_type == 'K5':
+                    moon_sig = 3.3
+                else:
+                    moon_sig = 4.5
 
-            xc_av = GLOBALutils.Average_CCF(xc_full, sn, sn_min=3., Simple=True, W=W_ccf)
-            pred = scipy.interpolate.splev(vels,tck1)
-            xc_av /= pred
+                p1,XCmodel,p1gau,XCmodelgau,Ls2 = GLOBALutils.XC_Final_Fit( vels, xc_av , sigma_res = 4, horder=8, moonv = refvel, moons = moon_sig, moon = False)
+                moonmatters = False
+                if (know_moon and here_moon):
+                    moonmatters = True
+                    ismoon = True
+                    confused = False
+                    p1_m,XCmodel_m,p1gau_m,XCmodelgau_m,Ls2_m = GLOBALutils.XC_Final_Fit( vels, xc_av , sigma_res = 4, horder=8, moonv = refvel, moons = moon_sig, moon = True)
+                    moon_flag = 1
+                else:
+                    confused = False
+                    ismoon = False
+                    p1_m,XCmodel_m,p1gau_m,XCmodelgau_m,Ls2_m = p1,XCmodel,p1gau,XCmodelgau,Ls2
+                    moon_flag = 0
 
-            if sp_type == 'M5':
-                moon_sig = 2.5
-            elif sp_type == 'K5':
-                moon_sig = 3.3
-            else:
-                moon_sig = 4.5
-
-            p1,XCmodel,p1gau,XCmodelgau,Ls2 = GLOBALutils.XC_Final_Fit( vels, xc_av , sigma_res = 4, horder=8, moonv = refvel, moons = moon_sig, moon = False)
-
-            moonmatters = False
-            if (know_moon and here_moon):
-                moonmatters = True
-                ismoon = True
-                confused = False
-                p1_m,XCmodel_m,p1gau_m,XCmodelgau_m,Ls2_m = GLOBALutils.XC_Final_Fit( vels, xc_av , sigma_res = 4, horder=8, moonv = refvel, moons = moon_sig, moon = True)
-                moon_flag = 1
-            else:
-                confused = False
-                ismoon = False
-                p1_m,XCmodel_m,p1gau_m,XCmodelgau_m,Ls2_m = p1,XCmodel,p1gau,XCmodelgau,Ls2
-                moon_flag = 0
-
-            bspan = GLOBALutils.calc_bss(vels,xc_av)
-            SP = bspan[0]
-	    SP2 = GLOBALutils.calc_bss2(vels,xc_av,p1gau)
-            #print p1gau[1]
-            if (not known_sigma):
-                disp = np.floor(p1gau[2])
-                if (disp < 3.0): 
-                    disp = 3.0
-                mask_hw_wide = av_m * disp / (GLOBALutils.Constants.c/1.0e3)
-                ml_v = av_m - mask_hw_wide
-                mh_v = av_m + mask_hw_wide            
-                known_sigma = True
-	    else:
+                bspan = GLOBALutils.calc_bss(vels,xc_av)
+                SP = bspan[0]
+                SP2 = GLOBALutils.calc_bss2(vels,xc_av,p1gau)
+                #print p1gau[1]
+                if (not known_sigma):
+                    disp = np.floor(p1gau[2])
+                    if (disp < 3.0): 
+                        disp = 3.0
+                    mask_hw_wide = av_m * disp / (GLOBALutils.Constants.c/1.0e3)
+                    ml_v = av_m - mask_hw_wide
+                    mh_v = av_m + mask_hw_wide            
+                    known_sigma = True
+                else:
                     cond = False
 
-        BSerr = -999.00
+            BSerr = -999.00
 
-        xc_dict = {'vels':vels,'xc_av':xc_av,'XCmodelgau':XCmodelgau,'Ls2':Ls2,'refvel':refvel,\
-		       'rvels':rvels,'rxc_av':rxc_av,'rpred':rpred,'rxc_av_orig':rxc_av_orig,\
-		       'rvel0_xc':rvel0_xc,'xc_full':xc_full, 'p1':p1, 'sn':sn, 'p1gau':p1gau,\
-		       'p1_m':p1_m,'XCmodel_m':XCmodel_m,'p1gau_m':p1gau_m,'Ls2_m':Ls2_m,\
-		       'XCmodelgau_m':XCmodelgau_m}
+            xc_dict = {'vels':vels,'xc_av':xc_av,'XCmodelgau':XCmodelgau,'Ls2':Ls2,'refvel':refvel,\
+    		       'rvels':rvels,'rxc_av':rxc_av,'rpred':rpred,'rxc_av_orig':rxc_av_orig,\
+    		       'rvel0_xc':rvel0_xc,'xc_full':xc_full, 'p1':p1, 'sn':sn, 'p1gau':p1gau,\
+    		       'p1_m':p1_m,'XCmodel_m':XCmodel_m,'p1gau_m':p1gau_m,'Ls2_m':Ls2_m,\
+    		       'XCmodelgau_m':XCmodelgau_m}
 
-        moon_dict = {'moonmatters':moonmatters,'moon_state':moon_state,'moonsep':moonsep,\
-		         'lunation':lunation,'mephem':mephem,'texp':h[0].header['EXPTIME']}
+            moon_dict = {'moonmatters':moonmatters,'moon_state':moon_state,'moonsep':moonsep,\
+    		         'lunation':lunation,'mephem':mephem,'texp':h[0].header['EXPTIME']}
 
-        pkl_xc = dirout + fsim.split('/')[-1][:-4]+obname+'_XC_'+sp_type+'.pkl'
-        pickle.dump( xc_dict, open( pkl_xc, 'w' ) )
+            pkl_xc = dirout + fsim.split('/')[-1][:-4]+obname+'_XC_'+sp_type+'.pkl'
+            pickle.dump( xc_dict, open( pkl_xc, 'w' ) )
 
-        ccf_pdf = dirout + 'proc/' + fsim.split('/')[-1][:-4] + obname + '_XCs_' + sp_type + '.pdf'
+            ccf_pdf = dirout + 'proc/' + fsim.split('/')[-1][:-4] + obname + '_XCs_' + sp_type + '.pdf'
 
-        if not avoid_plot:
-            GLOBALutils.plot_CCF(xc_dict,moon_dict,path=ccf_pdf)
+            if not avoid_plot:
+                GLOBALutils.plot_CCF(xc_dict,moon_dict,path=ccf_pdf)
           
 	    airmass  = h[0].header['ESO TEL AIRM START']
         seeing   = h[0].header['ESO TEL AMBI FWHM START']

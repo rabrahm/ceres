@@ -87,7 +87,8 @@ def corr_p(model_name):
 			if ons[k]==o:
 				o=o+1
 			k=k+1
-		
+		if o >= L_Gl.shape[0]:
+			break
 		I  = numpy.where(F_Gl[o]!=0.0)[0]
 		if I.shape[0] > 0:
 			Fl = F_Gl[o][I]
@@ -130,6 +131,8 @@ def corr(L,F,mwa,FF,ons):
 			if ons[k]==o:
 				o=o+1
 			k=k+1
+		if o >= L.shape[0]:
+			break
 		
 		I  = numpy.where(F[o]!=0.0)[0]
 		if I.shape[0] > 0:

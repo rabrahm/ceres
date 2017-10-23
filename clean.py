@@ -20,6 +20,7 @@ def getDirs(foldername):
 
 def SeeknDestroy(directory):
     if(directory == 'utils/SSEphem'):
+       or_path = os.getcwd()
        os.chdir('utils/SSEphem')
        p = subprocess.Popen('make clean',stdout = subprocess.PIPE, stderr = subprocess.PIPE,shell = True)
        p.wait()
@@ -36,7 +37,7 @@ def SeeknDestroy(directory):
        os.system('rm t_sofa_c')
        os.system('rm libsofa_c.a')
        p.wait()
-       os.chdir('../../')
+       os.chdir(or_path)
     # We obtain al files and folders of the current directory...
     files_and_folders = glob.glob(directory+'/*')
     # ...and we check each folder or file:
@@ -53,9 +54,14 @@ def SeeknDestroy(directory):
            SeeknDestroy(cf)
 # First, we get all the directories in the current folder:
 
-dirs2 = getDirs('utils')
+dirs1 = getDirs('.')
+#dirs2 = getDirs('utils')
 
-for directory in dirs2:
+for directory in dirs1:
     print directory
     # To each directory, we apply the SeeknDestroy function:
-    SeeknDestroy('utils/'+directory)
+    SeeknDestroy(directory)
+#for directory in dirs2:
+#    print directory
+#    # To each directory, we apply the SeeknDestroy function:
+#    SeeknDestroy('utils/'+directory)

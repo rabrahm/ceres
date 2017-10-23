@@ -7,6 +7,13 @@ import GLOBALutils
 import os 
 import glob
 import pyfits
+from scipy import ndimage
+import emcee
+import corner
+
+from astropy import units as u
+from astropy.time import Time
+from astropy.coordinates import SkyCoord, EarthLocation, AltAz
 
 def FileClassify(diri, log):
 
@@ -19,6 +26,8 @@ def FileClassify(diri, log):
 	thar_co		   = []
 	sim_sci        = []
 	dar_sci		   = []
+	thart = []
+	simt = []
 
 	f = open(log,'w')
 
@@ -57,19 +66,27 @@ def FileClassify(diri, log):
 					thar_co.append(archivo)
 				elif '2F' in archivo:
 					thar.append(archivo)
+					thart.append(mjd_fromheader(h)[0])
 			else:
 				if '1F' in archivo:
 					dar_sci.append(archivo)
 				else:
 					sim_sci.append(archivo)
+					simt.append(mjd_fromheader(h)[0])
 
 				#line = "%-15s %10s %10s %8.2f %4.2f %8s %11s %s\n" % (obname, ra, delta, texp, airmass, date, hour, archivo)
 				#f.write(line)
 
+	thart = np.array(thart)
+	simt = np.array(simt)
 	f.close()
 	biases, darks, flats, flats_co, thar, thar_co, sim_sci, dar_sci = \
 		np.array(biases), np.array(darks), np.array(flats), np.array(flats_co), np.array(thar), \
 		np.array(thar_co), np.array(sim_sci), np.array(dar_sci)
+	It = np.argsort(thart)
+	thar = thar[It]
+	It = np.argsort(simt)
+	sim_sci = sim_sci[It]
 	return biases, darks, flats, flats_co, thar, thar_co, sim_sci, dar_sci
 
 def make_flatOB(MasterFlat, c_co,exap=5):
@@ -294,4 +311,466 @@ def get_name(arch):
 	return obname
 
 	    
+def Initial_Wav_Calibration(filename,spec,order,wei, porder=3, rmsmax=75, minlines=10, FixEnds=True, \
+                            Dump_Argon=False, Dump_AllLines=False, Cheby=False, rough_shift = 0.0,del_width=5.0, \
+			    binning=1,line_width=4, fact=1,do_xc=True,sigmai=0.7,pixelization=False,fibre_ap=2.3):
+
+	f = open(filename).readlines()
+        bad_indices = np.array([])
+	pixel_centers = array([])
+	wavelengths   = array([])
+	sigmas        = array([])
+	centroids     = array([])
+	intensities   = array([])
+
+	delta=0.
+	N_l = 0
+	out = []
+	for line in f:
+	    if line[0]!='#':
+		w = line.split()
+		nlines = int(w[0])
+		pix = float(w[1])*fact/float(binning) + delta + rough_shift
+		wav = float(w[2])
+		if pix > 20 and pix < len(spec)-20:
+			sigma = sigmai * fact / float(binning)
+			X = np.arange(int(np.around(pix))-5,int(np.around(pix))+6)
+			Y = spec[X]
+			guess = np.array([pix-0.5*fibre_ap,np.max(Y),sigmai])
+			p1 = FitFideosCompProf(X, Y, guess, fibre_ap)
+
+			pixel_centers = np.append(pixel_centers,p1[0])
+			sigmas        = np.append(sigmas,p1[2])
+			wavelengths   = np.append(wavelengths,wav)
+			intensities   = np.append(intensities,p1[1])
+			centroids     = np.append(centroids, p1[0])
+			N_l += 1
+
+	#show()
+	pixel_centers2 = np.around(pixel_centers).astype('int')
+	I = np.where((pixel_centers2>=0) & (pixel_centers2<len(spec)))
+	pixel_centers2 = pixel_centers2[I]
+	#plot(pixel_centers2,spec[pixel_centers2],'go')
+	#show()
+	#print gfd
+
+	#I = np.where((pixel_centers>0) & (pixel_centers<2048))[0]
+	#plot(np.around(pixel_centers[I]).astype('int'),spec[np.around(pixel_centers[I]).astype('int')],'ro')
+	#show()
+	I1 = np.where(pixel_centers<50)[0]
+	I2 = np.where(pixel_centers>len(spec)-50)[0]
+	II = np.hstack((I1,I2))
+	bad_indices = np.hstack((np.array(bad_indices),II))
+	bad_indices = list(np.unique(bad_indices))
+	# now, do the polynomial fit, rejecting some lines until RMS is below rmsmax
+	I = range( N_l )
+
+	for bi in bad_indices:
+		I.remove( bi )
+		N_l -= 1
+
+	if (Cheby):
+		coeffs_pix2wav   = Cheby_Fit(pixel_centers[I], wavelengths[I], porder,len(spec))   
+		coeffs_pix2sigma = Cheby_Fit(pixel_centers[I], sigmas[I], porder,len(spec))
+	else:
+		coeffs_pix2wav   = scipy.polyfit(pixel_centers[I], wavelengths[I], porder)    
+		coeffs_pix2sigma = scipy.polyfit(pixel_centers[I], sigmas[I], porder)
+
+	rmsms, residuals = rms_ms(coeffs_pix2wav, pixel_centers[I], wavelengths[I], len(spec), Cheby=Cheby)
+
+	if (FixEnds):
+		minI = np.min( I ) + 1
+		maxI = np.max( I ) - 1
+	else:
+		minI = np.min( I )
+		maxI = np.max( I )
+	#if order==26:
+	#	    plot(pixel_centers[I],residuals,'ro')
+	#	    plot([0,4096],[0,0])
+	#plot(np.arange(4096),Cheby_eval(coeffs_pix2wav,np.arange(4096),len(spec)))
+	#show()
+	#print dfgh
+	count = 0
+	while ((N_l > minlines) and (rmsms > rmsmax)):
+		rmsms, residuals = rms_ms(coeffs_pix2wav, pixel_centers[I], wavelengths[I], len(spec), Cheby=Cheby)
+		index_worst = np.argmax( np.absolute(residuals) )
+		I.pop( index_worst)
+		N_l -= 1
+		if (Cheby):
+			coeffs_pix2wav   = Cheby_Fit(pixel_centers[I], wavelengths[I], porder,len(spec))   
+			coeffs_pix2sigma = Cheby_Fit(pixel_centers[I], sigmas[I], porder,len(spec))
+		else:
+			coeffs_pix2wav   = scipy.polyfit(pixel_centers[I], wavelengths[I], porder)    
+			coeffs_pix2sigma = scipy.polyfit(pixel_centers[I], sigmas[I], porder)
+		count +=1
+
+	rmsms, residuals = rms_ms(coeffs_pix2wav, pixel_centers[I], wavelengths[I], len(spec), Cheby=Cheby)    
+
+	pci = np.around(pixel_centers).astype('int')
+	#plot(spec)
+	#plot(pci,spec[pci],'ro')
+	#plot(pci[I],spec[pci[I]],'bo')
+	#show()
+	#plot(wavelengths[I],residuals,'ro')
+	#show()
+	#print "RMS is ", rmsms, "using ", N_l, " lines at indices ", I
+	#plot(pixel_centers[I],wavelengths[I],'ro')
+	#if order == 26:
+	#	    plot(pixel_centers[I],residuals-0.1,'bo')
+	#	    plot([0,4096],[-0.1,-0.1])
+	#	    #plot(np.arange(4096),Cheby_eval(coeffs_pix2wav,np.arange(4096),len(spec)))
+	#	    show()
+	#print order, len(pixel_centers), len(I)
+	return coeffs_pix2wav, coeffs_pix2sigma, pixel_centers[I], wavelengths[I], \
+        rmsms, residuals, centroids[I], sigmas[I], intensities[I]
+
+def rms_ms(coeffs_pix2wav, pixel_centers, wavelengths, npix, Cheby=False):
+    " Returns rms deviation of best fit in m/s"
+
+    if (Cheby):
+        residuals = Cheby_eval(coeffs_pix2wav,pixel_centers,npix) - wavelengths
+        central_wav = 0.5 * (Cheby_eval(coeffs_pix2wav,50.,npix) + Cheby_eval(coeffs_pix2wav,npix-50,npix))
+    else:
+        residuals = scipy.polyval(coeffs_pix2wav,pixel_centers) - wavelengths
+        central_wav = 0.5 * (scipy.polyval(coeffs_pix2wav,50.) + scipy.polyval(coeffs_pix2wav,npix-50))
+
+    rms_ms = np.sqrt( np.var( residuals ) ) * 299792458.0 / central_wav
+    
+    return rms_ms, residuals
+
+def fit2d(sc,trace,filename,spec,order,wei, porder=3, rmsmax=75, minlines=10, FixEnds=True, \
+                            Dump_Argon=False, Dump_AllLines=False, Cheby=False, rough_shift = 0.0,del_width=5.0, \
+			    binning=1,line_width=4, fact=1,do_xc=True,sigmai=0.8,pixelization=False):
+
+	f = open(filename).readlines()
+
+	pixel_centers = array([])
+	wavelengths   = array([])
+	sigmas        = array([])
+	centroids     = array([])
+	intensities   = array([])
+
+	delta=0.
+	N_l = 0
+	out = []
+	for line in f:
+	    if line[0]!='#':
+		w = line.split()
+		nlines = int(w[0])
+		pix = float(w[1])*fact/float(binning) + delta + rough_shift
+		wav = float(w[2])
+		if pix > 20 and pix < len(spec)-20:
+			#X = array(range(pix-line_width,pix+line_width+1))
+			#Y = spec[pix-line_width:pix+line_width+1]
+			sigma = sigmai * fact / float(binning)
+			#p1 = FitFideosCompProf(X, Y, B, mu[0], sigma[0])
+			#print trace
+			y1 = 2064 - np.polyval(trace,2048.-pix)
+			#print '#',2048-pix,y1
+			
+			X = np.arange(int(np.around(2048.-pix))-5,int(np.around(2048-pix))+5)
+			Y = np.arange(int(np.around(y1))-5,int(np.around(y1))+6)
+
+			F = sc.T
+			F = F[X,:]
+			F = F[:,Y]
+			B1 = F[0]
+			B2 = F[-1]
+			B3 = F[:,0]
+			B4 = F[:,-1]
+			BAC = np.median(np.hstack((B1,B2,B3,B4)))
+			F = F - BAC
+			Ferr = np.sqrt(np.sqrt(np.absolute(F))**2 + 9.)
+			#pars = np.array([1.8128e+03, 1.7167e+03, 7.500e+03, 2.3, 6.15])
+			#model = FideosCompProf(pars,X,Y)
+			#model2 = FideosCompProf(np.array([2048-pix, y1,F.max()]),X,Y)
+			#for i in range(F.shape[1]):
+			#	errorbar(X,F[:,i],yerr=Ferr[:,i],fmt='b')
+			#	plot(X,model[:,i],'r')
+			#	plot(Y,model2[i],'k')
+			#show()
+
+			#print X,Y,pix,y1
+			#p1 = FitFideos2DProf(X, Y, F, 2048-pix, y1)
+			guess = np.array([2048-pix, y1,F.max(),2.,10.])
+			ndim = len(guess)
+			nwalkers=100
+			pos = [guess + np.random.randn(ndim)*np.array([2,2,500.,2.,4.]) for i in range(nwalkers)]
+			sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(X,Y,F,Ferr))
+			sampler.run_mcmc(pos, 500)
+			samples = sampler.chain[:, 50:, :].reshape((-1, ndim))
+			#print samples.shape
+			print np.median(samples,axis=0)
+			if len(out) == 0:
+				out = np.median(samples,axis=0)
+			else:
+				out = np.vstack((out,np.median(samples,axis=0)))
+			#fig = corner.corner(samples, labels=["$Xpos$", "$Ypos$", "Amp", 'Fibwidth', 'Inst'])
+			#show()
+	return out
+
+def rms_ms(coeffs_pix2wav, pixel_centers, wavelengths, npix, Cheby=False):
+    " Returns rms deviation of best fit in m/s"
+
+    if (Cheby):
+        residuals = Cheby_eval(coeffs_pix2wav,pixel_centers,npix) - wavelengths
+        central_wav = 0.5 * (Cheby_eval(coeffs_pix2wav,50.,npix) + Cheby_eval(coeffs_pix2wav,npix-50,npix))
+    else:
+        residuals = scipy.polyval(coeffs_pix2wav,pixel_centers) - wavelengths
+        central_wav = 0.5 * (scipy.polyval(coeffs_pix2wav,50.) + scipy.polyval(coeffs_pix2wav,npix-50))
+
+    rms_ms = np.sqrt( np.var( residuals ) ) * 299792458.0 / central_wav
+    
+    return rms_ms, residuals
+
+def Cheby_Fit(x,y,order,npix):
+    """
+    Fits Chebyshev polynomials to y as a function of x
+
+    """
+    med = .5*npix
+    #normalize x
+    x_norm = (x-med) / med
+
+    def fitfunc(p,chebs,order):
+        ret_val = 0.0
+        for i in range(0,order+1):
+            ret_val += p[order-i]*chebs[i]
+        return ret_val
+    errfunc = lambda p,chebs,y,order: np.ravel( (fitfunc(p,chebs,order)-y) )
+    
+    def get_chebs(x,order):
+        chebs = []
+        for i in range(0,order+1):
+            chebs.append( scipy.special.chebyt(i)(x) )
+        return chebs
+
+    p0 = np.zeros( order + 1 )
+    p0[order] = np.mean( y )
+    chebs = get_chebs( x_norm, order)
+    p1, success = scipy.optimize.leastsq(errfunc, p0, args=(chebs, y, order))
+    return p1
+
+def Cheby_eval(p,x,npix):
+    """
+    evaluates Chebyshev polynomial fit at x given best-fit parameters p
+    """
+    med = .5*npix
+    x_norm = (x-med) / med
+    order = len(p) - 1
+    ret_val = 0.0
+    for i in range(order + 1):
+        ret_val += p[order - i]*scipy.special.chebyt(i)(x_norm)
+    
+    return ret_val
+
+def LineFit_SingleSigma(X, Y, B, mu, sigma, weight,pixelization=False):
+    """
+    This function fits a series of Gaussians simultaneously, given a set
+    of input pixels, sigmas, and intensities
+    
+    Sigma is the same for all lines
+    
+    Returns (mu_i, sigm_i, int_i), i=1,.,n where n is the number of components
+    """
+
+    # get number of components to be fit
+    n = len(mu)
+
+    def fitfunc(p, x, n):
+
+	if pixelization:
+	    lxo = len(x)
+	    xo = x.copy()
+	    x = np.arange(x[0]-0.5,x[-1]+0.5,0.01)
+
+        ret = np.zeros(len(x))
+        for i in range(n):
+            ret += ( p[i*2+1] * IntGaussian(x,p[i*2+2],p[0]) )
+
+	if pixelization:
+	    ret = ret.reshape((lxo,100))
+	    ret = np.mean(ret,axis=1)
+
+
+        return ret
+    errfunc = lambda p,x,n,y,weight: np.ravel( (fitfunc(p,x,n)-y)*weight )
+
+    # Build error array
+    #err = sqrt((B+Y)/gain + readnoise**2)
+    
+    # Build input parameters list
+    # length of inout parameter list: 3 * n
+    p0 = np.zeros(2*n+1)
+    p0[0] = sigma[0]
+    for i in range(n):
+        p0[i*2+1] = Y[int(round(mu[i])-X[0])]
+        p0[i*2+2] = mu[i]
+
+    # perform fit
+    #plot(X,Y,'b')
+    
+    p1, success = scipy.optimize.leastsq(errfunc,p0, args=(X,n,Y-B, weight))
+    #plot(X,fitfunc(p1,X,n),'r')
+    # build output consistent with LineFit
+    p_output = np.zeros(3*n)
+    for i in range(n):
+        p_output[i*3]   = p1[i*2 + 1]
+        p_output[i*3+1] = p1[i*2 + 2]
+        p_output[i*3+2] = p1[0]
+
+    return p_output, success  
+
+def TruncGaussian(x,y,x0,y0,dev):
+	if x > x0:
+		return 0
+	elif x < x0 - 3*dev:
+		return 0
+	c1 = (x - x0)**2/(2.*dev*dev)
+	c2 = (y - y0)**2/(2.*dev*dev)
+	z = np.exp(-(c1+c2))
+	return z
+
+def HalfFiber(x,y,x0,y0,lim):
+	if x > x0:
+		return 0.
+	if np.sqrt((x-x0)**2 + (y-y0)**2)<lim:
+		return 1.
+	else:
+		return 0.
+
+def HalfFiberPos(x,y,x0,y0,lim):
+	if x < x0:
+		return 0.
+	if np.sqrt((x-x0)**2 + (y-y0)**2)<lim:
+		return 1.
+	else:
+		return 0.
+
+def FitFideosCompProf(X, Y, p0, fibre_ap):
+
+    def AnaliticProfile1D(p,x,R):
+        space = 100.
+        xt    = np.arange(x[0],x[-1]+1,1./space)
+        x0 = xt - p[0]
+        J = np.where((R**2-x0**2>=0) & (x0>=0))[0]
+        out = np.zeros(len(x0))
+        out[J] = 2*np.sqrt(R**2-x0[J]**2)
+        out = scipy.ndimage.filters.gaussian_filter(out, p[2]*space)
+        out /= np.max(out)
+        out = p[1]*out
+        out = np.mean(out.reshape((len(out)/space,space)),axis=1)
+        return out
+    errfunc = lambda p,X,Y,fibre_ap: np.ravel( (AnaliticProfile1D(p,X,fibre_ap)-Y) )
+
+    p1, success = scipy.optimize.leastsq(errfunc,p0, args=(X,Y,fibre_ap))
+    #plot(X,Y)
+    #plot(X,AnaliticProfile1D(p1,X,fibre_ap))
+    #plot(X,AnaliticProfile1D(p0,X,fibre_ap))
+    return p1
+
+def FideosCompProf(p,X,Y):
+	    Xt = np.arange(X[0]-0.5,X[-1]+0.6,0.1)
+	    Yt = np.arange(Y[0]-0.5,Y[-1]+0.6,0.1)
+	    mat = np.zeros((len(Xt),len(Yt)))
+	    for x in np.arange(len(Xt)):
+	        for y in  np.arange(len(Yt)):
+		    mat[x,y] = HalfFiber(Xt[x],Yt[y],p[0],p[1],p[3])
+	    fin2 = scipy.ndimage.filters.gaussian_filter(mat, p[4])
+	    fin2 /= np.max(fin2)
+	    fin2 = p[2]*fin2
 	    
+	    mat2 = np.zeros((len(X),len(Y)))
+	    for x in np.arange(len(X)):
+	        I = np.where((Xt>=X[x]-0.5)&(Xt<X[x]+0.4999))[0]
+		temp = fin2[I]
+		for y in  np.arange(len(Y)):
+			J = np.where((Yt>=Y[y]-0.5)&(Yt<Y[y]+0.4999))[0]
+			mat2[x,y] = np.mean(temp[:,J])
+	    return mat2
+
+
+def FitFideos2DProf(X, Y, F, x1, y1):
+	def FideosCompProf(p,X,Y):
+	    Xt = np.arange(X[0]-0.5,X[-1]+0.6,0.1)
+	    Yt = np.arange(Y[0]-0.5,Y[-1]+0.6,0.1)
+	    mat = np.zeros((len(Xt),len(Yt)))
+	    for x in np.arange(len(Xt)):
+	        for y in  np.arange(len(Yt)):
+		    mat[x,y] = HalfFiber(Xt[x],Yt[y],p[0],p[1],2.)
+	    fin2 = scipy.ndimage.filters.gaussian_filter(mat, 5.)
+	    fin2 /= np.max(fin2)
+	    fin2 = p[2]*fin2
+	    
+	    mat2 = np.zeros((len(X),len(Y)))
+	    for x in np.arange(len(X)):
+	        I = np.where((Xt>=X[x]-0.5)&(Xt<X[x]+0.4999))[0]
+		temp = fin2[I]
+		for y in  np.arange(len(Y)):
+			J = np.where((Yt>=Y[y]-0.5)&(Yt<Y[y]+0.4999))[0]
+			mat2[x,y] = np.sum(temp[:,J])
+	    return mat2
+	errfunc = lambda p,X,Y,F: np.ravel( (FideosCompProf(p,X,Y)-F) )
+	
+	p0 = np.array([x1,y1,np.max(F)])
+        p1, success = scipy.optimize.leastsq(errfunc,p0, args=(X,Y,F))
+	print p0
+	print p1
+	imshow(F)
+	show()
+	imshow(FideosCompProf(p1,X,Y))
+	show()
+	return p1
+
+
+def lnlike(theta, X,Y,F, Ferr):
+	model = FideosCompProf(theta,X,Y)
+	inv_sigma2 = 1.0/(Ferr**2)
+	#ret = -np.log(2*np.pi) + np.log(np.sum(np.exp(-0.5*((y-model)/yerr)**2)/yerr))
+	ret = -0.5*(np.sum(inv_sigma2*(F-model)**2 - np.log(inv_sigma2)))
+	#for i in range(len(F)):
+	#	errorbar(Y,F[i],yerr=Ferr[i],fmt='b')
+	#for j in model:
+	#	plot(Y,j,'r')
+	#show()
+	#print theta, ret
+	if np.isnan(ret):
+		return -np.inf
+	else:
+		return ret
+
+
+def lnprior(theta,X,Y):
+	if X[0] < theta[0] < X[-1] and Y[0] < theta[1] < Y[-1] and 0 < theta[2] < 70000 and 0.1 < theta[3] < 5 and  0.1 < theta[4] < 20:
+	    return 0.0
+	return -np.inf
+
+def lnprob(theta, X,Y,F,Ferr):
+    lp = lnprior(theta,X,Y)
+    if not np.isfinite(lp):
+        return -np.inf
+    return lp + lnlike(theta,X,Y,F,Ferr)
+
+def AnaliticProfile1D(p,x,R=2.3):
+    space = 100.
+    xt    = np.arange(x[0],x[-1]+1,1./space)
+    x0 = xt - p[0]
+    J = np.where((R**2-x0**2>=0) & (x0>=0))[0]
+    out = np.zeros(len(x0))
+    out[J] = 2*np.sqrt(R**2-x0[J]**2)
+    out = scipy.ndimage.filters.gaussian_filter(out, p[2]*space)
+    out /= np.max(out)
+    out = p[1]*out
+    out = np.mean(out.reshape((len(out)/space,space)),axis=1)
+    return out
+
+
+def get_airmass(ra,dec,lat,lon,alt,dateobs):
+
+	target = SkyCoord(ra,dec, unit="deg")  
+	obs    = EarthLocation(lat=lat*u.deg, lon=lon*u.deg, height=alt*u.m)
+	#utcoffset = -4*u.hour  # Eastern Daylight Time
+	time = Time(dateobs)
+	altaz = target.transform_to(AltAz(obstime=time,location=obs))  
+
+	return altaz.secz
