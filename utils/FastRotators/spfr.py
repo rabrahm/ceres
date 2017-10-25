@@ -7,7 +7,7 @@ from scipy import ndimage
 from scipy import signal
 import pickle
 from matplotlib.backends.backend_pdf import PdfPages
-
+import os
 #from pyevolve import G1DList
 #from pyevolve import GSimpleGA
 
@@ -20,7 +20,7 @@ def download_models(webpage='http://svo2.cab.inta-csic.es/theory/models/coelho/h
 	cwd = os.getcwd()
 	os.chdir(dest+'/COELHO2014')
 
-	tf = np.arange(6000,1001,250)
+	tf = np.arange(6000,10001,250)
 	gf = np.arange(3.0,4.6,0.5)
 	zf = np.array([-1.,-0.5,0.0,0.2])
 
@@ -28,8 +28,13 @@ def download_models(webpage='http://svo2.cab.inta-csic.es/theory/models/coelho/h
 		for g in gf:
 			for z in zf:
 				modname = get_modname(t,g,z)
-				os.system('wget ' + webpage+modname+'.fits')
-				os.system('wget ' + webpage+modname+'plc.fits')
+				if z<0:
+					sz = 'm'
+				else:
+					sz = 'p'
+				sz = sz+str(float(np.absolute(z))).replace('.','')+'p00/'
+				os.system('wget ' + webpage+sz+modname+'.fits')
+				os.system('wget ' + webpage+sz+modname+'plc.fits')
 	os.chdir(cwd)
 
 	return True
@@ -172,6 +177,30 @@ def spec_ccf(sw,sf,mw,mf,vi,vf,dv):
 
 	return np.array(vels),np.array(retccf)
 
+def ccf_fft(swt,sft,mwt,mft):
+	mf = mft -1
+	mf = -mft
+	#plot(mw,mf)
+	tck = interpolate.splrep(np.log(mwt),mf,k=1)
+
+	sw = np.log(swt)
+	tck2 = interpolate.splrep(sw,sft,k=1)
+
+	nsw = np.linspace(sw[0], sw[-1], 5000)
+	sf  =  interpolate.splev(nsw,tck2)
+
+	mf  =  interpolate.splev(nsw,tck)
+
+	sf /= np.mean(sf)
+	mf /= np.mean(mf)
+
+	retccf = np.fft.ifft(np.conj(np.fft.fft(sf))*np.fft.fft(mf))
+	retccf = np.hstack((retccf[2500:],retccf[:2500]))
+	retvels = np.arange(len(retccf)) - 0.5*len(retccf)
+	retvels *= (nsw[1]-nsw[0])
+	retvels = 299792.458*(np.exp(retvels)-1.)
+	return retvels, retccf
+
 def ccf_simple(sw,sf,mw,mf,rv):
 	mf = mf -1
 	mf = -mf
@@ -243,11 +272,11 @@ def RVforFR(wavs,flxs,teff=6700,logg=4.0,feh=-1.0,vsini=100.,model_path='/Users/
 		tmf = pyasl.fastRotBroad(mw[I], sc[I], 0.5, vsini)
 		#plot(mw[I],tmf)
 		ccv,ccf = spec_ccf(scw,scf,mw[I],tmf,vmin,vmax,vstep)
-		ccf = np.array(ccf)
+		#ccf = np.array(ccf)
 		if len(ccftot)==0:
 			ccftot = ccf.copy()
 		else:
-			ccftot = np.vstack((ccftot,ccf))
+			ccftot = np.vstack((ccftot,ccf.copy()))
 
 	ccftot = np.mean(ccftot,axis=0)
 
@@ -428,13 +457,17 @@ def multiccf(pars):
 		tmf = pyasl.fastRotBroad(mw[I], sc[I], 0.5, vsini)
 		#plot(mw[I],tmf)
 		ccv,ccf = spec_ccf(scw,scf,mw[I],tmf,vmin,vmax,vstep)
+		#ccv,ccf = ccf_fft(scw,scf,mw[I],tmf)
+		#plot(ccv,ccf)
 		ccf = np.array(ccf)
 		if len(ccftot)==0:
 			ccftot = ccf.copy()
 		else:
 			ccftot = np.vstack((ccftot,ccf))
-
+	#show()
+	#print gfds
 	ccftot = np.mean(ccftot,axis=0)
+	print pars, ccftot.min()
 	return ccftot.min()
 
 
