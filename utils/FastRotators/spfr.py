@@ -467,7 +467,7 @@ def multiccf(pars):
 	#show()
 	#print gfds
 	ccftot = np.mean(ccftot,axis=0)
-	print pars, ccftot.min()
+	#print pars, ccftot.min()
 	return ccftot.min()
 
 
