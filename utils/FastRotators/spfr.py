@@ -77,7 +77,7 @@ def get_modname(t,g,z):
 	sz = sz.replace('.','')
 	return 't'+st+'_g'+sg+'_'+sz+'p00_hr'
 
-def get_model(t,g,z,model_path='/Users/rabrahm/data/COELHO2014/'):
+def get_model(t,g,z,model_path='../../data/COELHO2014/'):
 	modname = model_path + get_modname(t,g,z)
 	try:
 		out = pyfits.getdata(modname+'.fits')
@@ -101,7 +101,7 @@ def get_near(x,vec):
 		mmax = tvec[Ix].min() + x
 	return mmin,mmax
 
-def trilinear_interpolation(t,g,z,model_path='/Users/rabrahm/data/COELHO2014/'):
+def trilinear_interpolation(t,g,z,model_path='../../data/COELHO2014/'):
 	teffs = np.arange(6000,10001,250)
 	loggs = np.arange(3.0,4.6,0.5)
 	fehs  = np.array([-1.,-0.5,0.0,0.2])
@@ -235,7 +235,7 @@ def clean_strong_lines(mw,sc):
 	#"""
 	return sc
 
-def RVforFR(wavs,flxs,teff=6700,logg=4.0,feh=-1.0,vsini=100.,model_path='/Users/rabrahm/data/COELHO2014/',vmin=-1000.,vmax=1000.,vstep=10.):
+def RVforFR(wavs,flxs,teff=6700,logg=4.0,feh=-1.0,vsini=100.,model_path='../../data/COELHO2014/',vmin=-1000.,vmax=1000.,vstep=10.):
 	def fitfunc(p,x):
 		ret = p[3] + p[0] * np.exp(-.5*((x-p[1])/p[2])**2)
 		return ret
@@ -471,7 +471,7 @@ def multiccf(pars):
 	return ccftot.min()
 
 
-def get_pars_fr(wavst,flxst,model_patht='/Users/rabrahm/data/COELHO2014/',npools=4):
+def get_pars_fr(wavst,flxst,model_patht='../../data/COELHO2014/',npools=4):
 	t0 = time.time()
 	global wavs,flxs
 	global model_path
@@ -619,7 +619,7 @@ def trans_chromosome(chromosome):
 
 global wavs, flxs
 
-def find_pars_GA(wavs,flxs,model_path='/Users/rabrahm/data/COELHO2014/'):
+def find_pars_GA(wavs,flxs,model_path='../../data/COELHO2014/'):
 
 	def eval_func(chromosome):
 		print list(chromosome)
