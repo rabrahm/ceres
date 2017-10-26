@@ -168,9 +168,14 @@ def spec_ccf(sw,sf,mw,mf,vi,vf,dv):
 	while v<=vf:
 		swt = sw * (1 + v/299792.458)
 		mft = interpolate.splev(swt,tck)
+		#if v == 0:
+		#	plot(swt,mft)
+		#	plot(swt,sft)
+		#	show()
 		mft -= np.mean(mft)
 		sft = sf - np.mean(sf)
 		#sft = sf.copy()
+
 		retccf.append(np.sum(mft*sft)/np.sqrt(np.sum(mft**2)*np.sum(sft**2)))
 		vels.append(v)
 		v+=dv
@@ -179,7 +184,8 @@ def spec_ccf(sw,sf,mw,mf,vi,vf,dv):
 
 def ccf_fft(swt,sft,mwt,mft):
 	mf = mft -1
-	mf = -mft
+	mf = -mf
+
 	#plot(mw,mf)
 	tck = interpolate.splrep(np.log(mwt),mf,k=1)
 
@@ -191,9 +197,11 @@ def ccf_fft(swt,sft,mwt,mft):
 
 	mf  =  interpolate.splev(nsw,tck)
 
-	sf /= np.mean(sf)
-	mf /= np.mean(mf)
-
+	sf -= np.mean(sf)
+	mf -= np.mean(mf)
+	plot(nsw,sf)
+	plot(nsw,mf)
+	show()
 	retccf = np.fft.ifft(np.conj(np.fft.fft(sf))*np.fft.fft(mf))
 	retccf = np.hstack((retccf[2500:],retccf[:2500]))
 	retvels = np.arange(len(retccf)) - 0.5*len(retccf)
@@ -253,15 +261,20 @@ def RVforFR(wavs,flxs,teff=6700,logg=4.0,feh=-1.0,vsini=100.,model_path='../../d
 	except:
 		mw,sc = trilinear_interpolation(teff,logg,feh,model_path)
 
+	for order in range(len(flxs)):
+		flxs[order] = clean_strong_lines(wavs[order],flxs[order])
+
 	sc = clean_strong_lines(mw,sc)
 
-	mw = ToVacuum(mw)
-	ccftot = []
-
 	II = np.where(sc != 1)[0]
+	JJ = np.where(sc == 1)[0]
+
 	coef = normalize_model(mw[II],sc[II])
 	sc  /= np.polyval(coef,mw)
-
+	sc[JJ] = 1. 
+	mw = ToVacuum(mw)
+	weis1 = []
+	ccftot = []
 	for i in range(wavs.shape[0]):
 		scf = flxs[i]
 		scw = wavs[i]
@@ -272,13 +285,17 @@ def RVforFR(wavs,flxs,teff=6700,logg=4.0,feh=-1.0,vsini=100.,model_path='../../d
 		tmf = pyasl.fastRotBroad(mw[I], sc[I], 0.5, vsini)
 		#plot(mw[I],tmf)
 		ccv,ccf = spec_ccf(scw,scf,mw[I],tmf,vmin,vmax,vstep)
+		#plot(ccv,ccf)
+		#show()
 		#ccf = np.array(ccf)
+		wei1 = len(np.where(scf!=1)[0])**2
+		weis1.append(wei1)
 		if len(ccftot)==0:
-			ccftot = ccf.copy()
+			ccftot = ccf.copy()*wei1
 		else:
-			ccftot = np.vstack((ccftot,ccf.copy()))
-
-	ccftot = np.mean(ccftot,axis=0)
+			ccftot = np.vstack((ccftot,ccf.copy()*wei1))
+	weis1 = np.array(weis1)
+	ccftot = np.sum(ccftot,axis=0)/ np.sum(weis1)
 
 	p0 = [ccftot.min(),ccv[np.argmin(ccftot)],vsini,ccftot[0]]
 	p1, success = scipy.optimize.leastsq(errfunc,p0, args=(ccv,ccftot))
@@ -440,16 +457,18 @@ def multiccf(pars):
 
 	sc = clean_strong_lines(mw,sc)
 
-	mw = ToVacuum(mw)
-	ccftot = []
-
 	II = np.where(sc != 1)[0]
+	JJ = np.where(sc == 1)[0]
+
 	coef = normalize_model(mw[II],sc[II])
 	sc  /= np.polyval(coef,mw)
-
+	sc[JJ] = 1. 
+	mw = ToVacuum(mw)
+	weis1 = []
+	ccftot = []
 	for i in range(wavs.shape[0]):
-		scf = flxs[i]
-		scw = wavs[i]
+		scf = flxs[i].copy()
+		scw = wavs[i].copy()
 
 		J = np.where(scf!=0)[0]
 		scw,scf = scw[J],scf[J]
@@ -459,22 +478,33 @@ def multiccf(pars):
 		ccv,ccf = spec_ccf(scw,scf,mw[I],tmf,vmin,vmax,vstep)
 		#ccv,ccf = ccf_fft(scw,scf,mw[I],tmf)
 		#plot(ccv,ccf)
-		ccf = np.array(ccf)
+		#show()
+
+		wei1 = len(np.where(scf!=1)[0])**2
+		weis1.append(wei1)
 		if len(ccftot)==0:
-			ccftot = ccf.copy()
+			ccftot = ccf.copy()*wei1
 		else:
-			ccftot = np.vstack((ccftot,ccf))
-	#show()
+			ccftot = np.vstack((ccftot,ccf.copy()*wei1))
+	weis1 = np.array(weis1)
+	ccftot = np.sum(ccftot,axis=0)/ np.sum(weis1)
+
+
 	#print gfds
-	ccftot = np.mean(ccftot,axis=0)
+	#ccftot = np.mean(ccftot,axis=0)
 	#print pars, ccftot.min()
 	return ccftot.min()
 
 
 def get_pars_fr(wavst,flxst,model_patht='../../data/COELHO2014/',npools=4):
+	for order in range(len(flxst)):
+		flxst[order] = clean_strong_lines(wavst[order],flxst[order])
+
 	t0 = time.time()
+
 	global wavs,flxs
 	global model_path
+
 	wavs,flxs=wavst.copy(),flxst.copy()
 	model_path=model_patht
 
@@ -490,6 +520,10 @@ def get_pars_fr(wavst,flxst,model_patht='../../data/COELHO2014/',npools=4):
 	tz = np.repeat(np.tile(gz,len(gt)*len(gg)),len(gr))
 	tt = np.repeat(gt,len(gg)*len(gr)*len(gz))
 	tot = np.vstack((tt,tg,tz,tr)).T
+
+	#for pars in tot:
+	#	pars = [8000,4.0,-0.5,40.0]
+	#	print pars, multiccf(pars)
 
 	p = Pool(npools)
 	vals = np.array((p.map(multiccf, list(tot))))

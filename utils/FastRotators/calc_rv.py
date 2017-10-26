@@ -2,7 +2,6 @@ import pyfits
 import argparse
 import os
 import spfr
-import sys
 import glob
 from pylab import *
 import pickle
@@ -51,7 +50,7 @@ for fit in fits:
 	pix = (sc[0,0,0]/(sc[0,0,1]-sc[0,0,0]))/float(hd['RESOL'])
 	SNR_5130_R = np.around(SNR_5130*np.sqrt(pix))
 
-	p1gau,vels,xc_av,XCmodelgau = spfr.RVforFR(sc[0],sc[5], teff=teff, logg=logg, feh=feh, vsini=vsini, model_path=model_path)
+	p1gau,vels,xc_av,XCmodelgau = spfr.RVforFR(sc[0],sc[5], teff=teff, logg=logg, feh=feh, vsini=vsini, model_path=model_path,vstep=5.)
 
 	A = 0.11081
 	B = 0.0016
