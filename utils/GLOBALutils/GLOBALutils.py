@@ -155,6 +155,7 @@ def get_them(sc,exap,ncoef,maxords=-1,startfrom=0,nsigmas=10.,mode=1,endat=-1,nc
     else:
 	sc = sc[startfrom:endat,:]
     
+    exap = int(exap)
     medc = int(.5*sc.shape[1])
     d = np.median(sc[:,medc-exap:medc+exap+1],axis=1)
     #print sc[:,2000]

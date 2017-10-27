@@ -90,6 +90,7 @@ def FileClassify(diri, log):
 	return biases, darks, flats, flats_co, thar, thar_co, sim_sci, dar_sci
 
 def make_flatOB(MasterFlat, c_co,exap=5):
+	exap = int(np.around(exap))
 	nord_co = len(c_co)
 	flat = MasterFlat.T
 	img_out = flat.copy()
@@ -100,7 +101,7 @@ def make_flatOB(MasterFlat, c_co,exap=5):
 	for x in range(flat.shape[1]):
 		baso = np.min(flat[:,x])
 		for o in range(nord_co):
-			cen = np.around(Centers[o,x])
+			cen = int(np.around(Centers[o,x]))
 			try:
 				bas = np.min(flat[cen-3*exap:cen+3*exap,x])
 			except:
