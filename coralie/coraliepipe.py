@@ -132,8 +132,9 @@ biases, ob_flats, co_flats, ob_loc, co_loc, ThAr_ref, ThFP_ref,\
 	obnames_FP,exptimes, exptimes_FP, flats = coralieutils.FileClassify(dirin,log)
 
 # Pre-process
-if ( (os.access(dirout+'FlatOb.fits',os.F_OK) == False) or \
-     (os.access(dirout+'FlatCo.fits',os.F_OK) == False) or \
+if ( (( len(ob_flats) > 0) and (os.access(dirout+'FlatOb.fits',os.F_OK) == False)) or \
+     (( len(co_flats) > 0) and (os.access(dirout+'FlatCo.fits',os.F_OK) == False)) or \
+     (( len(flats) > 0) and (os.access(dirout+'Flat.fits',os.F_OK) == False)) or \
      (os.access(dirout+'trace.pkl',os.F_OK) == False)  or \
      (os.access(dirout+'MasterBias.fits',os.F_OK) == False)  or \
      (force_pre_process) ):
@@ -208,11 +209,17 @@ if (pre_process == 1):
         print '\t', nord_co, 'comparison orders found...'
 
 
-    trace_dict = {'c_ob':c_ob,
-                  'c_co':c_co,
+    if len(ob_flats)>0 and len(co_flats)>0:
+    	trace_dict = {'c_ob':c_ob,'c_co':c_co,
                   'nord_ob':nord_ob, 'nord_co':nord_co,
                   'GA_ob': GA_ob, 'RO_ob': RO_ob,
                   'GA_co': GA_co, 'RO_co': RO_co}
+    else:
+	trace_dict = {'c_all':c_all,'c_ob':c_ob,'c_co':c_co,
+                  'nord_ob':nord_ob, 'nord_co':nord_co,'nord_all':nord_all,
+                  'GA_ob': GA_ob, 'RO_ob': RO_ob,
+                  'GA_co': GA_co, 'RO_co': RO_co}
+
     pickle.dump( trace_dict, open( dirout+"trace.pkl", 'w' ) )
 
 else:
@@ -221,6 +228,9 @@ else:
     c_ob = trace_dict['c_ob']
     nord_ob = trace_dict['nord_ob']
     nord_co = trace_dict['nord_co']
+    if 'c_all' in trace_dict.keys():
+        c_all    = trace_dict['c_all']
+        nord_all = trace_dict['nord_all']
     # recover GA*, RO*
     GA_ob = trace_dict['GA_ob']
     RO_ob = trace_dict['RO_ob']
@@ -245,6 +255,7 @@ else:
 
 if len(flats) == 0:
 	c_all = GLOBALutils.Mesh(c_ob,c_co)
+
 print '\n\tExtraction of Flat calibration frames:'
 # Extract flat spectra, object
 P_ob_fits = dirout + 'P_ob.fits'

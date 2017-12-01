@@ -90,7 +90,6 @@ def FileClassify(diri, log):
 	return biases, darks, flats, flats_co, thar, thar_co, sim_sci, dar_sci
 
 def make_flatOB(MasterFlat, c_co,exap=5):
-	exap = int(np.around(exap))
 	nord_co = len(c_co)
 	flat = MasterFlat.T
 	img_out = flat.copy()
@@ -101,7 +100,7 @@ def make_flatOB(MasterFlat, c_co,exap=5):
 	for x in range(flat.shape[1]):
 		baso = np.min(flat[:,x])
 		for o in range(nord_co):
-			cen = int(np.around(Centers[o,x]))
+			cen = np.around(Centers[o,x])
 			try:
 				bas = np.min(flat[cen-3*exap:cen+3*exap,x])
 			except:
@@ -152,8 +151,8 @@ def clean_orders(c_all,data,exap=5):
     nords = len(c_all)
     medc = int(.5*data.shape[1])
     d = np.median(data[:,medc-exap:medc+exap+1],axis=1)
-    plot(d)
-    show()
+    #plot(d)
+    #show()
     Centers = np.zeros((len(c_all),data.shape[1]))
     ejx = np.arange(data.shape[1])
     for i in range(len(c_all)):
@@ -180,13 +179,13 @@ def clean_orders(c_all,data,exap=5):
         i -= 2
 
 	
-    for i in range(len(c_ob)):
-        Centers[i,:]=scipy.polyval(c_ob[i],ejx)
-	plot(ejx,Centers[i,:],'r')
-    for i in range(len(c_co)):
-        Centers[i,:]=scipy.polyval(c_co[i],ejx)
-	plot(ejx,Centers[i,:],'b')
-    show()
+    #for i in range(len(c_ob)):
+    #    Centers[i,:]=scipy.polyval(c_ob[i],ejx)
+    #	plot(ejx,Centers[i,:],'r')
+    #for i in range(len(c_co)):
+    #    Centers[i,:]=scipy.polyval(c_co[i],ejx)
+    #	plot(ejx,Centers[i,:],'b')
+    #show()
     return c_ob, c_co, len(c_ob), len(c_co)
 
 def mjd_fromheader(h):
@@ -236,10 +235,10 @@ def scat_flat(d,c_ob,c_co):
 	    refmins.append(refv[im])
 	    valmins.append(minv[im])
 	refmins,valmis = np.array(refmins),np.array(valmins)
-	plot(line)
-	plot(refmins,valmins,'ro')
-	show()
-	print gfd
+	#plot(line)
+	#plot(refmins,valmins,'ro')
+	#show()
+	#print gfd
 	    
 def get_scat(sc,ps,binning):
 	binning = float(binning)

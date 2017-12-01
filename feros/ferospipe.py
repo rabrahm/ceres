@@ -68,16 +68,16 @@ force_thar_wavcal  = False
 force_tharxc       = False
 force_sci_extract  = False
 force_stellar_pars = False
-force_trace	       = False
+force_trace	   = False
 dumpargon          = False
-force_spectral_file_build = False
+force_spectral_file_build = True
 dark_correction    = False
 
 bad_colummn        = True
 Inverse_m          = True
 use_cheby          = True
 
-MRMS               = 60   # max rms in m/s, global wav solution
+MRMS               = 90   # max rms in m/s, global wav solution
 
 trace_degree       = 4
 Marsh_alg          = 0
@@ -90,8 +90,8 @@ min_extract_col    = 50
 max_extract_col    = 4000
 
 porder_single = 5
-ncoef_x            = 6
-ncoef_m            = 7
+ncoef_x            = 5#6
+ncoef_m            = 7#7
 npar_wsol = (min(ncoef_x,ncoef_m) + 1) * (2*max(ncoef_x,ncoef_m) - min(ncoef_x,ncoef_m) + 2) / 2
 nconts = np.array([2,2,3,3,2,3,3,3,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1])
 lim_iz = np.array([100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,150,200,250,300,350,400,450,500,500,800])
@@ -166,7 +166,9 @@ if (pre_process == 1):
     Flat = Flat.T
     print "\tTracing echelle orders..."
 
-    c_all, nord_all = GLOBALutils.get_them(Flat, 5, trace_degree, maxords=-1,mode=2,startfrom=40,endat=1900, nsigmas=6)
+    c_all, nord_all = GLOBALutils.get_them(Flat, 5, trace_degree, maxords=-1,mode=2,startfrom=40,endat=1900, nsigmas=5)
+    #print nord_all, len(c_all)
+    #print gvfds
     c_all = c_all[2:]
     nord_all -= 2
     I1 = np.arange(0,nord_all,2)
@@ -402,7 +404,7 @@ for i in range(len(sorted_ThAr_Ne_dates)):
 	order   = o0
 	mid_wav = []
 	mid_col_wv = []
-
+	
         while order < o0 + n_useful:
             order_s = str(order+1)
             if (order < 9):
@@ -420,10 +422,14 @@ for i in range(len(sorted_ThAr_Ne_dates)):
 					 order_s+thar_end, thar_order, order, wei, rmsmax=100, \
 					 minlines=30,FixEnds=False,Dump_Argon=dumpargon,\
 					 Dump_AllLines=True, Cheby=use_cheby,porder=ncoef_x,del_width=4.0)
+	    #coef2 = np.polyfit(pixel_centers, wavelengths,5)
+	    #plot(pixel_centers,wavelengths-np.polyval(coef2,pixel_centers),'ro')
+	    #axhline(0.)
+	    #show()
 	    mid_col_wv.append(GLOBALutils.Cheby_eval(coeffs_pix2wav, int(.5*len(thar_order)), len(thar_order)))
 
 	    c_p2w.append(coeffs_pix2wav)
-	    mid_wav.append(GLOBALutils.Cheby_eval(coeffs_pix2wav,int(.5*len(thar_order)), len(thar_order)))
+	    mid_wav.append(GLOBALutils.Cheby_eval(coeffs_pix2wav,int(.25*len(thar_order)), len(thar_order)))
             wavss.append(GLOBALutils.Cheby_eval(coeffs_pix2wav,int(len(thar_order)/2.), len(thar_order)))
 
             orss.append(float(order))  
@@ -442,7 +448,26 @@ for i in range(len(sorted_ThAr_Ne_dates)):
             All_Intensities   = np.append( All_Intensities, intensities )
 	    All_residuals     = np.append( All_residuals, residuals )
             order+=1
+	"""
+	refx = 1./(np.arange(len(mid_col_wv)).astype('float')+1)
+	mid_col_wv = np.array(mid_col_wv)#s[5:]
+	coef1 = np.polyfit(refx,mid_col_wv,6)
+	coef2 = np.polyfit(refx,mid_col_wv,7)
+	coef3 = np.polyfit(refx,mid_col_wv,8)
+	coef4 = np.polyfit(refx,mid_col_wv,9)
 
+	plot(refx,mid_col_wv-np.polyval(coef1,refx),'o')
+	axhline(0.)
+	#show()
+	plot(refx,mid_col_wv-np.polyval(coef2,refx),'o')
+	axhline(0.)
+	#show()
+	plot(refx,mid_col_wv-np.polyval(coef3,refx),'o')
+	axhline(0.)
+	plot(refx,mid_col_wv-np.polyval(coef4,refx),'o')
+	axhline(0.)
+	show()
+	"""
         p0    = np.zeros( npar_wsol )
         p0[0] =  (16+OO0) * Global_ZP
         p1, G_pix, G_ord, G_wav, II, rms_ms, G_res = \
@@ -510,8 +535,13 @@ for i in range(len(sorted_ThAr_Ne_dates)):
                                                 ntotal=n_useful,npix=len(thar_order),nx=ncoef_x,nm=ncoef_m)
 
 	#for io in range(int(G_ord_co.min()),int(G_ord_co.max()+1),1):
-	#	I = np.where(G_ord_co == io)
-	#	plot(G_wav_co[I],G_res_co[I],'.')
+	#	I = np.where(G_ord_co == io)[0]
+	#	tmpw,tmpr = G_wav_co[I],G_res_co[I]
+	#	IJ = np.argsort(tmpw)
+	#	tmpw,tmpr = tmpw[IJ],tmpr[IJ]
+	#	plot(tmpw,tmpr,'.')
+	#	plot(tmpw,scipy.signal.medfilt(tmpr,21),'.')
+	#axhline(0.)
 	#show()
 
 	spec_ob,spec_co = np.zeros((2,n_useful,len(thar_order))),np.zeros((2,n_useful,len(thar_order)))
@@ -1157,6 +1187,8 @@ if (not JustExtract):
         mh_v = av_m + mask_hw_wide 
 
         print '\t\t\tComputing the CCF...'
+	boot_ind = np.arange(spec.shape[1])
+	#boot_ind = np.arange(5,18,1)
         if True:
             cond = True
             while (cond):
@@ -1165,7 +1197,7 @@ if (not JustExtract):
                         GLOBALutils.XCor(spec, ml_v, mh_v, weight, 0, lbary_ltopo, vel_width=velw,vel_step=velsh,\
                                               spec_order=9,iv_order=10,sn_order=8,max_vel_rough=velw)
 
-                xc_av = GLOBALutils.Average_CCF(xc_full, sn, sn_min=3., Simple=True, W=W_ccf)
+                xc_av = GLOBALutils.Average_CCF(xc_full, sn, sn_min=3., Simple=True, W=W_ccf,boot_ind=boot_ind)
                 outt = np.vstack((vels,xc_av))
                 yy     = scipy.signal.medfilt(xc_av,11)
                 pred = lowess(yy, vels,frac=0.4,it=10,return_sorted=False)
@@ -1183,7 +1215,7 @@ if (not JustExtract):
                         GLOBALutils.XCor(spec, ml_v, mh_v, weight, vel0_xc, lbary_ltopo, vel_width=vel_width,vel_step=0.2,\
                                               spec_order=9,iv_order=10,sn_order=8,max_vel_rough=velw)
 
-                xc_av = GLOBALutils.Average_CCF(xc_full, sn, sn_min=3., Simple=True, W=W_ccf)
+                xc_av = GLOBALutils.Average_CCF(xc_full, sn, sn_min=3., Simple=True, W=W_ccf,boot_ind=boot_ind)
                 pred = scipy.interpolate.splev(vels,tck1)
                 xc_av /= pred
 
@@ -1193,6 +1225,7 @@ if (not JustExtract):
                     moon_sig = 3.3
                 else:
                     moon_sig = 4.5
+		    moon_sig = 0.6*np.sqrt(1.**2+disp**2)
 
                 p1,XCmodel,p1gau,XCmodelgau,Ls2 = GLOBALutils.XC_Final_Fit( vels, xc_av , sigma_res = 4, horder=8, moonv = refvel, moons = moon_sig, moon = False)
                 moonmatters = False
@@ -1229,7 +1262,7 @@ if (not JustExtract):
     		       'rvels':rvels,'rxc_av':rxc_av,'rpred':rpred,'rxc_av_orig':rxc_av_orig,\
     		       'rvel0_xc':rvel0_xc,'xc_full':xc_full, 'p1':p1, 'sn':sn, 'p1gau':p1gau,\
     		       'p1_m':p1_m,'XCmodel_m':XCmodel_m,'p1gau_m':p1gau_m,'Ls2_m':Ls2_m,\
-    		       'XCmodelgau_m':XCmodelgau_m}
+    		       'XCmodelgau_m':XCmodelgau_m,'W_ccf':W_ccf}
 
             moon_dict = {'moonmatters':moonmatters,'moon_state':moon_state,'moonsep':moonsep,\
     		         'lunation':lunation,'mephem':mephem,'texp':h[0].header['EXPTIME']}

@@ -155,7 +155,6 @@ def get_them(sc,exap,ncoef,maxords=-1,startfrom=0,nsigmas=10.,mode=1,endat=-1,nc
     else:
 	sc = sc[startfrom:endat,:]
     
-    exap = int(exap)
     medc = int(.5*sc.shape[1])
     d = np.median(sc[:,medc-exap:medc+exap+1],axis=1)
     #print sc[:,2000]
@@ -250,6 +249,8 @@ def get_them(sc,exap,ncoef,maxords=-1,startfrom=0,nsigmas=10.,mode=1,endat=-1,nc
     #print gfds
     #plot(np.arange(len(d))[pos], d[pos],'ro')
     pos = pos[I]
+    #print len(pos)
+    #print gfds
     #plot(np.arange(len(d))[pos], d[pos],'go')
     #show()
     #print jfhedslja
@@ -2546,7 +2547,7 @@ def simbad_query_obname(obname):
     output = StringIO.StringIO() 
     c = pycurl.Curl()
                 
-    c.setopt(pycurl.URL, "http://simbad.harvard.edu/simbad/sim-script")
+    c.setopt(pycurl.URL, "http://simbad.u-strasbg.fr/simbad/sim-script")
     c.setopt(c.HTTPPOST, values)
     c.setopt(pycurl.WRITEFUNCTION, output.write) 
     c.perform()
@@ -2590,7 +2591,7 @@ def simbad_query_coords(ra,dec):
     output = StringIO.StringIO() 
     c = pycurl.Curl()
                     
-    c.setopt(pycurl.URL, "http://simbad.harvard.edu/simbad/sim-script")
+    c.setopt(pycurl.URL, "http://simbad.u-strasbg.fr/simbad/sim-script")
     c.setopt(c.HTTPPOST, values)
     c.setopt(pycurl.WRITEFUNCTION, output.write) 
     c.perform()
@@ -3274,7 +3275,7 @@ def cor_thar(spec, span=10, filename='/data/echelle/ecpipe/DuPont/wavcals/',binn
 
 	CCF = np.array(CCF)
 	DEL = np.array(DEL)
-	plot(DEL,CCF,'ro')
+	#plot(DEL,CCF,'ro')
 	#show()
 	I = np.argmax(CCF)
 	#plot(DEL,CCF)
@@ -3564,7 +3565,7 @@ def simbad_coords(obname,mjd):
 	values = [("scriptFIle", (pycurl.FORM_FILE, tfile))]
 	output = StringIO.StringIO() 
 	c = pycurl.Curl()
-	c.setopt(pycurl.URL, "http://simbad.harvard.edu/simbad/sim-script")
+	c.setopt(pycurl.URL, "http://simbad.u-strasbg.fr/simbad/sim-script")
 	c.setopt(c.HTTPPOST, values)
 	c.setopt(pycurl.WRITEFUNCTION, output.write)
 	cond = True

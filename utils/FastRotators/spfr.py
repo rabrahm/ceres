@@ -175,7 +175,7 @@ def spec_ccf(sw,sf,mw,mf,vi,vf,dv):
 		mft -= np.mean(mft)
 		sft = sf - np.mean(sf)
 		#sft = sf.copy()
-
+		#print np.sum(mft**2),np.sum(sft**2)
 		retccf.append(np.sum(mft*sft)/np.sqrt(np.sum(mft**2)*np.sum(sft**2)))
 		vels.append(v)
 		v+=dv
@@ -276,6 +276,7 @@ def RVforFR(wavs,flxs,teff=6700,logg=4.0,feh=-1.0,vsini=100.,model_path='../../d
 	weis1 = []
 	ccftot = []
 	for i in range(wavs.shape[0]):
+		#plot(wavs[i],flxs[i])
 		scf = flxs[i]
 		scw = wavs[i]
 
@@ -284,16 +285,19 @@ def RVforFR(wavs,flxs,teff=6700,logg=4.0,feh=-1.0,vsini=100.,model_path='../../d
 		I = np.where((mw>scw[0]-100) & (mw<scw[-1]+100))
 		tmf = pyasl.fastRotBroad(mw[I], sc[I], 0.5, vsini)
 		#plot(mw[I],tmf)
-		ccv,ccf = spec_ccf(scw,scf,mw[I],tmf,vmin,vmax,vstep)
-		#plot(ccv,ccf)
-		#show()
-		#ccf = np.array(ccf)
-		wei1 = len(np.where(scf!=1)[0])**2
-		weis1.append(wei1)
-		if len(ccftot)==0:
-			ccftot = ccf.copy()*wei1
-		else:
-			ccftot = np.vstack((ccftot,ccf.copy()*wei1))
+		J = np.where(scf!=1)[0]
+		if len(J)>100:
+			ccv,ccf = spec_ccf(scw,scf,mw[I],tmf,vmin,vmax,vstep)
+			#plot(ccv,ccf)
+			#show()
+			#ccf = np.array(ccf)
+			wei1 = len(np.where(scf!=1)[0])**2
+			weis1.append(wei1)
+			if len(ccftot)==0:
+				ccftot = ccf.copy()*wei1
+			else:
+				ccftot = np.vstack((ccftot,ccf.copy()*wei1))
+	#show()
 	weis1 = np.array(weis1)
 	ccftot = np.sum(ccftot,axis=0)/ np.sum(weis1)
 
@@ -475,17 +479,19 @@ def multiccf(pars):
 		I = np.where((mw>scw[0]-100) & (mw<scw[-1]+100))
 		tmf = pyasl.fastRotBroad(mw[I], sc[I], 0.5, vsini)
 		#plot(mw[I],tmf)
-		ccv,ccf = spec_ccf(scw,scf,mw[I],tmf,vmin,vmax,vstep)
-		#ccv,ccf = ccf_fft(scw,scf,mw[I],tmf)
-		#plot(ccv,ccf)
-		#show()
+		J = np.where(scf!=1)[0]
+		if len(J)>100:
+			ccv,ccf = spec_ccf(scw,scf,mw[I],tmf,vmin,vmax,vstep)
+			#ccv,ccf = ccf_fft(scw,scf,mw[I],tmf)
+			#plot(ccv,ccf)
+			#show()
 
-		wei1 = len(np.where(scf!=1)[0])**2
-		weis1.append(wei1)
-		if len(ccftot)==0:
-			ccftot = ccf.copy()*wei1
-		else:
-			ccftot = np.vstack((ccftot,ccf.copy()*wei1))
+			wei1 = len(np.where(scf!=1)[0])**2
+			weis1.append(wei1)
+			if len(ccftot)==0:
+				ccftot = ccf.copy()*wei1
+			else:
+				ccftot = np.vstack((ccftot,ccf.copy()*wei1))
 	weis1 = np.array(weis1)
 	ccftot = np.sum(ccftot,axis=0)/ np.sum(weis1)
 
