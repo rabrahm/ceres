@@ -110,8 +110,7 @@ n_useful           = 70    # up to which order do we care?
 order_dir   = "wavcals/"
 models_path = base+"data/COELHO_MODELS/R_40000b/"    # path to the synthetic models 
 
-RO_ob, GA_ob = 6.82,1.5
-ronoise, gain = 6.82,1.5
+ronoise, gain = 6.82, 1.9
 
 log = dirout+'night.log'
 
@@ -269,13 +268,17 @@ if len(darks)>1:
 c_all = GLOBALutils.Mesh(c_ob,c_co)
 nord_all = nord_ob + nord_co
 
+if len(biases)>0:
+	ronoise = np.around(fideosutils.compute_RON(MasterBias,biases,gain=gain),1)
+print '\n\tRON:', ronoise,'e\n'
+
 P_ob_fits = dirout + 'P_ob.fits'
 P_co_fits = dirout + 'P_co.fits'
 S_flat_ob_fits = dirout +'S_flat_ob.fits'
 S_flat_ob_simple_fits = dirout +'S_flat_ob_simple.fits'
 S_flat_co_fits = dirout +'S_flat_co.fits'
 S_flat_co_simple_fits = dirout +'S_flat_co_simple.fits'
-
+#force_flat_extract=True
 if ( os.access(P_ob_fits,os.F_OK) == False ) or ( os.access(S_flat_ob_fits,os.F_OK) == False ) or \
     ( os.access(S_flat_ob_simple_fits,os.F_OK) == False ) or ( os.access(P_co_fits,os.F_OK) == False ) or \
     ( os.access(S_flat_co_fits,os.F_OK) == False ) or ( os.access(S_flat_co_simple_fits,os.F_OK) == False ) or \
@@ -289,35 +292,44 @@ if ( os.access(P_ob_fits,os.F_OK) == False ) or ( os.access(S_flat_ob_fits,os.F_
     bac_ob = GLOBALutils.get_scat(MasterFlat_ob.T,Centers,span=8)
 
     Centers = np.zeros((nord_co,MasterFlat.shape[0]))
-    #imshow(MasterFlat_co.T)
     for i in range(nord_co):
         Centers[i,:]=scipy.polyval(c_co[i],ejx)
     bac_co = GLOBALutils.get_scat(MasterFlat_co.T,Centers,span=8)
 
+    hdu = pyfits.PrimaryHDU(bac_ob)
+    if os.access(dirout +'BKG_flat_ob.fits',os.F_OK):
+	os.system('rm '+ dirout +'BKG_flat_ob.fits')
+    hdu.writeto(dirout +'BKG_flat_ob.fits')
+	
+    #plot(MasterFlat_ob.T[:,1000])
+    #plot(bac_ob[:,1000])
+    #show()
+
     Flat_ob = MasterFlat_ob.T - bac_ob
     Flat_co = MasterFlat_co.T - bac_co
+
     print 'P_ob...'
-    P_ob = GLOBALutils.obtain_P(Flat_ob, c_ob, ext_aperture_ob, RO_ob,\
-                                    GA_ob,NSigma_Marsh, S_Marsh, \
+    P_ob = GLOBALutils.obtain_P(Flat_ob, c_ob, ext_aperture_ob, ronoise,\
+                                    gain,NSigma_Marsh, S_Marsh, \
                     N_Marsh, Marsh_alg, min_extract_col,\
                     max_extract_col, npools)
     print 'P_co...'
-
-    P_co = GLOBALutils.obtain_P(Flat_co, c_co, ext_aperture_co, RO_ob,\
-                                    GA_ob,NSigma_Marsh, S_Marsh, \
+    P_co = GLOBALutils.obtain_P(Flat_co, c_co, ext_aperture_co, ronoise,\
+                                    gain,NSigma_Marsh, S_Marsh, \
                     N_Marsh, Marsh_alg, min_extract_col,\
                     max_extract_col, npools)
+
     print 'S_ob...'
 
     S_flat_ob_simple = GLOBALutils.simple_extraction(Flat_ob,c_ob,ext_aperture_ob,min_extract_col,\
                                                          max_extract_col,npools)
-    S_flat_ob  = GLOBALutils.optimal_extraction(Flat_ob,P_ob,c_ob,ext_aperture_ob,RO_ob,GA_ob,S_Marsh,\
+    S_flat_ob  = GLOBALutils.optimal_extraction(Flat_ob,P_ob,c_ob,ext_aperture_ob,ronoise,gain,S_Marsh,\
                                                     NCosmic_Marsh,min_extract_col,max_extract_col,npools)
     print 'S_co...'
 
     S_flat_co_simple = GLOBALutils.simple_extraction(Flat_co,c_co,ext_aperture_co,min_extract_col,\
                                                          max_extract_col,npools)
-    S_flat_co  = GLOBALutils.optimal_extraction(Flat_co,P_co,c_co,ext_aperture_co,RO_ob,GA_ob,S_Marsh,\
+    S_flat_co  = GLOBALutils.optimal_extraction(Flat_co,P_co,c_co,ext_aperture_co,ronoise,gain,S_Marsh,\
                                                     NCosmic_Marsh,min_extract_col,max_extract_col,npools)
 
     S_flat_ob_simple = GLOBALutils.invert(S_flat_ob_simple)
@@ -397,11 +409,11 @@ for fsim in thars:
         dthar -= bac
         thar_Ss_ob_simple  = GLOBALutils.simple_extraction(dthar.T,c_ob,ext_aperture_ob,min_extract_col,\
                                                          max_extract_col,npools)
-        thar_Ss_ob  = GLOBALutils.optimal_extraction(dthar.T,P_ob,c_ob,ext_aperture_ob,RO_ob,GA_ob,S_Marsh,\
+        thar_Ss_ob  = GLOBALutils.optimal_extraction(dthar.T,P_ob,c_ob,ext_aperture_ob,ronoise,gain,S_Marsh,\
                                                     NCosmic_Marsh,min_extract_col,max_extract_col,npools)
         thar_Ss_co_simple  = GLOBALutils.simple_extraction(dthar.T,c_co,ext_aperture_co,min_extract_col,\
                                                          max_extract_col,npools)
-        thar_Ss_co  = GLOBALutils.optimal_extraction(dthar.T,P_co,c_co,ext_aperture_co,RO_ob,GA_ob,S_Marsh,\
+        thar_Ss_co  = GLOBALutils.optimal_extraction(dthar.T,P_co,c_co,ext_aperture_co,ronoise,gain,S_Marsh,\
                                                     NCosmic_Marsh,min_extract_col,max_extract_col,npools)
     
         thar_Ss_ob_simple = GLOBALutils.invert(thar_Ss_ob_simple)
@@ -447,7 +459,7 @@ for fsim in thars_co:
         dthar -= bac
         thar_Ss_co_simple  = GLOBALutils.simple_extraction(dthar.T,c_co,ext_aperture_co,min_extract_col,\
                                                          max_extract_col,npools)
-        thar_Ss_co  = GLOBALutils.optimal_extraction(dthar.T,P_co,c_co,ext_aperture_co,RO_ob,GA_ob,S_Marsh,\
+        thar_Ss_co  = GLOBALutils.optimal_extraction(dthar.T,P_co,c_co,ext_aperture_co,ronoise,gain,S_Marsh,\
                                                     NCosmic_Marsh,min_extract_col,max_extract_col,npools)
     
         thar_Ss_co_simple = GLOBALutils.invert(thar_Ss_co_simple)
@@ -608,18 +620,20 @@ for fsim in thars:
             meanres,meanwav = [],[]
             for o in np.unique(G_ord):
                 I = np.where(G_ord == o)[0]
-                plot(G_wav[I],G_res[I],'.')
+                plot(G_wav[I],G_res[I],'o')
                 #plot(np.median(G_wav[I]),np.median(G_res[I])+delt,'o')
                 #meanres.append(np.median(G_res[I]))
             #meanwav.append(np.median(G_wav[I]))
             #plot(meanres,'o')
 	    axhline(0)
-	    xlabel(r'Wavelength [$\AA$]')
-	    ylabel(r'Residuals [$\AA$]')
+	    xticks(fontsize=25)
+	    yticks(fontsize=25)
+	    xlabel(r'Wavelength [$\AA$]', fontsize=25)
+	    ylabel(r'Residuals [$\AA$]', fontsize=25)
             show()
             #delt +=0.001
             """
-
+	    #print fds
             thar_out = np.zeros((2,ntot,lines_thar_ob.shape[1]))
             equis = np.arange( lines_thar_ob.shape[1] )        
             order = start_ob
@@ -636,11 +650,13 @@ for fsim in thars:
                 order+=1
                 idorder += 1
                 out_order += 1
-	    #plot(All_Pixel_Centers,All_Wavelengths,'r.')
-	    #xlabel('Pixel')
-	    #ylabel(r'Wavelength [$\AA$]')
+	    #plot(All_Pixel_Centers,All_Wavelengths,'ro')
+	    #xticks(fontsize=25)
+	    #yticks(fontsize=25)
+	    #xlabel('Pixel', fontsize=25)
+	    #ylabel(r'Wavelength [$\AA$]', fontsize=25)
 	    #show()
-
+	    #print tfrds
         
             if os.access(thar_spec_ob,os.F_OK):
                 os.system('rm '+ thar_spec_ob)
@@ -1089,8 +1105,11 @@ for fsim in new_list:
     longitude   = -70.7346
     epoch       =  2000.0
 
-    known_coords = False    
-    sp,ra,dec,known_coords = GLOBALutils.simbad_coords(obname,mjd)
+    known_coords = False
+    try:  
+    	sp,ra,dec,known_coords = GLOBALutils.simbad_coords(obname,mjd)
+    except:
+	ra,dec = -999,-999
     ras,decs = ra,dec
     ra2,dec2 = GLOBALutils.getcoords(obname,mjd,filen=reffile)
     if ra2 !=0 and dec2 != 0:
@@ -1160,6 +1179,7 @@ for fsim in new_list:
     #   plot(ejx,y)
     #show()
 
+    """
     drift, c_ob_new = GLOBALutils.get_drift(data.T,P_ob,c_ob,pii=1000,win=5)
 
     #drift = 2.4
@@ -1169,9 +1189,11 @@ for fsim in new_list:
     c_ob_new[:,-1] += drift
     c_co_new = c_co.copy()
     c_co_new[:,-1] += drift
-
-    P_ob_new = GLOBALutils.shift_P(P_ob,drift,c_ob_new,ext_aperture_ob)
-    P_co_new = GLOBALutils.shift_P(P_co,drift,c_co_new,ext_aperture_co)
+    """
+    c_ob_new = c_ob.copy()
+    c_co_new = c_co.copy()
+    P_ob_new = P_ob.copy()#GLOBALutils.shift_P(P_ob,drift,c_ob_new,ext_aperture_ob)
+    P_co_new = P_co.copy()#GLOBALutils.shift_P(P_co,drift,c_co_new,ext_aperture_co)
 
     #plot(P_ob_new[:,1000])
     #plot(P_ob[:,1000])
@@ -1687,7 +1709,7 @@ for fsim in new_list:
         if not avoid_plot:
             GLOBALutils.plot_CCF(xc_dict,moon_dict,path=ccf_pdf)
 
-        SNR_5130 = np.median(spec[8,30,1000:1101] )
+        SNR_5130 = np.median(spec[8,21,1000:1101] )
 	if SNR_5130 < 1:
 		SNR_5130 = 1.
         seeing   = -999
@@ -1717,6 +1739,7 @@ for fsim in new_list:
         RVerr =  B + ( 1.6 + 0.2 * p1gau[2] ) * A / np.round(SNR_5130)
         depth_fact = 1. + p1gau[0]/(p1gau[2]*np.sqrt(2*np.pi))
 
+	RVerr2_ori = -999.0
         if depth_fact >= 1.:
             RVerr2 = -999.000
         else:
@@ -1725,6 +1748,7 @@ for fsim in new_list:
             else:
                 depth_fact = (1 - 0.59) / (1 - depth_fact)
             RVerr2 = RVerr * depth_fact
+	    RVerr2_ori = RVerr2
             if (RVerr2 <= 0.009):
                 RVerr2 = 0.009
 
@@ -1738,7 +1762,7 @@ for fsim in new_list:
         RVerr2 = np.around(RVerr2,4)
         BSerr = np.around(BSerr,4)
 
-        print '\t\t\tRV = '+str(RV)+' +- '+str(RVerr2)
+        print '\t\t\tRV = '+str(RV)+' +- '+str(RVerr2) + '  (' + str(RVerr2_ori) + ')'
         print '\t\t\tBS = '+str(BS)+' +- '+str(BSerr)
 
         bjd_out = 2400000.5 + mbjd

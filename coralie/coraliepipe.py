@@ -1000,7 +1000,7 @@ for nlisti in range(len(new_list)):
             spec[5,order,:][LL2] = 1
             spec[5,order,:][LK] = 0
             spec[6,order,:][LL] = spec[8,order,:][LL] ** 2
-            spec[6,order,:][LL2] = spec[8,order,:][LL] ** 2
+            spec[6,order,:][LL2] = spec[8,order,:][LL2] ** 2
 
             spec[9,order,:][L] = spec[5,order,:][L] * (dlambda_dx[L] ** 1) 
             spec[10,order,:][L] = spec[6,order,:][L] / (dlambda_dx[L] ** 2)

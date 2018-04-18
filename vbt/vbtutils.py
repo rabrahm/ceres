@@ -433,4 +433,3 @@ def mjd_fromheader(h):
     mjd = mjd_start + (fraction * texp) / secinday
 
     return mjd, mjd0
-

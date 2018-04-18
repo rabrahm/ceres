@@ -8,11 +8,13 @@ parser = argparse.ArgumentParser()
 parser.add_argument('directorio')
 parser.add_argument('-model_path',default='../../data/COELHO2014/')
 parser.add_argument('-npools', default=1)
+parser.add_argument('-fixG', default=-1)
 
 args   = parser.parse_args()
 dirin  = args.directorio
 model_path  = args.model_path
 npools = int(args.npools)
+fixG = float(args.fixG)
 
 try:
 	sc = pyfits.getdata(dirin)
@@ -33,7 +35,7 @@ for fit in fits:
 
 	sc = pyfits.getdata(fit)
 	hd = pyfits.getheader(fit)
-	teff, logg, feh, vsini = spfr.get_pars_fr(sc[0],sc[5],model_patht=model_path,npools=npools)
+	teff, logg, feh, vsini = spfr.get_pars_fr(sc[0],sc[5],model_patht=model_path,npools=npools,fixG=fixG)
 	print '\tTeff=', teff, 'K'
 	print '\tlog(g)=', logg, 'dex'
 	print '\t[Fe/H]=', feh, 'dex'
@@ -63,4 +65,3 @@ for fit in fits:
 	for line in lines:
 		f.write(line)
 	f.close()
-

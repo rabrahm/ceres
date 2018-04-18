@@ -1064,7 +1064,7 @@ for nlisti in range(len(new_list)):
         bacR = pyfits.getdata(bacfile)
 
     bacfile = dirout + 'BACB_' + fsim.split('/')[-1][:-4]+'fits'
-    if os.access(bacfile,os.F_OK) == False  or True:
+    if os.access(bacfile,os.F_OK) == False:
         CentersB = np.zeros((len(c1_temp),dataB.shape[1]))
         for i in range(len(c1_temp)):
             CentersB[i,:]=np.polyval(c1_temp[i],np.arange(dataB.shape[1]))
@@ -1386,11 +1386,12 @@ for nlisti in range(len(new_list)):
 	ccoefs = GLOBALutils.get_cont(spec[0],spec[3])
 
 	for order in range(nord_ob2):
-            L  = np.where( spec[1,order,:] != 0 )
+	    fn = R_flat_ob_n[order,1,:]
+            L  = np.where( (spec[1,order,:] != 0) & (fn > 0) )[0]
+
             spec[5,order,:][L] = spec[3,order,:][L] / np.polyval(ccoefs[order],spec[0,order,:][L])    
             ratio              = np.polyval(ccoefs[order],spec[0,order,:][L])*Rnorms[order]
-	    fn = R_flat_ob_n[order,1,:]
-            L  = np.where( fn > 0 )[0]
+
             spec[3,order,:][L] = sci_S_ob_R[order,1,:][L] / R_flat_ob_n[order,1,:][L]
             spec[4,order,:][L] = sci_S_ob_R[order,2,:][L] * ( R_flat_ob_n[order,1,:][L] ** 2 )
             spec[6,order,:][L] = spec[4,order,:][L] * (ratio ** 2 )
@@ -1406,11 +1407,12 @@ for nlisti in range(len(new_list)):
             spec[10,order,:][L] = spec[6,order,:][L] / (dlambda_dx[L] ** 2)
 
 	for order in range(nord_ob1):
-            L  = np.where( spec[1,order + nord_ob2,:] != 0 )
+	    fn = B_flat_ob_n[order,1,:]
+            L  = np.where( (spec[1,order + nord_ob2,:] != 0) & (fn > 0) )[0]
             spec[5,order + nord_ob2,:][L] = spec[3,order + nord_ob2,:][L] / np.polyval(ccoefs[order + nord_ob2],spec[0,order + nord_ob2,:][L])	   
             ratio              = np.polyval(ccoefs[order + nord_ob2],spec[0,order + nord_ob2,:][L])*Bnorms[order]
-	    fn = B_flat_ob_n[order,1,:]
-            L  = np.where( fn > 0 )
+
+            #L  = np.where( fn > 0 )
             spec[3,order + nord_ob2,:][L] = sci_S_ob_B[order,1,:][L] / B_flat_ob_n[order,1,:][L]
             spec[4,order + nord_ob2,:][L] = sci_S_ob_B[order,2,:][L] * ( B_flat_ob_n[order,1,:][L] ** 2 )
             spec[6,order + nord_ob2,:][L] = spec[4,order + nord_ob2,:][L] * (ratio ** 2 )

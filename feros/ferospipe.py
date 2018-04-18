@@ -48,6 +48,7 @@ parser.add_argument('-just_extract', action="store_true", default=False)
 parser.add_argument('-npools', default=1)
 parser.add_argument('-o2do',default='all')
 parser.add_argument('-reffile',default='default')
+parser.add_argument('-lamp',default='LAMP3')
 
 args   = parser.parse_args()
 dirin            = args.directorio
@@ -58,6 +59,7 @@ JustExtract      = args.just_extract
 npools           = int(args.npools)
 object2do        = args.o2do
 reffile          = args.reffile
+lamp             = str(args.lamp)
 
 ####### GLOBAL VARIABLES #####
 ## perhaps put into options ##
@@ -131,7 +133,7 @@ print "\tProducts of reduction will be in",dirout
 print '\n'
 
 biases, flats, ThArNe_ref, ThAr_Ne_ref, simThAr_sci, simSky_sci, ThAr_ref_dates, \
-        ThAr_Ne_ref_dates, darks, dark_times = ferosutils.FileClassify(dirin,log)
+        ThAr_Ne_ref_dates, darks, dark_times = ferosutils.FileClassify(dirin,log, lamp=lamp)
 
 if ( (os.access(dirout+'Flat.fits',os.F_OK) == False)        or \
      (os.access(dirout+'trace.pkl',os.F_OK) == False)        or \
@@ -592,37 +594,56 @@ ThAr_all       = np.hstack(( np.array(ThArNe_ref), np.array(ThAr_Ne_ref) ))
 ThAr_all_dates = np.hstack(( np.array(ThAr_ref_dates), np.array(ThAr_Ne_ref_dates) ))
 p_shifts = []
 p_mjds   = []
-"""
-if len(ThAr_all)>0:
+refidx = 0
+#"""
+print len(ThAr_all) 
+if len(sorted_ThAr_Ne_dates)>6:
     Thar_shifts_out = dirout + 'ThAr_Ne_shifts.dat'
+    difs = 0
+    mindif = 9999999999
+    j = 0
+    while j < len(sorted_ThAr_Ne_dates):
 
-    i = 0
-    p_shifts = []
-    p_mjds   = []
-    fref   = ThAr_Ne_ref[sorted_ThAr_Ne_dates[0]]
-    refdct = pickle.load( open(dirout + fref.split('/')[-1][:-4]+'wavsolpars.pkl','r' ) )
+	    fref   = ThAr_Ne_ref[sorted_ThAr_Ne_dates[j]]
+	    refdct = pickle.load( open(dirout + fref.split('/')[-1][:-4]+'wavsolpars.pkl','r' ) )
 
-    while i < len(sorted_ThAr_Ne_dates):
-        fsim  = ThAr_Ne_ref[sorted_ThAr_Ne_dates[i]]
-        pdict = pickle.load( open(dirout + fsim.split('/')[-1][:-4]+'wavsolpars.pkl','r' ) )
-        p_shift, pix_centers, orders, wavelengths, I, rms_ms, residuals  = \
-			    GLOBALutils.Global_Wav_Solution_vel_shift(pdict['All_Pixel_Centers_co'],\
-			    pdict['All_Wavelengths_co'], pdict['All_Orders_co'],\
-			    np.ones(len(pdict['All_Wavelengths_co'])), refdct['p1_co'],\
-			    minlines=1200, maxrms=MRMS,order0=OO0, ntotal=n_useful,\
-			    Cheby=use_cheby, Inv=Inverse_m, npix=Flat.shape[1],nx=ncoef_x,nm=ncoef_m)
-        p_shifts.append(p_shift)
-        p_mjds.append(pdict['mjd'])
-        p_shift_ob, pix_centers_ob, orders_ob, wavelengths_ob, I_ob, rms_ms_ob, residuals_ob  = \
-                GLOBALutils.Global_Wav_Solution_vel_shift(pdict['All_Pixel_Centers'],\
-                pdict['All_Wavelengths'], pdict['All_Orders'],\
-                np.ones(len(pdict['All_Wavelengths'])), refdct['p1'],\
-                minlines=1200, maxrms=MRMS,order0=OO0, ntotal=n_useful,\
-                Cheby=use_cheby, Inv=Inverse_m, npix=Flat.shape[1],nx=ncoef_x,nm=ncoef_m)
+	    p_shifts = []
+	    p_shifts_ob = []
+	    p_mjds   = []
+	    i = 0
+	    while i < len(sorted_ThAr_Ne_dates):
+		fsim  = ThAr_Ne_ref[sorted_ThAr_Ne_dates[i]]
+		pdict = pickle.load( open(dirout + fsim.split('/')[-1][:-4]+'wavsolpars.pkl','r' ) )
+		p_shift, pix_centers, orders, wavelengths, I, rms_ms, residuals  = \
+				    GLOBALutils.Global_Wav_Solution_vel_shift(pdict['All_Pixel_Centers_co'],\
+				    pdict['All_Wavelengths_co'], pdict['All_Orders_co'],\
+				    np.ones(len(pdict['All_Wavelengths_co'])), refdct['p1_co'],\
+				    minlines=1200, maxrms=MRMS,order0=OO0, ntotal=n_useful,\
+				    Cheby=use_cheby, Inv=Inverse_m, npix=Flat.shape[1],nx=ncoef_x,nm=ncoef_m)
+		p_shifts.append(p_shift)
+		p_mjds.append(pdict['mjd'])
+		p_shift_ob, pix_centers_ob, orders_ob, wavelengths_ob, I_ob, rms_ms_ob, residuals_ob  = \
+		        GLOBALutils.Global_Wav_Solution_vel_shift(pdict['All_Pixel_Centers'],\
+		        pdict['All_Wavelengths'], pdict['All_Orders'],\
+		        np.ones(len(pdict['All_Wavelengths'])), refdct['p1'],\
+		        minlines=1200, maxrms=MRMS,order0=OO0, ntotal=n_useful,\
+		        Cheby=use_cheby, Inv=Inverse_m, npix=Flat.shape[1],nx=ncoef_x,nm=ncoef_m)
+		p_shifts_ob.append(p_shift_ob)
+		i+=1
+	    p_shifts = np.array(p_shifts)
+	    p_shifts_ob = np.array(p_shifts_ob)
+	    dif = np.mean(np.absolute(p_shifts-p_shifts_ob))
+	    if dif < mindif:
+		mindif = dif
+		difs = j
+	    print j, dif
+	    j+=1
+    refidx = difs
+    print 'This:',ThAr_Ne_ref[sorted_ThAr_Ne_dates[refidx]]
 
-        i+=1
+    p_shifts = list(p_shifts)
 
-"""
+#"""
 ### start of science frame reductions ###
 new_list         = []
 new_list_obnames = []
@@ -883,7 +904,7 @@ for fsim in comp_list:
         hdu = GLOBALutils.update_header(hdu,'HIERARCH SMOONALT',str(mephem.alt))
 
         # get ThAr closest in time
-        indice = sorted_ThAr_Ne_dates[0]	
+        indice = sorted_ThAr_Ne_dates[refidx]	
         hdu = GLOBALutils.update_header(hdu,'HIERARCH THAR REF',ThAr_Ne_ref_m[indice].split('/')[-1][:-5]+'_sp_ob.fits')
         hdu = GLOBALutils.update_header(hdu,'HIERARCH THAR REF CO',ThAr_Ne_ref_m[indice].split('/')[-1][:-5]+'_sp_co.fits')
         thar_fits_ob = dirout + ThAr_Ne_ref_m[indice].split('/')[-1][:-4]+'spec.ob.fits.S'
@@ -948,7 +969,11 @@ for fsim in comp_list:
 			    All_Wavelengths_co, All_Orders_co, np.ones(len(All_Wavelengths_co)), wsol_dict['p1_co'],\
 			    minlines=1000, maxrms=MRMS,order0=OO0, ntotal=n_useful,\
 			    Cheby=use_cheby, Inv=Inverse_m, npix=len(thar_order),nx=ncoef_x,nm=ncoef_m)
-
+	    precision    = rms_ms/np.sqrt(len(I))
+            good_quality = True
+            if (precision > 5):
+                good_quality = False
+		p_shift = 0.   
             p_shifts.append(p_shift)
             p_mjds.append(mjd)
 
@@ -971,10 +996,7 @@ for fsim in comp_list:
             hdu_co.writeto(dirout + fsim.split('/')[-1][:-5]+'_sp_co.fits')
             hdu = GLOBALutils.update_header(hdu,'HIERARCH THAR CO',fsim.split('/')[-1][:-5]+'_sp_co.fits')
 
-            precision    = rms_ms/np.sqrt(len(I))
-            good_quality = True
-            if (precision > 10):
-                good_quality = False
+
             hdu = GLOBALutils.update_header(hdu,'HIERARCH GOOD QUALITY WAVSOL', good_quality)
             hdu = GLOBALutils.update_header(hdu,'HIERARCH WAVSOL ERROR', precision, '[m/s]')
 
@@ -1027,6 +1049,8 @@ for fsim in comp_list:
             L  = np.where( spec[1,oss] != 0 )
             ccoef = GLOBALutils.get_cont_single(spec[0,oss],spec[3,oss],spec[4,oss],ll=1.5,lu=5,nc=nconts[oss])
             spec[5,oss,:][L] = spec[3,oss,L] / np.polyval(ccoef,spec[0,oss][L]) 
+	    #plot(spec[0,oss,:],spec[3,oss,:])
+	    #plot(spec[0,oss,:][L],np.polyval(ccoef,spec[0,oss][L]))
             nJ = np.where(np.isnan(spec[5,oss])==True)[0]
             nJ2 = np.where(np.isinf(spec[5,oss])==True)[0]
             spec[5,oss,nJ] = 1.0
@@ -1035,10 +1059,11 @@ for fsim in comp_list:
             spec[6,oss,:][L] = spec[4,oss,:][L] * (ratio ** 2 )
             spec[7,oss,:][L] = ratio
             spec[8,oss,:][L] = ratio * S_flat_ob_n[order,1,:][L] / np.sqrt( ratio * S_flat_ob_n[order,1,:][L] / gain + (ronoise/gain)**2 )
-
+	    #print spec[8,oss,1890:2010]
             rI = np.where(spec[5,oss] > 1. + 8./spec[8,oss])
             spec[5,oss,rI] = 1.
-
+            rI = np.where(spec[5,oss] < - (1. + 8./spec[8,oss]))
+            spec[5,oss,rI] = 1.
             spl           = scipy.interpolate.splrep(np.arange(WavSol.shape[0]), WavSol,k=3)
             dlambda_dx    = scipy.interpolate.splev(np.arange(WavSol.shape[0]), spl, der=1)
             NN            = np.average(dlambda_dx)
@@ -1047,7 +1072,7 @@ for fsim in comp_list:
             spec[9,oss,:][L]  = spec[5,oss,:][L] * (dlambda_dx[L] ** 1) 
             spec[10,oss,:][L] = spec[6,oss,:][L] / (dlambda_dx[L] ** 2)
             order+=1
-
+	#show()
         if os.access(dirout + fout, os.F_OK):
             os.remove(dirout + fout)
         hdu.writeto(dirout + fout)
@@ -1354,7 +1379,7 @@ if (not JustExtract):
         hdu[0] = GLOBALutils.update_header(hdu[0],'BJD_OUT', bjd_out)
 
         line_out = "%-15s %18.8f %9.4f %7.4f %9.3f %5.3f   feros   ceres   50000 %6d %5.2f %5.2f %5.1f %4.2f %5.2f %6.1f %4d %s\n"%\
-                      (obname, bjd_out, RV, RVerr2, BS, BSerr, T_eff_epoch, logg_epoch, Z_epoch, vsini_epoch, XC_min, disp_epoch,\
+                      (obname, bjd_out, RV, RVerr2, BS2, BSerr, T_eff_epoch, logg_epoch, Z_epoch, vsini_epoch, XC_min, disp_epoch,\
 		       TEXP, SNR_5130_R, ccf_pdf)
         f_res.write(line_out)
         hdu.close()

@@ -19,9 +19,9 @@ def download_models(webpage='http://svo2.cab.inta-csic.es/theory/models/coelho/h
 	os.system('mkdir '+dest+'/COELHO2014')
 	cwd = os.getcwd()
 	os.chdir(dest+'/COELHO2014')
-
 	tf = np.arange(6000,10001,250)
-	gf = np.arange(3.0,4.6,0.5)
+	gf = np.arange(2.5,4.6,0.5)
+	#gf = np.array([2.5])
 	zf = np.array([-1.,-0.5,0.0,0.2])
 
 	for t in tf:
@@ -103,7 +103,7 @@ def get_near(x,vec):
 
 def trilinear_interpolation(t,g,z,model_path='../../data/COELHO2014/'):
 	teffs = np.arange(6000,10001,250)
-	loggs = np.arange(3.0,4.6,0.5)
+	loggs = np.arange(2.5,4.6,0.5)
 	fehs  = np.array([-1.,-0.5,0.0,0.2])
 	x0,x1 = get_near(t,teffs)
 	y0,y1 = get_near(g,loggs)
@@ -220,27 +220,49 @@ def ccf_simple(sw,sf,mw,mf,rv):
 	sft = sf - np.mean(sf)
 	return np.sum(mft*sft)/np.sqrt(np.sum(mft**2)*np.sum(sft**2))
 
-def clean_strong_lines(mw,sc):
-	#""""
-	I = np.where((mw>6520)&(mw<6600))[0]
-	sc[I] = 1.
-	I = np.where((mw>5888)&(mw<5897))[0]
-	sc[I] = 1.
-	I = np.where((mw>4310)&(mw<4360))[0]
-	sc[I] = 1.
-	I = np.where((mw>4840)&(mw<4880))[0]
-	sc[I] = 1.
-	I = np.where((mw>4070)&(mw<4130))[0]
-	sc[I] = 1.
-	I = np.where((mw>3875)&(mw<3900))[0]
-	sc[I] = 1.
-	I = np.where((mw>3920)&(mw<3945))[0]
-	sc[I] = 1.
-	I = np.where((mw>3955)&(mw<3980))[0]
-	sc[I] = 1.
-	I = np.where(mw<3850)[0]
-	sc[I] = 1.
-	#"""
+def clean_strong_lines(mw,sc,mode=1):
+	if mode==1:
+		#""""
+		I = np.where((mw>6520)&(mw<6600))[0]
+		sc[I] = 1.
+		I = np.where((mw>5888)&(mw<5897))[0]
+		sc[I] = 1.
+		I = np.where((mw>4310)&(mw<4360))[0]
+		sc[I] = 1.
+		I = np.where((mw>4840)&(mw<4880))[0]
+		sc[I] = 1.
+		I = np.where((mw>4070)&(mw<4130))[0]
+		sc[I] = 1.
+		I = np.where((mw>3875)&(mw<3900))[0]
+		sc[I] = 1.
+		I = np.where((mw>3920)&(mw<3945))[0]
+		sc[I] = 1.
+		I = np.where((mw>3955)&(mw<3980))[0]
+		sc[I] = 1.
+		I = np.where(mw<3850)[0]
+		sc[I] = 1.
+		#"""
+	if mode==2:
+		#""""
+		I = np.where((mw>6550)&(mw<6570))[0]
+		sc[I] = 1.
+		I = np.where((mw>5888)&(mw<5897))[0]
+		sc[I] = 1.
+		I = np.where((mw>4320)&(mw<4350))[0]
+		sc[I] = 1.
+		I = np.where((mw>4850)&(mw<4870))[0]
+		sc[I] = 1.
+		I = np.where((mw>4090)&(mw<4110))[0]
+		sc[I] = 1.
+		I = np.where((mw>3875)&(mw<3900))[0]
+		sc[I] = 1.
+		I = np.where((mw>3920)&(mw<3945))[0]
+		sc[I] = 1.
+		I = np.where((mw>3955)&(mw<3980))[0]
+		sc[I] = 1.
+		I = np.where(mw<3850)[0]
+		sc[I] = 1.
+		#"""
 	return sc
 
 def RVforFR(wavs,flxs,teff=6700,logg=4.0,feh=-1.0,vsini=100.,model_path='../../data/COELHO2014/',vmin=-1000.,vmax=1000.,vstep=10.):
@@ -502,9 +524,9 @@ def multiccf(pars):
 	return ccftot.min()
 
 
-def get_pars_fr(wavst,flxst,model_patht='../../data/COELHO2014/',npools=4):
+def get_pars_fr(wavst,flxst,model_patht='../../data/COELHO2014/',npools=4,fixG=1.0):
 	for order in range(len(flxst)):
-		flxst[order] = clean_strong_lines(wavst[order],flxst[order])
+		flxst[order] = clean_strong_lines(wavst[order],flxst[order],mode=1)
 
 	t0 = time.time()
 
@@ -516,7 +538,9 @@ def get_pars_fr(wavst,flxst,model_patht='../../data/COELHO2014/',npools=4):
 
 
 	gt = np.array([6000,7000,8000,9000,10000])
-	gg = np.array([3.0,3.5,4.0,4.5])
+	gg = np.array([2.5,3.0,3.5,4.0,4.5])
+	if fixG != -1:
+		gg = np.array([fixG])
 	gz = np.array([-1,-0.5,0.0,0.2])
 	gr = np.array([10.,50.,100.,150.,200.,250.,300.])
 
@@ -566,41 +590,75 @@ def get_pars_fr(wavst,flxst,model_patht='../../data/COELHO2014/',npools=4):
 	print bt,bg,bz,br, (t2-t1)/60.,'mins'
 	#np.savetxt('temp_grid.txt',vals)
 
-	grid = np.reshape(vals,(len(gt),len(gg),len(gz),len(gr)))
-	tckt = interpolate.splrep(gt,np.arange(len(gt)),k=1)
-	tckg = interpolate.splrep(gg,np.arange(len(gg)),k=1)
-	tckz = interpolate.splrep(gz,np.arange(len(gz)),k=1)
-	tckr = interpolate.splrep(gr,np.arange(len(gr)),k=1)
 
-	itckt = interpolate.splrep(np.arange(len(gt)),gt,k=1)
-	itckg = interpolate.splrep(np.arange(len(gg)),gg,k=1)
-	itckz = interpolate.splrep(np.arange(len(gz)),gz,k=1)
-	itckr = interpolate.splrep(np.arange(len(gr)),gr,k=1)
+	if fixG==-1:
+		grid = np.reshape(vals,(len(gt),len(gg),len(gz),len(gr)))
+		tckt = interpolate.splrep(gt,np.arange(len(gt)),k=1)
+		tckg = interpolate.splrep(gg,np.arange(len(gg)),k=1)
+		tckz = interpolate.splrep(gz,np.arange(len(gz)),k=1)
+		tckr = interpolate.splrep(gr,np.arange(len(gr)),k=1)
 
-	st = np.arange(gt[0],gt[-1]+1,10.)
-	sg = np.arange(gg[0],gg[-1]+0.01,0.1)
-	sz = np.arange(gz[0],gz[-1]+0.01,0.1)
-	sr = np.arange(gr[0],gr[-1]+1.,5.)
+		itckt = interpolate.splrep(np.arange(len(gt)),gt,k=1)
+		itckg = interpolate.splrep(np.arange(len(gg)),gg,k=1)
+		itckz = interpolate.splrep(np.arange(len(gz)),gz,k=1)
+		itckr = interpolate.splrep(np.arange(len(gr)),gr,k=1)
 
-	st = interpolate.splev(st,tckt)
-	sg = interpolate.splev(sg,tckg)
-	sz = interpolate.splev(sz,tckz)
-	sr = interpolate.splev(sr,tckr)
+		st = np.arange(gt[0],gt[-1]+1,10.)
+		sg = np.arange(gg[0],gg[-1]+0.01,0.1)
+		sz = np.arange(gz[0],gz[-1]+0.01,0.1)
+		sr = np.arange(gr[0],gr[-1]+1.,5.)
 
-	tr2 = np.tile(sr,len(st)*len(sg)*len(sz))
-	tg2 = np.repeat(np.tile(sg,len(st)),len(sr)*len(sz))
-	tz2 = np.repeat(np.tile(sz,len(st)*len(sg)),len(sr))
-	tt2 = np.repeat(st,len(sg)*len(sr)*len(sz))
-	tot2 = np.vstack((tt2,tg2,tz2,tr2))
+		st = interpolate.splev(st,tckt)
+		sg = interpolate.splev(sg,tckg)
+		sz = interpolate.splev(sz,tckz)
+		sr = interpolate.splev(sr,tckr)
 
-	zi = ndimage.map_coordinates(grid, tot2, order=3, mode='nearest')
-	I  = np.argmin(zi)
-	minval = tot2[:,I]
+		tr2 = np.tile(sr,len(st)*len(sg)*len(sz))
+		tg2 = np.repeat(np.tile(sg,len(st)),len(sr)*len(sz))
+		tz2 = np.repeat(np.tile(sz,len(st)*len(sg)),len(sr))
+		tt2 = np.repeat(st,len(sg)*len(sr)*len(sz))
+		tot2 = np.vstack((tt2,tg2,tz2,tr2))
 
-	mint = interpolate.splev(minval[0],itckt)
-	ming = interpolate.splev(minval[1],itckg)
-	minz = interpolate.splev(minval[2],itckz)
-	minr = interpolate.splev(minval[3],itckr)
+		zi = ndimage.map_coordinates(grid, tot2, order=3, mode='nearest')
+		I  = np.argmin(zi)
+		minval = tot2[:,I]
+
+		mint = interpolate.splev(minval[0],itckt)
+		ming = interpolate.splev(minval[1],itckg)
+		minz = interpolate.splev(minval[2],itckz)
+		minr = interpolate.splev(minval[3],itckr)
+
+	else:
+		grid = np.reshape(vals,(len(gt),len(gz),len(gr)))
+		tckt = interpolate.splrep(gt,np.arange(len(gt)),k=1)
+		tckz = interpolate.splrep(gz,np.arange(len(gz)),k=1)
+		tckr = interpolate.splrep(gr,np.arange(len(gr)),k=1)
+
+		itckt = interpolate.splrep(np.arange(len(gt)),gt,k=1)
+		itckz = interpolate.splrep(np.arange(len(gz)),gz,k=1)
+		itckr = interpolate.splrep(np.arange(len(gr)),gr,k=1)
+
+		st = np.arange(gt[0],gt[-1]+1,10.)
+		sz = np.arange(gz[0],gz[-1]+0.01,0.1)
+		sr = np.arange(gr[0],gr[-1]+1.,5.)
+
+		st = interpolate.splev(st,tckt)
+		sz = interpolate.splev(sz,tckz)
+		sr = interpolate.splev(sr,tckr)
+
+		tr2 = np.tile(sr,len(st)*len(sz))
+		tz2 = np.repeat(np.tile(sz,len(st)),len(sr))
+		tt2 = np.repeat(st,len(sr)*len(sz))
+		tot2 = np.vstack((tt2,tz2,tr2))
+
+		zi = ndimage.map_coordinates(grid, tot2, order=3, mode='nearest')
+		I  = np.argmin(zi)
+		minval = tot2[:,I]
+
+		mint = interpolate.splev(minval[0],itckt)
+		ming = fixG
+		minz = interpolate.splev(minval[1],itckz)
+		minr = interpolate.splev(minval[2],itckr)
 
 	#d = {'grid':grid, 'zi':zi, 'tot2':tot2, 'gt':gt, 'gg':gg, 'gz':gz, 'gr':gr}
 	#pickle.dump(d,open('temp_dict.pkl'))
@@ -684,7 +742,6 @@ def find_pars_GA(wavs,flxs,model_path='../../data/COELHO2014/'):
 	print trans_chromosome(ga.bestIndividual())
 
 """
-
 
 
 

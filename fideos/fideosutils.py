@@ -774,3 +774,13 @@ def get_airmass(ra,dec,lat,lon,alt,dateobs):
 	altaz = target.transform_to(AltAz(obstime=time,location=obs))  
 
 	return altaz.secz
+
+def compute_RON(mbias,biases,gain=1.):
+	stdevs = []
+	for fbias in biases:
+		bias = pyfits.getdata(fbias)
+		tbias = bias-mbias
+		stdevs.append(np.sqrt(np.var(tbias)))
+	stdevs = np.array(stdevs)
+	return np.median(stdevs)*gain
+		

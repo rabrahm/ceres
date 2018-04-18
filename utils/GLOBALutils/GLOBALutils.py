@@ -131,6 +131,7 @@ def getcoords(obname,mjd,filen='/data/echelle/feros/coords.txt'):
 	return RA,DEC
 
 def get_them(sc,exap,ncoef,maxords=-1,startfrom=0,nsigmas=10.,mode=1,endat=-1,nc2=2):
+    exap = int(exap)
     def fitfunc(p,x):
 	ret = p[0] + p[1] * np.exp(-.5*((x-p[2])/p[3])**2)
 	return ret
@@ -282,6 +283,7 @@ def get_them(sc,exap,ncoef,maxords=-1,startfrom=0,nsigmas=10.,mode=1,endat=-1,nc
 	else:
 		exap2 = exap + .2*exap
 		dev = exap2/4.
+	exap2 = int(exap2)
 	for i in range(len(pos)):
 	    if pos[i]-exap2 < 0:
 		    x = ejx[:pos[i]+exap2+1]
@@ -343,7 +345,7 @@ def get_them(sc,exap,ncoef,maxords=-1,startfrom=0,nsigmas=10.,mode=1,endat=-1,nc
 		else:
 		    exap2 = exap + .2*exap
 		    dev = exap2/4.
-
+		exap2 = int(exap2)
 		while j < len(pos):
 		    if pos[j]-exap2 < 0:
 			    x = ejx[:int(pos[j]+exap2+1)]
@@ -1010,7 +1012,7 @@ def FlatNormalize(S_flat_ob, S_flat_ob_simple, mid=1023):
 
         # fill the trivial parts now
         S_flat_ob_n[j,0,:]         = S_flat_ob[j,0,:]
-
+	plot 
     return S_flat_ob_n,S_flat_ob_simple_n
 
 def FlatNormalize_single(S_flat,mid=1023,span=500):
@@ -1032,7 +1034,6 @@ def FlatNormalize_single(S_flat,mid=1023,span=500):
             S_flat_n[j,2,:] = S_flat[j,2,:] * max_val**2
             S_flat_n[j,0,:] = S_flat[j,0,:]
             max_vals.append(max_val)
-
     return S_flat_n,np.array(max_vals)
 
 def retrace(dat, c_all,span=9):
@@ -2748,7 +2749,7 @@ def get_cont_single(W,F,E,nc=3,ll=3,lu=3,span=10,fact=3.,frac=0.3):
 	wav,flx,err = np.delete(W,I),np.delete(F,I),1./np.sqrt(np.delete(E,I))
 	I = np.where(np.isnan(flx)==True)[0]
 	wav,flx,err = np.delete(wav,I),np.delete(flx,I),np.delete(err,I)
-	
+
 	i = 0
 	rw,re,rd = [],[],[]
 	good_w,good_f = [],[]
@@ -2767,6 +2768,7 @@ def get_cont_single(W,F,E,nc=3,ll=3,lu=3,span=10,fact=3.,frac=0.3):
 			except:
 				None
 			i+=1
+
 		#print len(good_w),0.1*len(wav),len(wav)
 		if len(good_w)>0.2*len(wav):
 			cond = False
@@ -2776,9 +2778,10 @@ def get_cont_single(W,F,E,nc=3,ll=3,lu=3,span=10,fact=3.,frac=0.3):
 			good_w,good_f = [],[]
 			fact +=1
 		if fact>20:
-			return np.array([1.])
+			return np.array([0,np.max(scipy.signal.medfilt(F,21))])
 		
 	gw,gf = np.array(good_w),np.array(good_f)
+
 	rw,re,rd = np.array(rw),np.array(re),np.array(rd) 
 	#plot(rw,rd,'ro')
 	#plot(rw,fact*re,'bo')

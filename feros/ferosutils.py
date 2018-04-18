@@ -149,7 +149,7 @@ def gauss(params,x):
 def res_gauss(params,g,x):
 	return g-gauss(params,x)
 
-def FileClassify(diri, log):
+def FileClassify(diri, log, lamp='LAMP3'):
 	"""
 	Classifies all files in a directory and writes a night log of science images
 	"""
@@ -181,6 +181,7 @@ def FileClassify(diri, log):
     
 	jj = 0
 	for archivo in all_files:
+
 		jj+=1
 		dump = False
 		for bf in bad_files:
@@ -231,11 +232,12 @@ def FileClassify(diri, log):
 
 			elif h[0].header['HIERARCH ESO DPR TYPE'] == 'WAVE':
 				div = archivo.split('_')
-				if h[0].header['HIERARCH ESO INS CALMIRR2 ID'] == 'LAMP1':
+				if h[0].header['HIERARCH ESO INS CALMIRR2 ID'] == lamp:
 					ThArNe_ref.append(archivo)
 					mjd, mjd0 = mjd_fromheader(h)
 					ThArNe_ref_dates.append( mjd )
-				elif h[0].header['HIERARCH ESO INS CALMIRR2 ID'] == 'LAMP3':
+				if h[0].header['HIERARCH ESO INS CALMIRR2 ID'] == lamp:
+					
 					ThAr_Ne_ref.append(archivo)
 					mjd, mjd0 = mjd_fromheader(h)
 					ThAr_Ne_ref_dates.append( mjd )
