@@ -49,6 +49,8 @@ parser.add_argument('-npools', default=1)
 parser.add_argument('-o2do',default='all')
 parser.add_argument('-reffile',default='default')
 parser.add_argument('-ofind', default='last')
+parser.add_argument('-template', default='UVES_red_obs_exp')
+parser.add_argument('-slit', default='0.7')
 
 args = parser.parse_args()
 dirin            = args.directorio
@@ -60,6 +62,8 @@ npools           = int(args.npools)
 object2do        = args.o2do
 reffile          = args.reffile
 stst            = args.ofind
+template        = args.template
+slit            = args.slit
 
 if dirin[-1] != '/':
     dirin = dirin + '/'
@@ -104,13 +108,22 @@ sky_aperture       = 31
 NSigma_Marsh       = 10
 NCosmic_Marsh      = 10
 S_Marsh            = 0.4
-N_Marsh            = 3      # grado polinomio 
-min_extract_col      = 0
-min_extract_cols1    = [920,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-min_extract_cols2    = [1710,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-max_extract_col      = 4000
-max_extract_cols1    = [3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895]
-max_extract_cols2    = [3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3390]
+N_Marsh            = 3      # grado polinomio
+
+if template == 'UVES_red_obs_exp':
+	min_extract_col      = 0
+	min_extract_cols1    = [920,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+	min_extract_cols2    = [1710,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+	max_extract_col      = 4000
+	max_extract_cols1    = [3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895]
+	max_extract_cols2    = [3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3390]
+elif template == 'UVES_dic2_obs_expfree':
+	min_extract_col      = 0
+	min_extract_cols1    = [920 ,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+	min_extract_cols2    = [1710,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+	max_extract_col      = 4000
+	max_extract_cols1    = [3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895]
+	max_extract_cols2    = [3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3390]
 
 xbinning           = 1
 ybinning           = 1
@@ -229,6 +242,7 @@ else:
 
 print '\n\tExtraction of ThAr calibration frames:'
 for fsim in ThAr_ref:
+    print fsim
     thar_fits = dirout + fsim.split('/')[-1][:-4]+'spec.pkl'
     if ( os.access(thar_fits,os.F_OK) == False ) or ( force_thar_extract ):
         hthar = pyfits.open( fsim )

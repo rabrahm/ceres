@@ -3554,29 +3554,37 @@ def simbad_coords(obname,mjd):
 	elif obname.lower() == 'omicronpup':
 		obname = 'omi pup'
 
-	sp,ra,dec = 0,0,0
-	(th,tfile) = tempfile.mkstemp(prefix='CP', text=True)
-        tf = open(tfile,'w')
-	tf.write("output console=off\n")
-	tf.write("output script=off\n")
-	tf.write("output error=merge\n")
-	tf.write("set limit 1\n")
-	tf.write("format object fmt1 \"%IDLIST(1) | %OTYPELIST(S) | %SP(S) | %COO(A) | %COO(D) | %PM(A) | %PM(D)\"\n")
-	tf.write("result full\n")
-	tf.write("query id %s\n" % ( obname ) )
-	tf.close()
-	values = [("scriptFIle", (pycurl.FORM_FILE, tfile))]
-	output = StringIO.StringIO() 
-	c = pycurl.Curl()
-	c.setopt(pycurl.URL, "http://simbad.u-strasbg.fr/simbad/sim-script")
-	c.setopt(c.HTTPPOST, values)
-	c.setopt(pycurl.WRITEFUNCTION, output.write)
+	paths = ['http://simbad.u-strasbg.fr/simbad/sim-script','http://simbad.harvard.edu/simbad/sim-script']
+
 	cond = True
+	i = 0
 	while cond:
 		try:
+			sp,ra,dec = 0,0,0
+			(th,tfile) = tempfile.mkstemp(prefix='CP', text=True)
+			tf = open(tfile,'w')
+			tf.write("output console=off\n")
+			tf.write("output script=off\n")
+			tf.write("output error=merge\n")
+			tf.write("set limit 1\n")
+			tf.write("format object fmt1 \"%IDLIST(1) | %OTYPELIST(S) | %SP(S) | %COO(A) | %COO(D) | %PM(A) | %PM(D)\"\n")
+			tf.write("result full\n")
+			tf.write("query id %s\n" % ( obname ) )
+			tf.close()
+			values = [("scriptFIle", (pycurl.FORM_FILE, tfile))]
+			output = StringIO.StringIO() 
+			c = pycurl.Curl()
+			c.setopt(pycurl.URL, paths[i])
+			c.setopt(c.HTTPPOST, values)
+			c.setopt(pycurl.WRITEFUNCTION, output.write)
 			c.perform()
 		except:
-			print 'Trying again to perform query to SIMBAD'
+			if i == 0:
+				i = 1
+			else:
+				i=0
+			print 'Trying again to perform query to SIMBAD, changing to', paths[i]
+			
 		else:
 			cond = False
 	c.close()

@@ -230,7 +230,7 @@ if (pre_process == 1):
     temp_flat = fideosutils.make_flatOB(MasterFlat, c_co)
     for i in range(temp_flat.shape[1]):
         temp_flat[:,i] = scipy.ndimage.filters.gaussian_filter(temp_flat[:,i],3.)
-    c_ob, nord_ob = GLOBALutils.get_them(temp_flat, 6,trace_degree,maxords=-1,nsigmas=2.,mode=1)
+    c_ob, nord_ob = GLOBALutils.get_them(temp_flat, 7,trace_degree,maxords=-1,nsigmas=2.,mode=1)
     c_ob, nord_ob = fideosutils.good_orders(c_ob,nord_ob,MasterFlat.shape[1],MasterFlat.shape[0],ext_aperture_ob)
 
     print "\t\t-> Object orders found:", nord_ob
@@ -1621,6 +1621,19 @@ for fsim in new_list:
                     GLOBALutils.XCor(spec, ml_v, mh_v, weight, 0, lbary_ltopo, vel_width=200,vel_step=3,\
                                           spec_order=9,iv_order=10,sn_order=8,max_vel_rough=200)
             v1,x1 = vels.copy(), xc_full.copy()
+
+	    for i in range(spec.shape[1]):
+		I = np.where((spec[0,i]>7030) & (spec[0,i] < 7050))[0]
+		if len(I)>0:
+			W_ccf[i] = 0
+		I = np.where((spec[0,i]>6920) & (spec[0,i] < 6940))[0]
+		if len(I)>0:
+			W_ccf[i] = 0
+		I = np.where((spec[0,i]>4300) & (spec[0,i] < 4310))[0]
+		if len(I)>0:
+			W_ccf[i] = 0	
+	    #print W_ccf	
+		
             xc_av = GLOBALutils.Average_CCF(xc_full, sn, sn_min=0.0, Simple=True, W=W_ccf, start_order=2)
             # Normalize the continuum of the CCF robustly with R     
             yy = scipy.signal.medfilt(xc_av,11)
@@ -1642,7 +1655,7 @@ for fsim in new_list:
             vels, xc_full, sn, nlines_ccf, W_ccf =\
                     GLOBALutils.XCor(spec, ml_v, mh_v, weight, vel0_xc, lbary_ltopo, vel_width=vel_width,vel_step=0.1,\
                                           spec_order=9,iv_order=10,sn_order=8,max_vel_rough=300)
-
+	    
             xc_av = GLOBALutils.Average_CCF(xc_full, sn, sn_min=0.0, Simple=True, W=W_ccf, start_order=2)
             pred = scipy.interpolate.splev(vels,tck1)
             xc_av /= pred
