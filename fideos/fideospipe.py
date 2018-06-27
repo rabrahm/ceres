@@ -22,7 +22,7 @@ import ephem
 import glob
 import jplephem
 from math import radians as rad
-import pyfits
+from astropy.io import fits as pyfits
 import pickle
 import os
 import scipy

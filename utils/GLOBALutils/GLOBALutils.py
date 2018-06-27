@@ -1,4 +1,4 @@
-import pyfits
+from astropy.io import fits as pyfits
 import numpy as np
 from numpy import median,sqrt,array,exp
 import scipy
@@ -233,7 +233,7 @@ def get_them(sc,exap,ncoef,maxords=-1,startfrom=0,nsigmas=10.,mode=1,endat=-1,nc
     #show()
     #print gfds
     dtemp = d[tbase] - interpolate.splev(tbase,tck)
-    ddev = np.sqrt(np.var(dtemp))
+    ddev = np.sqrt(np.var(dtemp[5:-5]))
     dt = d-interpolate.splev(np.arange(len(d)),tck)
     #plot(dt)
     #axhline(3*ddev)
@@ -244,7 +244,7 @@ def get_them(sc,exap,ncoef,maxords=-1,startfrom=0,nsigmas=10.,mode=1,endat=-1,nc
     #print vy
 
     #plot(d)
-    #plot(base,d[base])
+    #plot(tbase,d[tbase])
     #plot(np.arange(len(d))[pos], d[pos],'bo')
     #show()
     #print gfds
@@ -1678,7 +1678,7 @@ def XC_Final_Fit( X, Y, usemin=True, sigma_res = 1.5, horder=20, moonv = 0., moo
     return p1, predicted, p1_gau, predicted_gau, L2
 
 
-def Average_CCF(xc_full, sn, start_order=0,sn_min=0.15, Simple=False, W=None, boot_ind=None):
+def Average_CCF(xc_full, sn, start_order=0,sn_min=0.15, Simple=False, W=None, boot_ind=[]):
     """
     Given the CCF of all orders, construct an average CCF
     """
@@ -1691,9 +1691,9 @@ def Average_CCF(xc_full, sn, start_order=0,sn_min=0.15, Simple=False, W=None, bo
 
     combine_indices = range(start_order, norders)
     #print combine_indices
-    if (boot_ind != None):
-        combine_indices = boot_ind
-    
+    if len(boot_ind)>0:
+        	combine_indices = boot_ind
+
     for order in combine_indices:
     	#I = np.where(np.isnan(xc_full[:,order+1]))
     	#print I

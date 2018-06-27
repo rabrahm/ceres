@@ -6,7 +6,7 @@ sys.path.append("../utils/GLOBALutils")
 import GLOBALutils
 import os 
 import glob
-import pyfits
+from astropy.io import fits as pyfits
 from scipy import ndimage
 import emcee
 import corner

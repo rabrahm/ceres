@@ -1,6 +1,4 @@
 import sys
-from pylab import *
-
 base = '../'
 
 sys.path.append(base+"utils/Continuum")
@@ -17,6 +15,9 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
+from pylab import *
+
+
 # ceres modules
 import coralieutils
 import continuum
@@ -29,7 +30,7 @@ import argparse
 import ephem
 import jplephem
 from math import radians as rad
-import pyfits
+from astropy.io import fits as pyfits
 import pickle
 import os
 import scipy
@@ -193,7 +194,7 @@ if (pre_process == 1):
 	    c_ob, nord_ob = GLOBALutils.get_them(Flat_ob, 8, trace_degree,maxords=-1,mode=1)
 	    c_co, nord_co = GLOBALutils.get_them(Flat_co, 8, trace_degree,maxords=-1,startfrom=300,mode=1)
     else:
-        c_all, nord_all = GLOBALutils.get_them(Flat, 4, trace_degree,maxords=-1,mode=1,nsigmas=3)
+        c_all, nord_all = GLOBALutils.get_them(Flat, 5, trace_degree,maxords=-1,mode=1,nsigmas=3)
 	GA_co,GA_ob = GA_flat, GA_flat
 	RO_co,RO_ob = RO_flat, RO_flat
 

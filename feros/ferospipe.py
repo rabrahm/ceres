@@ -1,4 +1,10 @@
 import sys
+
+import matplotlib
+matplotlib.use("Agg") 
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
+
 from pylab import *
 
 base = '../'
@@ -9,11 +15,6 @@ sys.path.append(base+"utils/OptExtract")
 baryc_dir= base+'utils/SSEphem/'
 sys.path.append(baryc_dir)
 ephemeris='DEc403'
-
-import matplotlib
-matplotlib.use("Agg") 
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
 
 # ceres modules
 import ferosutils
@@ -28,7 +29,7 @@ import ephem
 import jplephem
 #from PyAstronomy import pyasl
 from math import radians as rad
-import pyfits
+from astropy.io import fits as pyfits
 import pickle
 import os
 import scipy
@@ -134,7 +135,7 @@ print '\n'
 
 biases, flats, ThArNe_ref, ThAr_Ne_ref, simThAr_sci, simSky_sci, ThAr_ref_dates, \
         ThAr_Ne_ref_dates, darks, dark_times = ferosutils.FileClassify(dirin,log, lamp=lamp)
-
+#ThAr_Ne_ref,ThAr_Ne_ref_dates = ThAr_Ne_ref[:8],ThAr_Ne_ref_dates[:8]
 if ( (os.access(dirout+'Flat.fits',os.F_OK) == False)        or \
      (os.access(dirout+'trace.pkl',os.F_OK) == False)        or \
      (os.access(dirout+'MasterBias.fits',os.F_OK) == False)  or \
@@ -595,54 +596,91 @@ ThAr_all_dates = np.hstack(( np.array(ThAr_ref_dates), np.array(ThAr_Ne_ref_date
 p_shifts = []
 p_mjds   = []
 refidx = 0
+fname = dirout +'thar_shifts.pdf'
+dct_shfts = {}
+        
+force_shift = False
+if os.access(dirout+'shifts.pkl',os.F_OK):
+    dct_shfts = pickle.load(open(dirout+'shifts.pkl','r'))
+    for fl in ThAr_Ne_ref:
+        if not fl in dct_shfts['names']:
+            force_shift = True
+            dct_shfts = {}
+            break
+else:
+    force_shift = True
 #"""
 print len(ThAr_all) 
-if len(sorted_ThAr_Ne_dates)>6:
+if force_shift and len(sorted_ThAr_Ne_dates)>6:
+    f, axarr = plt.subplots(len(sorted_ThAr_Ne_dates), sharex=True,figsize=(5, 30))
     Thar_shifts_out = dirout + 'ThAr_Ne_shifts.dat'
     difs = 0
     mindif = 9999999999
     j = 0
+    dct_shft = {}
+    vec_dif = []
+    vec_nam = []
     while j < len(sorted_ThAr_Ne_dates):
-
-	    fref   = ThAr_Ne_ref[sorted_ThAr_Ne_dates[j]]
-	    refdct = pickle.load( open(dirout + fref.split('/')[-1][:-4]+'wavsolpars.pkl','r' ) )
-
-	    p_shifts = []
-	    p_shifts_ob = []
-	    p_mjds   = []
-	    i = 0
-	    while i < len(sorted_ThAr_Ne_dates):
-		fsim  = ThAr_Ne_ref[sorted_ThAr_Ne_dates[i]]
-		pdict = pickle.load( open(dirout + fsim.split('/')[-1][:-4]+'wavsolpars.pkl','r' ) )
-		p_shift, pix_centers, orders, wavelengths, I, rms_ms, residuals  = \
+        fref   = ThAr_Ne_ref[sorted_ThAr_Ne_dates[j]]
+        vec_nam.append(fref)
+        refdct = pickle.load( open(dirout + fref.split('/')[-1][:-4]+'wavsolpars.pkl','r' ) )
+        p_shifts = []
+        p_shifts_ob = []
+        p_mjds   = []
+        i = 0
+        while i < len(sorted_ThAr_Ne_dates):
+            fsim  = ThAr_Ne_ref[sorted_ThAr_Ne_dates[i]]
+            pdict = pickle.load( open(dirout + fsim.split('/')[-1][:-4]+'wavsolpars.pkl','r' ) )
+            p_shift, pix_centers, orders, wavelengths, I, rms_ms, residuals  = \
 				    GLOBALutils.Global_Wav_Solution_vel_shift(pdict['All_Pixel_Centers_co'],\
 				    pdict['All_Wavelengths_co'], pdict['All_Orders_co'],\
 				    np.ones(len(pdict['All_Wavelengths_co'])), refdct['p1_co'],\
 				    minlines=1200, maxrms=MRMS,order0=OO0, ntotal=n_useful,\
 				    Cheby=use_cheby, Inv=Inverse_m, npix=Flat.shape[1],nx=ncoef_x,nm=ncoef_m)
-		p_shifts.append(p_shift)
-		p_mjds.append(pdict['mjd'])
-		p_shift_ob, pix_centers_ob, orders_ob, wavelengths_ob, I_ob, rms_ms_ob, residuals_ob  = \
+            p_shifts.append(p_shift)
+            p_mjds.append(pdict['mjd'])
+            p_shift_ob, pix_centers_ob, orders_ob, wavelengths_ob, I_ob, rms_ms_ob, residuals_ob  = \
 		        GLOBALutils.Global_Wav_Solution_vel_shift(pdict['All_Pixel_Centers'],\
 		        pdict['All_Wavelengths'], pdict['All_Orders'],\
 		        np.ones(len(pdict['All_Wavelengths'])), refdct['p1'],\
 		        minlines=1200, maxrms=MRMS,order0=OO0, ntotal=n_useful,\
 		        Cheby=use_cheby, Inv=Inverse_m, npix=Flat.shape[1],nx=ncoef_x,nm=ncoef_m)
-		p_shifts_ob.append(p_shift_ob)
-		i+=1
-	    p_shifts = np.array(p_shifts)
-	    p_shifts_ob = np.array(p_shifts_ob)
-	    dif = np.mean(np.absolute(p_shifts-p_shifts_ob))
-	    if dif < mindif:
-		mindif = dif
-		difs = j
-	    print j, dif
-	    j+=1
+            p_shifts_ob.append(p_shift_ob)
+            i+=1
+        p_shifts = np.array(p_shifts)
+        p_shifts_ob = np.array(p_shifts_ob)
+        dif = np.absolute(np.mean(p_shifts-p_shifts_ob))
+        vec_dif.append(dif)        
+        axarr[j].plot(p_shifts-p_shifts_ob)
+        axarr[j].axhline(0)
+        axarr[j].set_title(fref.split('/')[-1]+'offset: '+str(np.around(dif,5)))
+        if dif < mindif:
+            mindif = dif
+            difs = j
+        print j, dif
+        j+=1
+    dct_shfts['vals']=np.array(vec_dif)
+    dct_shfts['names']=np.array(vec_nam)
+
     refidx = difs
-    print 'This:',ThAr_Ne_ref[sorted_ThAr_Ne_dates[refidx]]
-
     p_shifts = list(p_shifts)
+    savefig(fname,format='pdf')
 
+    pickle.dump(dct_shfts, open(dirout+'shifts.pkl','w'))
+
+elif len(sorted_ThAr_Ne_dates)>6:
+    dct_shfts = pickle.load(open(dirout+'shifts.pkl','r'))
+    I = np.argmin(dct_shfts['vals'])
+    goodname = dct_shfts['names'][I]
+    j = 0
+    while j < len(sorted_ThAr_Ne_dates):
+        if ThAr_Ne_ref[sorted_ThAr_Ne_dates[j]] == goodname:
+            refidx = j
+        j+=1
+else:
+    refidx = 0
+print 'This:',ThAr_Ne_ref[sorted_ThAr_Ne_dates[refidx]]
+clf()
 #"""
 ### start of science frame reductions ###
 new_list         = []

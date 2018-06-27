@@ -39,15 +39,15 @@ def CheckLibraries():
       print '             To install it, go to: http://www.scipy.org/\n\n'
       sys.exit(1)
     print "     > Scipy is ok!"
-    try:
-      import pyfits
-    except ImportError:
-      print "     ----------------------------------------------------------"
-      print '     ERROR: '+p_name+' will not be installed in your system because'
-      print '            pyfits is not installed in your system.'
-      print '            To install it, go to: http://www.stsci.edu/institute/software_hardware/pyfits \n\n'
-      sys.exit(1)
-    print "     > Pyfits is ok!"
+    #try:
+    #  import pyfits
+    #except ImportError:
+    #  print "     ----------------------------------------------------------"
+    #  print '     ERROR: '+p_name+' will not be installed in your system because'
+    #  print '            pyfits is not installed in your system.'
+    #  print '            To install it, go to: http://www.stsci.edu/institute/software_hardware/pyfits \n\n'
+    #  sys.exit(1)
+    #print "     > Pyfits is ok!"
 def getDirs(foldername):
     return os.walk(foldername).next()[1]
 
