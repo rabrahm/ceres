@@ -254,7 +254,7 @@ else:
     MasterBias = h[0].data
 
 
-if len(flats) == 0:
+if len(ob_flats)>0 and len(co_flats)>0:
 	c_all = GLOBALutils.Mesh(c_ob,c_co)
 
 print '\n\tExtraction of Flat calibration frames:'
