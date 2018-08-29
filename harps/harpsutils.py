@@ -1,4 +1,6 @@
-import pyfits
+import matplotlib
+matplotlib.use("Agg") 
+from astropy.io import fits as pyfits
 from pylab import *
 import scipy
 import glob

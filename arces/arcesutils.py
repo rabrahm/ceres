@@ -1,4 +1,4 @@
-import pyfits
+from astropy.io import fits as pyfits
 import scipy
 import glob
 import os
@@ -165,4 +165,3 @@ def OverscanTrim(d):
 
     newdata = newdata - overscan
     return newdata
-

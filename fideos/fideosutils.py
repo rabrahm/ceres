@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use('Agg')
 from pylab import *
 import scipy
 from scipy import interpolate
@@ -102,10 +104,10 @@ def make_flatOB(MasterFlat, c_co,exap=5):
 		for o in range(nord_co):
 			cen = np.around(Centers[o,x])
 			try:
-				bas = np.min(flat[cen-3*exap:cen+3*exap,x])
+				bas = np.min(flat[int(np.around(cen-3*exap)):int(np.around(cen+3*exap)),x])
 			except:
 				bas = baso
-			img_out[cen-exap:cen+exap+1,x] = bas
+			img_out[int(np.around(cen-exap)):int(np.around(cen+exap+1)),x] = bas
 	return img_out
 
 def get_flatOB(MasterFlat, MasterFlat_co):
@@ -659,7 +661,7 @@ def FitFideosCompProf(X, Y, p0, fibre_ap):
         out = scipy.ndimage.filters.gaussian_filter(out, p[2]*space)
         out /= np.max(out)
         out = p[1]*out
-        out = np.mean(out.reshape((len(out)/space,space)),axis=1)
+        out = np.mean(out.reshape((int(len(out)/space),int(space))),axis=1)
         return out
     errfunc = lambda p,X,Y,fibre_ap: np.ravel( (AnaliticProfile1D(p,X,fibre_ap)-Y) )
 
@@ -784,3 +786,7 @@ def compute_RON(mbias,biases,gain=1.):
 	stdevs = np.array(stdevs)
 	return np.median(stdevs)*gain
 		
+def fill_list_header(hdu,ofiles):
+    for i in range(len(ofiles)):
+        hdu = GLOBALutils.update_header(hdu,'RAW'+str(i),ofiles[i].split('/')[-1])
+    return hdu

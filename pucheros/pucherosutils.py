@@ -1,11 +1,14 @@
 import sys
+import matplotlib
+matplotlib.use("Agg") 
+
 base = '../'
 sys.path.append(base+"utils/GLOBALutils")
 import GLOBALutils
 
 import numpy as np
 import scipy
-import pyfits
+from astropy.io import fits as pyfits
 import os
 import glob
 import tempfile

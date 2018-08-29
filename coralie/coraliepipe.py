@@ -1,4 +1,7 @@
 import sys
+import matplotlib
+matplotlib.use("Agg") 
+
 base = '../'
 
 sys.path.append(base+"utils/Continuum")
@@ -10,8 +13,6 @@ baryc_dir= base+'utils/SSEphem/'
 sys.path.append(baryc_dir)
 ephemeris='DEc403'
 
-import matplotlib
-matplotlib.use("Agg") 
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 

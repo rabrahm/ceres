@@ -1,4 +1,6 @@
 import sys
+import matplotlib
+matplotlib.use("Agg")
 from pylab import *
 
 base = '../'
@@ -9,9 +11,7 @@ sys.path.append(base+"utils/GLOBALutils")
 baryc_dir= base+'utils/SSEphem/'
 sys.path.append(baryc_dir)
 ephemeris='DEc403'
-
-import matplotlib
-matplotlib.use("Agg") 
+ 
 import matplotlib.pyplot as plt
 
 # ecpipe modules
@@ -21,7 +21,7 @@ import fiesutils
 import GLOBALutils
 
 # other useful modules
-import pyfits
+from astropy.io import fits as pyfits
 import pickle
 import os
 import numpy as np

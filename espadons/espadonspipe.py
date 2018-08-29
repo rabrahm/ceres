@@ -1,4 +1,7 @@
 import sys
+import matplotlib
+matplotlib.use("Agg") 
+
 from pylab import *
 
 base = '../'
@@ -26,7 +29,7 @@ import ephem
 import jplephem
 #from PyAstronomy import pyasl
 from math import radians as rad
-import pyfits
+from astropy.io import fits as pyfits
 import pickle
 import os
 import scipy

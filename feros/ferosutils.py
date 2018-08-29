@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use("Agg") 
 from astropy.io import fits as pyfits
 import numpy as np
 from numpy import median,sqrt,array,exp

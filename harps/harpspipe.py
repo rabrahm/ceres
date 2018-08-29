@@ -1,4 +1,6 @@
 import sys
+import matplotlib
+matplotlib.use("Agg") 
 from pylab import *
 
 base = '../'
@@ -11,8 +13,6 @@ baryc_dir= base+'utils/SSEphem/'
 sys.path.append(baryc_dir)
 ephemeris='DEc403'
 
-import matplotlib
-matplotlib.use("Agg") 
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
@@ -27,7 +27,7 @@ import argparse
 import ephem
 import jplephem
 from math import radians as rad
-import pyfits
+from astropy.io import fits as pyfits
 import pickle
 import os
 import scipy

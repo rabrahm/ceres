@@ -1,3 +1,6 @@
+import matplotlib
+matplotlib.use('Agg')
+
 from astropy.io import fits as pyfits
 import numpy as np
 from numpy import median,sqrt,array,exp
@@ -1002,17 +1005,17 @@ def FlatNormalize(S_flat_ob, S_flat_ob_simple, mid=1023):
     S_flat_ob_n  = np.zeros( np.shape(S_flat_ob) )
     S_flat_ob_simple_n  = np.zeros( np.shape(S_flat_ob_simple) )
 
-    for j in range(norders):
-        max_val        = (scipy.signal.medfilt(S_flat_ob[j,1,mid-span:mid+span+1],21)).max()
+    for j in np.arange(norders).astype('int'):
+        max_val        = (scipy.signal.medfilt(S_flat_ob[j,1,int(np.around(mid-span)):int(np.around(mid+span+1))],21)).max()
         S_flat_ob_n[j,1,:]     = (S_flat_ob[j,1,:] / max_val)
         S_flat_ob_n[j,2,:]  = S_flat_ob[j,1,:] * max_val**2 
 
-        max_val        = (scipy.signal.medfilt(S_flat_ob_simple[j,mid-span:mid+span+1],21)).max()
+        max_val        = (scipy.signal.medfilt(S_flat_ob_simple[j,int(np.around(mid-span)):int(np.around(mid+span+1))],21)).max()
         S_flat_ob_simple_n[j,:]     = (S_flat_ob_simple[j,:] / max_val)
 
         # fill the trivial parts now
         S_flat_ob_n[j,0,:]         = S_flat_ob[j,0,:]
-	plot 
+
     return S_flat_ob_n,S_flat_ob_simple_n
 
 def FlatNormalize_single(S_flat,mid=1023,span=500):
@@ -1023,13 +1026,13 @@ def FlatNormalize_single(S_flat,mid=1023,span=500):
     norders = S_flat.shape[0]
     max_vals = []
     if len(S_flat.shape)==2:
-        for j in range(norders):
-            max_val = (scipy.signal.medfilt(S_flat[j,mid-span:mid+span+1],21)).max()
+        for j in np.arange(norders):
+            max_val = (scipy.signal.medfilt(S_flat[j,int(mid-span):int(mid+span)+1],21)).max()
             S_flat_n[j,:]     = S_flat[j,:] / max_val
             max_vals.append(max_val)
     else:
-        for j in range(norders):
-            max_val = (scipy.signal.medfilt(S_flat[j,1,mid-span:mid+span+1],21)).max()
+        for j in np.arange(norders):
+            max_val = (scipy.signal.medfilt(S_flat[j,1,int(mid-span):int(mid+span+1)],21)).max()
             S_flat_n[j,1,:] = S_flat[j,1,:] / max_val
             S_flat_n[j,2,:] = S_flat[j,2,:] * max_val**2
             S_flat_n[j,0,:] = S_flat[j,0,:]
@@ -1811,7 +1814,7 @@ def fit_these_lines(waves_ob,filename,spec,order,wei, rough_shift = 0.0, del_wid
 	N_l = 0
 	bad_indices = []
 	bad_indices_ct = 0
-	plot(spec)
+	#plot(spec)
 	for line in f:
 		#print line
 		w = line.split()
@@ -1854,10 +1857,10 @@ def fit_these_lines(waves_ob,filename,spec,order,wei, rough_shift = 0.0, del_wid
 			#if (suc<1) or (suc > 4):
 			#    print "Problem", order, X, delta
 			# collect fit information
-			plot(X,Y)
+			#plot(X,Y)
 			reto =  p1[0]*np.exp((X-p1[1])**2/(-0.5*p1[2]**2))
 			#print reto
-			plot(X,reto,'r')
+			#plot(X,reto,'r')
 
 			wavelenghts = np.append(wavelengths,wav)
 			for j in range(nlines):
@@ -1880,8 +1883,8 @@ def fit_these_lines(waves_ob,filename,spec,order,wei, rough_shift = 0.0, del_wid
 	wavelengths_co,pixel_centers_co,intensities_co,sigmas_co,centroids_co = \
 	   np.array(wavelengths_co),np.array(pixel_centers_co),np.array(intensities_co), \
 	   np.array(sigmas_co),np.array(centroids_co)
-	plot(np.around(pixel_centers_co).astype('int'),spec[np.around(pixel_centers_co).astype('int')],'ro')
-	show()
+	#plot(np.around(pixel_centers_co).astype('int'),spec[np.around(pixel_centers_co).astype('int')],'ro')
+	#show()
 
 	return wavelengths_co,pixel_centers_co,intensities_co,sigmas_co,centroids_co
 
@@ -2757,7 +2760,7 @@ def get_cont_single(W,F,E,nc=3,ll=3,lu=3,span=10,fact=3.,frac=0.3):
 	while cond:
 		while i < len(wav):
 			try:
-				w,f,e = wav[i:i+span],flx[i:i+span],err[i:i+span]
+				w,f,e = wav[i:int(i+span)],flx[i:int(i+span)],err[i:int(i+span)]
 				dev = np.sqrt(np.var(f))
 				rw.append(np.mean(w))
 				re.append(np.median(e))
@@ -3341,6 +3344,7 @@ def plot_CCF(xc_dict,moon_dict,path='XC.pdf'):
     pp.savefig()
     pp.close()
     clf()
+    close('all')
 
     pass
 
