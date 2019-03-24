@@ -1335,9 +1335,30 @@ static PyMethodDef MarshMethods[] = {
 	{NULL, NULL, 0, NULL}
 };
 
-void initMarsh(void){
-	(void) Py_InitModule("Marsh", MarshMethods);
+#if PY_MAJOR_VERSION >= 3
+static struct PyModuleDef moduledef = {
+        PyModuleDef_HEAD_INIT,
+        "Marsh",
+        NULL,
+        0, //no state, so re-initialization is fine
+        MarshMethods,
+        NULL,
+        NULL,
+        NULL,
+        NULL
+};
+
+PyMODINIT_FUNC PyInit_Marsh(void)
+{
+  PyObject* module = PyModule_Create(&moduledef);
+  return module;
 }
+
+#else
+void initMarsh(void){
+  Py_InitModule("Marsh", MarshMethods);
+}
+#endif
 
 
 /*********************************************************************
