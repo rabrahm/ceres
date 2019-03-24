@@ -38,7 +38,7 @@ def FileClassify(dir, log,binning):
         for line in linesbf:
             bad_files.append(dir+line[:-1])
         bf.close()
-    
+
     all_files = glob.glob(dir+"/pfs*fits")
 
     for archivo in all_files:
@@ -47,7 +47,7 @@ def FileClassify(dir, log,binning):
             if archivo == bf:
                 dump = True
                 break
-    
+
         h = pyfits.open(archivo)
         if dump == False and h[0].header['BINNING']==binning:
             if h[0].header['EXPTYPE'] == 'Object' and h[0].header['OBJECT'] != 'ThAr' and h[0].header['OBJECT'] != 'WideFlat':
@@ -60,7 +60,7 @@ def FileClassify(dir, log,binning):
                 date    = h[0].header['UT-DATE']
                 hour    = h[0].header['UT-TIME']
                 obnames.append( obname )
-                exptimes.append( texp ) 
+                exptimes.append( texp )
                 line = "%-15s %10s %10s %8.2f %4.2f %8s %8s %s\n" % (obname, ra, delta, texp, airmass, date, hour, archivo)
                 f.write(line)
             elif h[0].header['EXPTYPE'] == 'Bias':
@@ -83,8 +83,8 @@ def mjd_fromheader(h):
     """
     return modified Julian date from header
     """
-    
-    datetu = h[0].header['UT-DATE'] 
+
+    datetu = h[0].header['UT-DATE']
     ut     = h[0].header['UT-TIME']
     mjd0,mjd,i = GLOBALutils.iau_cal2jd(int(datetu[0:4]),int(datetu[5:7]),int(datetu[8:]))
     ut = float(ut[:2]) + float(ut[3:5])/60. + float(ut[6:])/3600.
@@ -113,7 +113,7 @@ def MedianCombine(ImgList, bs, os, bias = 0.):
     d = h.data
     d = OverscanTrim(d,bs,os)
     d -= bias
-    
+
     factor = 1.25
     if (n < 3):
         factor = 1
@@ -121,7 +121,7 @@ def MedianCombine(ImgList, bs, os, bias = 0.):
     ronoise = factor * h.header['ENOISE'] / np.sqrt(n)
     gain    = h.header['EGAIN']
 
-    
+
     if (n == 1):
         return d, ronoise, gain
     else:

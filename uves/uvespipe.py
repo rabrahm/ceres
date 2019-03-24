@@ -12,7 +12,7 @@ sys.path.append(base+"utils/OptExtract")
 baryc_dir= base+'utils/SSEphem/'
 sys.path.append(baryc_dir)
 ephemeris='DEc403'
- 
+
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
@@ -89,7 +89,7 @@ force_flat_extract = False
 force_flat_nor     = False
 force_thar_extract = False
 force_thar_wavcal  = False
-force_tharxc       = False	
+force_tharxc       = False
 force_sci_extract  = False
 force_spectral_file_build = True
 force_stellar_pars = False
@@ -111,24 +111,24 @@ S_Marsh            = 0.4
 N_Marsh            = 3      # grado polinomio
 
 if template == 'UVES_red_obs_exp':
-	min_extract_col      = 0
-	min_extract_cols1    = [920,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-	min_extract_cols2    = [1710,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-	max_extract_col      = 4000
-	max_extract_cols1    = [3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895]
-	max_extract_cols2    = [3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3390]
+    min_extract_col      = 0
+    min_extract_cols1    = [920,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+    min_extract_cols2    = [1710,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+    max_extract_col      = 4000
+    max_extract_cols1    = [3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895]
+    max_extract_cols2    = [3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3390]
 elif template == 'UVES_dic2_obs_expfree':
-	min_extract_col      = 0
-	min_extract_cols1    = [920 ,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-	min_extract_cols2    = [1710,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-	max_extract_col      = 4000
-	max_extract_cols1    = [3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895]
-	max_extract_cols2    = [3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3390]
+    min_extract_col      = 0
+    min_extract_cols1    = [920 ,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+    min_extract_cols2    = [1710,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+    max_extract_col      = 4000
+    max_extract_cols1    = [3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895]
+    max_extract_cols2    = [3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3895,3390]
 
 xbinning           = 1
 ybinning           = 1
 
-ext_aperture = int(float(ext_aperture)/float(ybinning)) 
+ext_aperture = int(float(ext_aperture)/float(ybinning))
 
 ncoef_x   = 5
 ncoef_m   = 6
@@ -152,7 +152,7 @@ print '\tThis in the log of the night:\n'
 f = open(log)
 flines = f.readlines()
 for line in flines:
-	print '\t\t'+line[:-1]
+    print '\t\t'+line[:-1]
 print '\n'
 
 if ((os.access(dirout+'Flat.fits',os.F_OK) == False) or \
@@ -235,7 +235,7 @@ if (os.access(dirout+'NFlat.fits',os.F_OK)==False) or (os.access(dirout+'Flat_sp
     hdu.writeto(dirout+'NFlat.fits')
 
     pickle.dump( sflat, open( dirout+'Flat_spec.pkl', 'w' ) )
-	
+
 else:
     nflat = pyfits.getdata(dirout+'NFlat.fits')
     sflat = pickle.load( open( dirout+'Flat_spec.pkl' ) )
@@ -249,7 +249,7 @@ for fsim in ThAr_ref:
         dthar = (np.dstack((hthar[1].data,hthar[2].data)) -  MasterBias) / nflat
         print "\t\tNo previous extraction or extraction forced for ThAr file", fsim, "extracting..."
         dthar1 = dthar[:,:,0].T
-        dthar2 = dthar[:,:,1].T 
+        dthar2 = dthar[:,:,1].T
 
         thar1_S = GLOBALutils.simple_extraction(dthar1,c_all1,ext_aperture,min_extract_cols1,max_extract_cols1,npools)
         thar2_S = GLOBALutils.simple_extraction(dthar2,c_all2,ext_aperture,min_extract_cols2,max_extract_cols2,npools)
@@ -304,7 +304,7 @@ for fsim in ThAr_ref:
                      minlines=20,FixEnds=False,Dump_Argon=dumpargon,sigmai=2.,\
                      Dump_AllLines=True, Cheby=use_cheby,porder=ncoef_x,do_xc=False, line_width=6,pixelization=True)
 
-            if order == 7: 
+            if order == 7:
                 Global_ZP = GLOBALutils.Cheby_eval( coeffs_pix2wav, 0.5*(len(thar_order)-1), len(thar_order))
 
             All_Pixel_Centers = np.append( All_Pixel_Centers, pixel_centers )
@@ -315,7 +315,7 @@ for fsim in ThAr_ref:
             All_Intensities   = np.append( All_Intensities, intensities )
 
         p0 = np.zeros( npar_wsol )
-        p0[0] =  (7+ro0) * Global_ZP 
+        p0[0] =  (7+ro0) * Global_ZP
         p1, G_pix, G_ord, G_wav, II, rms_ms, G_res = \
             GLOBALutils.Fit_Global_Wav_Solution(All_Pixel_Centers, All_Wavelengths, All_Orders,\
                                                 np.ones(All_Intensities.shape), p0, Cheby=use_cheby,\
@@ -356,12 +356,12 @@ for fsim in ThAr_ref:
 
             coeffs_pix2wav, coeffs_pix2sigma, pixel_centers, wavelengths,\
             rms_ms, residuals, centroids, sigmas, intensities =\
-					 GLOBALutils.Initial_Wav_Calibration(order_dir+'nrorder_'+\
-					 order_s+'.iwdat', thar_order, order, wei, rmsmax=100, \
-					 minlines=20,FixEnds=False,Dump_Argon=dumpargon,sigmai=2.,\
-					 Dump_AllLines=True, Cheby=use_cheby,porder=ncoef_x,do_xc=False, line_width=6,pixelization=True)
+                                         GLOBALutils.Initial_Wav_Calibration(order_dir+'nrorder_'+\
+                                         order_s+'.iwdat', thar_order, order, wei, rmsmax=100, \
+                                         minlines=20,FixEnds=False,Dump_Argon=dumpargon,sigmai=2.,\
+                                         Dump_AllLines=True, Cheby=use_cheby,porder=ncoef_x,do_xc=False, line_width=6,pixelization=True)
 
-            if order == 11: 
+            if order == 11:
                 Global_ZP = GLOBALutils.Cheby_eval( coeffs_pix2wav, 0.5*(len(thar_order)-1), len(thar_order))
 
             All_Pixel_Centers2 = np.append( All_Pixel_Centers2, pixel_centers )
@@ -370,23 +370,23 @@ for fsim in ThAr_ref:
             All_Centroids2     = np.append( All_Centroids2, centroids)
             All_Sigmas2        = np.append( All_Sigmas2, sigmas)
             All_Intensities2   = np.append( All_Intensities2, intensities )
-	
-			#isz  = pixel_centers - sigmas
-			#der  = pixel_centers + sigmas
-			#isz  = GLOBALutils.Cheby_eval( coeffs_pix2wav, isz, len(thar_order))
-			#der  = GLOBALutils.Cheby_eval( coeffs_pix2wav, der, len(thar_order))
-			#sig  = 0.5*(der-isz)
-			#fwhm = 2.35 * sig
-			#resol = wavelengths / fwhm
-			#print order, np.median(resol)
-			#plot(pixel_centers,resol,'o')
-		#show()
+
+                        #isz  = pixel_centers - sigmas
+                        #der  = pixel_centers + sigmas
+                        #isz  = GLOBALutils.Cheby_eval( coeffs_pix2wav, isz, len(thar_order))
+                        #der  = GLOBALutils.Cheby_eval( coeffs_pix2wav, der, len(thar_order))
+                        #sig  = 0.5*(der-isz)
+                        #fwhm = 2.35 * sig
+                        #resol = wavelengths / fwhm
+                        #print order, np.median(resol)
+                        #plot(pixel_centers,resol,'o')
+                #show()
         #print dfgh
 
         p0 = np.zeros( npar_wsol )
-        p0[0] =  (11 + ro0 + len(c_all1) + order_gap) * Global_ZP 
+        p0[0] =  (11 + ro0 + len(c_all1) + order_gap) * Global_ZP
         p2, G_pix2, G_ord2, G_wav2, II2, rms_ms2, G_res2 = \
-			GLOBALutils.Fit_Global_Wav_Solution(All_Pixel_Centers2, All_Wavelengths2, All_Orders2,\
+                        GLOBALutils.Fit_Global_Wav_Solution(All_Pixel_Centers2, All_Wavelengths2, All_Orders2,\
                                                 np.ones(All_Intensities2.shape), p0, Cheby=use_cheby,\
                                                 maxrms=MRMS, Inv=Inverse_m,minlines=400,order0=ro0 + len(c_all1) + order_gap, \
                                                 ntotal=nord2,npix=len(thar_order),nx=ncoef_x,nm=ncoef_m)
@@ -413,21 +413,21 @@ for fsim in ThAr_ref:
         pickle.dump( pdict, open( wavsol_pkl, 'w' ) )
 
     else:
-        print "\t\tUsing previously computed wavelength solution in file",wavsol_pkl			
+        print "\t\tUsing previously computed wavelength solution in file",wavsol_pkl
 
 print '\n\tThe following targets will be processed:'
 new_list = []
 if object2do == 'all':
-	new_list = sim_sci
+    new_list = sim_sci
 else:
-	for fsim in sim_sci:
-		hd = pyfits.getheader(fsim)
-		if object2do in hd['OBJECT']:
-			new_list.append(fsim)
+    for fsim in sim_sci:
+        hd = pyfits.getheader(fsim)
+        if object2do in hd['OBJECT']:
+            new_list.append(fsim)
 
 for fsim in new_list:
-	hd = pyfits.getheader(fsim)
-	print '\t\t'+str(hd['OBJECT'])
+    hd = pyfits.getheader(fsim)
+    print '\t\t'+str(hd['OBJECT'])
 
 # Does any image have a special requirement for dealing with the moonlight?
 if os.access(dirin + 'moon_corr.txt', os.F_OK):
@@ -460,7 +460,7 @@ for fsim in new_list:
         here_moon = use_moon[I]
 
     h = pyfits.open(fsim)
-    mjd,mjd0      = uvesutils.mjd_fromheader2(h[0].header)    
+    mjd,mjd0      = uvesutils.mjd_fromheader2(h[0].header)
     ron1,gain1 = float(h[1].header['HIERARCH ESO DET OUT1 RON']),float(h[1].header['HIERARCH ESO DET OUT1 GAIN'])
     ron2,gain2 = float(h[2].header['HIERARCH ESO DET OUT1 RON']),float(h[2].header['HIERARCH ESO DET OUT1 GAIN'])
 
@@ -511,7 +511,7 @@ for fsim in new_list:
     else:
         sky = pyfits.getdata(sky_fits)
 
-    data = data - sky 
+    data = data - sky
     data = data / nflat
 
     ra  = float(h[0].header['RA'])
@@ -547,10 +547,10 @@ for fsim in new_list:
     mbjd = mjd + res['delay'][0] / (3600.0 * 24.0)
 
     # Moon Phase Calculations
-    gobs      = ephem.Observer()  
+    gobs      = ephem.Observer()
     gobs.name = 'VLT'
-    gobs.lat  = rad(latitude)  # lat/long in decimal degrees  
-    gobs.long = rad(longitude) 
+    gobs.lat  = rad(latitude)  # lat/long in decimal degrees
+    gobs.long = rad(longitude)
     gobs.date = h[0].header['DATE-OBS'].replace('T',' ')
     mephem    = ephem.Moon()
     mephem.compute(gobs)
@@ -583,13 +583,13 @@ for fsim in new_list:
         sci_Ss1 = GLOBALutils.simple_extraction(data[:,:,0].T,c_all1,ext_aperture,min_extract_cols1,max_extract_cols1,npools)
         print "\t\t\tsimple extraction for chip2..."
         sci_Ss2 = GLOBALutils.simple_extraction(data[:,:,1].T,c_all2,ext_aperture,min_extract_cols2,max_extract_cols2,npools)
-        
+
         sci_Ss1 = GLOBALutils.invert(sci_Ss1)
         sci_Ss2 = GLOBALutils.invert(sci_Ss2)
         #"""
         print "\t\t\t\optimal extraction for chip1..."
         sci_S1  = GLOBALutils.optimal_extraction(data[:,:,0].T,P1,c_all1,ext_aperture,ron1,gain1,S_Marsh,NCosmic_Marsh,\
-		 min_extract_cols1,max_extract_cols1,npools)
+                 min_extract_cols1,max_extract_cols1,npools)
         print "\t\t\t\optimal extraction for chip2..."
         sci_S2  = GLOBALutils.optimal_extraction(data[:,:,1].T,P2,c_all2,ext_aperture,ron2,gain2,S_Marsh,NCosmic_Marsh,\
          min_extract_cols2,max_extract_cols2,npools)
@@ -600,17 +600,17 @@ for fsim in new_list:
 
         sci_S1 = GLOBALutils.invert(sci_S1)
         sci_S2 = GLOBALutils.invert(sci_S2)
-        
+
         if (os.access(P_fits,os.F_OK)):
             os.remove( P_fits )
         hdu = pyfits.PrimaryHDU( P )
         hdu.writeto( P_fits )
         sci_S  = {'chip1':sci_S1, 'chip2':sci_S2}
         pickle.dump(sci_S,open(sci_fits,'w'))
-        
+
         sci_Ss = {'chip1':sci_Ss1, 'chip2':sci_Ss2}
         pickle.dump(sci_Ss,open(sci_fits_simple,'w'))
-        
+
     else:
         print '\t\t'+fsim+" has already been extracted, reading in product fits files..."
         sci_S  = pickle.load(open(sci_fits,'r'))
@@ -627,7 +627,7 @@ for fsim in new_list:
         hdu = GLOBALutils.update_header(hdu,'HIERARCH SHUTTER START UT',  h[0].header['DATE-OBS'].split('T')[1])
         hdu = GLOBALutils.update_header(hdu,'HIERARCH TEXP (S)',h[0].header['EXPTIME'])
         hdu = GLOBALutils.update_header(hdu,'HIERARCH BARYCENTRIC CORRECTION (KM/S)', bcvel_baryc)
-        hdu = GLOBALutils.update_header(hdu,'HIERARCH (LAMBDA_BARY / LAMBDA_TOPO)', lbary_ltopo)    
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH (LAMBDA_BARY / LAMBDA_TOPO)', lbary_ltopo)
         hdu = GLOBALutils.update_header(hdu,'HIERARCH TARGET NAME', obname)
         hdu = GLOBALutils.update_header(hdu,'HIERARCH RA',h[0].header['RA'])
         hdu = GLOBALutils.update_header(hdu,'HIERARCH DEC',h[0].header['DEC'])
@@ -648,14 +648,14 @@ for fsim in new_list:
         wsol_dict = pickle.load(open(pkl_wsol,'r'))
 
         # Apply new wavelength solution including barycentric correction
-        equis = np.arange( data.shape[0] )        
+        equis = np.arange( data.shape[0] )
         for order in range(nord1):
             #order = 16
             #print order
             m = order + ro0
             chebs = GLOBALutils.Calculate_chebs(equis, m, npix=data.shape[0],\
-		    order0=ro0, ntotal=nord1, Inverse=Inverse_m,nx=ncoef_x,nm=ncoef_m)
-            WavSol = lbary_ltopo * (1.0/m) * GLOBALutils.Joint_Polynomial_Cheby(wsol_dict['p1'],chebs,ncoef_x,ncoef_m)   
+                    order0=ro0, ntotal=nord1, Inverse=Inverse_m,nx=ncoef_x,nm=ncoef_m)
+            WavSol = lbary_ltopo * (1.0/m) * GLOBALutils.Joint_Polynomial_Cheby(wsol_dict['p1'],chebs,ncoef_x,ncoef_m)
             spec[0,order,:] = GLOBALutils.ToVacuum(WavSol)
             spec[1,order,:] = sci_S['chip1'][order,1,:]
             #spec[1,order,:300] = 0.
@@ -684,7 +684,7 @@ for fsim in new_list:
             nI = np.where(np.isnan(spec[5,order])==False)[0]
             nJ = np.where(np.isnan(spec[5,order])==True)[0]
             spec[6,order,:][L] = spec[8,order,:][L] ** 2
-            spec[9,order,:][L] = spec[5,order,:][L] * (dlambda_dx[L] ** 1) 
+            spec[9,order,:][L] = spec[5,order,:][L] * (dlambda_dx[L] ** 1)
             spec[10,order,:][L] = spec[6,order,:][L] / (dlambda_dx[L] ** 2)
 
 
@@ -693,7 +693,7 @@ for fsim in new_list:
             m = order + ro0 + nord1 + order_gap
             chebs = GLOBALutils.Calculate_chebs(equis, m, npix=data.shape[0],\
             order0=ro0 + nord1 + order_gap, ntotal=nord2, Inverse=Inverse_m,nx=ncoef_x,nm=ncoef_m)
-            WavSol = lbary_ltopo * (1.0/m) * GLOBALutils.Joint_Polynomial_Cheby(wsol_dict['p2'],chebs,ncoef_x,ncoef_m)   
+            WavSol = lbary_ltopo * (1.0/m) * GLOBALutils.Joint_Polynomial_Cheby(wsol_dict['p2'],chebs,ncoef_x,ncoef_m)
             spec[0,order2,:] = GLOBALutils.ToVacuum(WavSol)
             spec[1,order2,:] = sci_S['chip2'][order,1,:]
             #spec[1,order2,:300] = 0.
@@ -723,7 +723,7 @@ for fsim in new_list:
             nI = np.where(np.isnan(spec[5,order2])==False)[0]
             nJ = np.where(np.isnan(spec[5,order2])==True)[0]
             spec[6,order2,:][L] = spec[8,order2,:][L] ** 2
-            spec[9,order2,:][L] = spec[5,order2,:][L] * (dlambda_dx[L] ** 1) 
+            spec[9,order2,:][L] = spec[5,order2,:][L] * (dlambda_dx[L] ** 1)
             spec[10,order2,:][L] = spec[6,order2,:][L] / (dlambda_dx[L] ** 2)
 
     if (not JustExtract):
@@ -754,7 +754,7 @@ for fsim in new_list:
                 f = open(pars_file,'w')
                 f.write(line)
                 f.close()
-		       
+
             else:
                 print "\t\t\tAtmospheric parameters loaded from file:"
                 T_eff, logg, Z, vsini, vel0 = np.loadtxt(pars_file,unpack=True)
@@ -779,15 +779,15 @@ for fsim in new_list:
         # assign mask
         sp_type, mask = GLOBALutils.get_mask_reffile(obname,reffile=reffile,base='../data/xc_masks/')
         print "\t\t\tWill use",sp_type,"mask for CCF."
-		
+
         velw  = 300
         velsh = 3.
-            
+
         # Read in mask
         ml, mh, weight = np.loadtxt(mask,unpack=True)
         ml_v = GLOBALutils.ToVacuum( ml )
         mh_v = GLOBALutils.ToVacuum( mh )
-       
+
         # make mask larger accounting for factor ~2.5 lower res in FEROS w/r to HARPS
         av_m = 0.5*( ml_v + mh_v )
         ml_v -= 1.5*(av_m - ml_v)
@@ -806,7 +806,7 @@ for fsim in new_list:
 
         mask_hw_wide = av_m * disp / (GLOBALutils.Constants.c/1.0e3)
         ml_v = av_m - mask_hw_wide
-        mh_v = av_m + mask_hw_wide 
+        mh_v = av_m + mask_hw_wide
 
         print '\t\t\tComputing the CCF...'
         cond = True
@@ -826,17 +826,17 @@ for fsim in new_list:
             rvels, rxc_av, rpred, rxc_av_orig, rvel0_xc = vels.copy(), xc_av.copy(), pred.copy(), xc_av_orig.copy(), vel0_xc
             xc_av_rough = xc_av
             vels_rough  = vels
-                
+
             vel_width = np.maximum( 20.0, 6*disp )
 
             vels, xc_full, sn, nlines_ccf, W_ccf =\
                     GLOBALutils.XCor(spec, ml_v, mh_v, weight, vel0_xc, lbary_ltopo, vel_width=vel_width,vel_step=0.2,\
                                           spec_order=9,iv_order=10,sn_order=8,max_vel_rough=velw)
-		
+
             xc_av = GLOBALutils.Average_CCF(xc_full, sn, sn_min=3., Simple=True, W=W_ccf)
             pred = scipy.interpolate.splev(vels,tck1)
             xc_av /= pred
-		
+
             if sp_type == 'M5':
                 moon_sig = 2.5
             elif sp_type == 'K5':
@@ -865,11 +865,11 @@ for fsim in new_list:
             #print p1gau[1]
             if (not known_sigma):
                 disp = np.floor(p1gau[2])
-                if (disp < 3.0): 
+                if (disp < 3.0):
                     disp = 3.0
                 mask_hw_wide = av_m * disp / (GLOBALutils.Constants.c/1.0e3)
                 ml_v = av_m - mask_hw_wide
-                mh_v = av_m + mask_hw_wide            
+                mh_v = av_m + mask_hw_wide
                 known_sigma = True
             else:
                 cond = False
@@ -877,13 +877,13 @@ for fsim in new_list:
             BSerr = -999.00
 
         xc_dict = {'vels':vels,'xc_av':xc_av,'XCmodelgau':XCmodelgau,'Ls2':Ls2,'refvel':refvel,\
-		       'rvels':rvels,'rxc_av':rxc_av,'rpred':rpred,'rxc_av_orig':rxc_av_orig,\
-		       'rvel0_xc':rvel0_xc,'xc_full':xc_full, 'p1':p1, 'sn':sn, 'p1gau':p1gau,\
-		       'p1_m':p1_m,'XCmodel_m':XCmodel_m,'p1gau_m':p1gau_m,'Ls2_m':Ls2_m,\
-		       'XCmodelgau_m':XCmodelgau_m}
+                       'rvels':rvels,'rxc_av':rxc_av,'rpred':rpred,'rxc_av_orig':rxc_av_orig,\
+                       'rvel0_xc':rvel0_xc,'xc_full':xc_full, 'p1':p1, 'sn':sn, 'p1gau':p1gau,\
+                       'p1_m':p1_m,'XCmodel_m':XCmodel_m,'p1gau_m':p1gau_m,'Ls2_m':Ls2_m,\
+                       'XCmodelgau_m':XCmodelgau_m}
 
         moon_dict = {'moonmatters':moonmatters,'moon_state':moon_state,'moonsep':moonsep,\
-		         'lunation':lunation,'mephem':mephem,'texp':h[0].header['EXPTIME']}
+                         'lunation':lunation,'mephem':mephem,'texp':h[0].header['EXPTIME']}
 
 
         pkl_xc = dirout + fsim.split('/')[-1][:-4]+obname+'_XC_'+sp_type+'.pkl'
@@ -897,7 +897,7 @@ for fsim in new_list:
 
         airmass  = h[0].header['ESO OBS AIRM']
         seeing   = -999
-        TEXP = h[0].header['EXPTIME']    
+        TEXP = h[0].header['EXPTIME']
         SNR_5130 = np.median(spec[8,13,1900:2101] )
 
         if sp_type=='G2':
@@ -917,8 +917,8 @@ for fsim in new_list:
         BSerr = D / float(np.round(SNR_5130)) + C
         RVerr = 0.5
 
-        RV     = np.around(p1gau_m[1],4)  
-        BS     = np.around(SP,4)   
+        RV     = np.around(p1gau_m[1],4)
+        BS     = np.around(SP,4)
         RVerr2 = np.around(RVerr,4)
         BSerr  = np.around(BSerr,4)
         print '\t\t\tRV = '+str(RV)+' +- '+str(RVerr2)
@@ -949,7 +949,7 @@ for fsim in new_list:
         hdu = GLOBALutils.update_header(hdu,'BJD_OUT', bjd_out)
         line_out = "%-15s %18.8f %9.4f %7.4f %9.3f %5.3f   uves   ceres   %8d %6d %5.2f %5.2f %5.1f %4.2f %5.2f %6.1f %4d %s\n"%\
                       (obname, bjd_out, RV, RVerr2, BS, BSerr, ref_RES, T_eff_epoch, logg_epoch, Z_epoch, vsini_epoch, XC_min, disp_epoch,\
-		       TEXP, SNR_5130_R, ccf_pdf)
+                       TEXP, SNR_5130_R, ccf_pdf)
         f_res.write(line_out)
         if (os.access( dirout + fout,os.F_OK)):
             os.remove( dirout + fout)

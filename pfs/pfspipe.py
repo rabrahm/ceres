@@ -10,7 +10,7 @@ sys.path.append(base+"utils/GLOBALutils/")
 baryc_dir= base+'utils/SSEphem/'
 sys.path.append(baryc_dir)
 ephemeris='DEc403'
- 
+
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
@@ -56,7 +56,7 @@ npools           = int(args.npools)
 object2do        = args.o2do
 reffile          = args.reffile
 stst             = args.ofind
-binning          = args.binning 
+binning          = args.binning
 
 if dirin[-1] != '/':
     dirin = dirin + '/'
@@ -102,7 +102,7 @@ ext_aperture       = 5
 NSigma_Marsh       = 5
 NCosmic_Marsh      = 5
 S_Marsh            = 0.4
-N_Marsh            = 3      # grado polinomio 
+N_Marsh            = 3      # grado polinomio
 min_extract_col    = 0
 max_extract_col    = 2032
 bias_section       = [1,2032,2160]
@@ -122,7 +122,7 @@ if binning == '1x1':
     lsnr1              = 1900
     lsnr2              = 2101
     fact = 2.
-    
+
 
 ncoef_x   = 6
 ncoef_m   = 7
@@ -197,7 +197,7 @@ if (pre_process == 1):
     print "\t\t-> Masterflat: done!"
     #Flat = pyfits.getdata(dirout+'Flat.fits')
     #RO_flat, GA_flat = 1.,1.
-    
+
     # Find orders & traces
     print "\tTracing echelle orders..."
     h = pyfits.open(dirin+stst)[0]
@@ -236,7 +236,7 @@ if ( os.access(NorFlat_fits,os.F_OK) == False ) or (force_flat):
     eje = np.arange(Flat.shape[1])
     medianFlat = scipy.signal.medfilt(Flat,[5,9])
     #NorFlat = Flat/medianFlat
-    
+
     vals = []
     ffact = 1.
     if binning == '1x1':
@@ -262,19 +262,19 @@ if ( os.access(NorFlat_fits,os.F_OK) == False ) or (force_flat):
     I = np.where(NorFlat==0)
     NorFlat[I] = 1.
     if (os.access(NorFlat_fits,os.F_OK)):
-        os.remove( NorFlat_fits )    
+        os.remove( NorFlat_fits )
     hdu = pyfits.PrimaryHDU( NorFlat )
     hdu.writeto( NorFlat_fits )
 else:
     print "\tNormalized Flat found, loading..."
-    NorFlat = pyfits.getdata( NorFlat_fits )    
+    NorFlat = pyfits.getdata( NorFlat_fits )
 
 # Compute profile for optimal extraction
 P_fits = dirout + 'P.fits'
 
 if ( os.access(P_fits,os.F_OK) == False ) or (force_P_det):
     print "\n\tNo previous P matrix determination or determination forced, computing and saving..."
-    
+
     h = pyfits.open(dirin+stst)[0]
     hth = pyfits.getheader(dirin+stst)
     d = h.data
@@ -307,10 +307,10 @@ if ( os.access(P_fits,os.F_OK) == False ) or (force_P_det):
 
     # write P as fits file
     if (os.access(P_fits,os.F_OK)):
-        os.remove( P_fits )    
+        os.remove( P_fits )
     hdu = pyfits.PrimaryHDU( P )
     hdu.writeto( P_fits )
-   
+
 else:
     print "\n\tP matrix found, loading..."
     P      = pyfits.getdata( P_fits )
@@ -326,13 +326,13 @@ if ( os.access(Flat_spec_fits,os.F_OK) == False ) or (force_flat_extract):
     flat_S = GLOBALutils.simple_extraction(NFlat,c_all,ext_aperture,min_extract_col,max_extract_col,npools)
     #for i in range(nord):
         #    flat_S[i,:,:] = getSpectrum( P, NFlat, c_all[i,:], ext_aperture, RO_flat, GA_flat, S_Marsh, 0*NCosmic_Marsh, min_extract_col,max_extract_col )
-    
+
     #flat_S = PFSutils.FlatNormalize( flat_S, mid = int(np.round(.5*flat_S.shape[2]))-1 )
     if (os.access(Flat_spec_fits,os.F_OK)):
         os.remove( Flat_spec_fits )
     hdu = pyfits.PrimaryHDU( flat_S )
     hdu.writeto( Flat_spec_fits )
-else: 
+else:
     print "\t\tExtracted flat found, loading..."
     flat_S = pyfits.getdata( Flat_spec_fits )
 
@@ -352,13 +352,13 @@ for fsim in thars:
         thar_Ss = GLOBALutils.simple_extraction(dthar,c_all,ext_aperture,min_extract_col,max_extract_col,npools)
         thar_S  = GLOBALutils.optimal_extraction(dthar,P,c_all,ext_aperture,hthar.header['ENOISE'],\
           hthar.header['EGAIN'],S_Marsh,NCosmic_Marsh,min_extract_col,max_extract_col,npools)
-            
+
         # save as fits file
         if (os.access(thar_fits,os.F_OK)):
             os.remove( thar_fits )
         if (os.access(thar_fits_simple,os.F_OK)):
             os.remove( thar_fits_simple )
-            
+
         hdu = pyfits.PrimaryHDU( thar_S )
         #hdu.header = hd
         hdu = GLOBALutils.update_header(hdu,'SLITNAME', hd['SLITNAME'])
@@ -380,8 +380,8 @@ for i in range(len(thars)):
     hthar = pyfits.open( thars[index] )
     wavsol_pkl = dirout + 'PFS_' + hthar[0].header['UT-DATE'] + '_' + hthar[0].header['UT-TIME']+'.wavsolpars.pkl'
     if ( os.access(wavsol_pkl,os.F_OK) == False ) or (force_thar_wavcal):
-        print "\t\tWorking on initial ThAr file", thars[index] 
-        
+        print "\t\tWorking on initial ThAr file", thars[index]
+
         mjd, mjd0 = pfsutils.mjd_fromheader( hthar )
         thar_fits = dirout + 'PFS_' + hthar[0].header['UT-DATE'] + '_' + hthar[0].header['UT-TIME'] +'.ThAr.spec.fits'
         thar_S = pyfits.getdata( thar_fits )
@@ -405,14 +405,14 @@ for i in range(len(thars)):
             order_s = str(order)
             if (order < 10):
                 order_s = '0'+str(order)
-            
+
             thar_order_orig = lines_thar[order,:]
             IV              = iv_thar[order,:]
             wei             = np.sqrt( IV )
-            #bkg             = PFSutils.Lines_mBack(thar_order_orig, IV,  thres_rel=3)        
+            #bkg             = PFSutils.Lines_mBack(thar_order_orig, IV,  thres_rel=3)
             #thar_order      = thar_order_orig - bkg
             thar_order      = thar_order_orig
-        
+
             coeffs_pix2wav, coeffs_pix2sigma, pixel_centers, wavelengths,\
             rms_ms, residuals, centroids, sigmas, intensities =\
                 GLOBALutils.Initial_Wav_Calibration(order_dir+'norder_'+\
@@ -420,7 +420,7 @@ for i in range(len(thars)):
                 minlines=10,FixEnds=False,Dump_Argon=dumpargon,\
                 Dump_AllLines=True, Cheby=use_cheby,porder=ncoef_x,fact=fact,del_width=30.)
 
-            if (order == 32): 
+            if (order == 32):
                 if (use_cheby):
                     Global_ZP = GLOBALutils.Cheby_eval( coeffs_pix2wav, 0.5*len(thar_order), len(thar_order))
                 else:
@@ -435,23 +435,23 @@ for i in range(len(thars)):
 
     #show()
         p0 = np.zeros( npar_wsol )
-        p0[0] =  (32+93) * Global_ZP 
+        p0[0] =  (32+93) * Global_ZP
         p1, G_pix, G_ord, G_wav, II, rms_ms, G_res = \
             GLOBALutils.Fit_Global_Wav_Solution(All_Pixel_Centers, All_Wavelengths, All_Orders,\
                                                 np.ones(All_Intensities.shape), p0, Cheby=use_cheby,\
                                                 maxrms=50, Inv=Inverse_m,minlines=minlines_glob,order0=93, \
                                                 ntotal=n_useful,npix=len(thar_order),nx=ncoef_x,nm=ncoef_m)
 
-        equis = np.arange( thar_S.shape[2] )    
+        equis = np.arange( thar_S.shape[2] )
         for order in range(n_useful):
             m = order + 93
             chebs = GLOBALutils.Calculate_chebs(equis, m, npix=thar_S.shape[2], order0=93, ntotal=n_useful, Inverse=Inverse_m,nx=ncoef_x,nm=ncoef_m)
-            WavSol = (1.0/m) * GLOBALutils.Joint_Polynomial_Cheby(p1,chebs,ncoef_x,ncoef_m)   
+            WavSol = (1.0/m) * GLOBALutils.Joint_Polynomial_Cheby(p1,chebs,ncoef_x,ncoef_m)
             thar_data[0,order,:] = WavSol
 
         if (os.access(thar_out,os.F_OK)):
             os.remove( thar_out )
-            
+
         hdu = pyfits.PrimaryHDU( thar_data )
         hdu = GLOBALutils.update_header(hdu,'SLITNAME', hd['SLITNAME'])
         hdu.writeto( thar_out )
@@ -460,7 +460,7 @@ for i in range(len(thars)):
         #   I = np.where(G_ord == orde)[0]
         #   plot(G_wav[I],G_res[I],'o')
         #show()
-    
+
         pdict = {'p1':p1,'mjd':mjd, 'G_pix':G_pix, 'G_ord':G_ord, 'G_wav':G_wav, 'II':II, 'rms_ms':rms_ms,\
                      'G_res':G_res, 'All_Centroids':All_Centroids, 'All_Orders':All_Orders, 'All_Sigmas':All_Sigmas}
         pickle.dump( pdict, open( wavsol_pkl, 'w' ) )
@@ -473,7 +473,7 @@ for i in range(len(thars)):
 
 xc_fout_f = dirout+'ThAr_XCor+DeltaL.dat'
 force_tharxc = True
-if ( (os.access(xc_fout_f,os.F_OK) == False) or (force_tharxc)):  
+if ( (os.access(xc_fout_f,os.F_OK) == False) or (force_tharxc)):
     xc_fout = open(xc_fout_f,'w')
     for i in range(len(sorted_thar_dates)):
         fsim = thars[sorted_thar_dates[i]]
@@ -496,10 +496,10 @@ if ( (os.access(xc_fout_f,os.F_OK) == False) or (force_tharxc)):
 
                 lines_thar  = thar_S[:,1,:]
                 lines_thar2 = thar_S2[:,1,:]
-                
+
                 pdict1 = pickle.load( open(dirout + 'PFS_' + hthar[0].header['UT-DATE'] + '_' + hthar[0].header['UT-TIME']+'.wavsolpars.pkl','r' ) )
                 pdict2 = pickle.load( open(dirout + 'PFS_' + hthar2[0].header['UT-DATE'] + '_' + hthar2[0].header['UT-TIME']+'.wavsolpars.pkl','r' ) )
-                
+
                 # cross-correlate
                 nob=n_useful
                 out_shifts = np.zeros( nob )
@@ -507,20 +507,20 @@ if ( (os.access(xc_fout_f,os.F_OK) == False) or (force_tharxc)):
                 for j in range(nob):
                     XCor, shifts = GLOBALutils.XC_ThAr(lines_thar[j,:], lines_thar2[j,:], 20)
                     p1    = GLOBALutils.XC_Gau_Fit(shifts, XCor, back_lag=2, usemin=0)
-                    out_shifts[j] = p1[1] 
+                    out_shifts[j] = p1[1]
                     # Now measure Delta \lambda
                     m = j + 93
                     equis = np.arange(50,1950)
                     chebs = GLOBALutils.Calculate_chebs(equis, m, npix=lines_thar.shape[1], order0=93, ntotal=n_useful, Inverse=Inverse_m,nx=ncoef_x,nm=ncoef_m)
-                    WavSol1 = (1.0/m) * GLOBALutils.Joint_Polynomial_Cheby(pdict1['p1'],chebs,ncoef_x,ncoef_m)    
-                    WavSol2 = (1.0/m) * GLOBALutils.Joint_Polynomial_Cheby(pdict2['p1'],chebs,ncoef_x,ncoef_m) 
+                    WavSol1 = (1.0/m) * GLOBALutils.Joint_Polynomial_Cheby(pdict1['p1'],chebs,ncoef_x,ncoef_m)
+                    WavSol2 = (1.0/m) * GLOBALutils.Joint_Polynomial_Cheby(pdict2['p1'],chebs,ncoef_x,ncoef_m)
                     out_dl[j]  = np.mean( WavSol1 - WavSol2 ) * 299792458.0 / WavSol1[1000]
                     rep = scipy.interpolate.splrep(equis,WavSol1)
                     dldx  = scipy.interpolate.splev(1000.0,rep,der=1)
                     out_shifts[j] = p1[1] * dldx * 299792458.0 / WavSol1[1000]
 
                 uno = np.median( out_shifts )
-                dos = np.mean( out_dl ) 
+                dos = np.mean( out_dl )
 
                 # write out products
                 line_out = "%20.12f %20.12f %12.6f %14.8f %s %s\n" % (mjd, mjd2, uno, dos,thar_fits.split('/')[-1],thar_fits2.split('/')[-1])
@@ -569,7 +569,7 @@ else:
 spec_moon = np.array(spec_moon)
 use_moon  = np.array(use_moon)
 
-#new_list = new_list[1:]           
+#new_list = new_list[1:]
 for nlisti in range(len(new_list)):
     fsim = new_list[ nlisti ]
     obname = new_list_obnames[ nlisti ]
@@ -588,11 +588,11 @@ for nlisti in range(len(new_list)):
     # get mjd and mjd0
     mjd,mjd0 = pfsutils.mjd_fromheader(h)
 
-    #  get gain and readnoise of object 
+    #  get gain and readnoise of object
     ronoise = h[0].header['ENOISE']
     gain    = h[0].header['EGAIN']
     iodine  = h[0].header['IODINE']
-    
+
     print "\t\tWorking on an observation of object",obname
 
     # Find lambda_bary/lambda_topo using baryc
@@ -623,13 +623,13 @@ for nlisti in range(len(new_list)):
 
     print "\t\tBarycentric velocity:", bcvel_baryc
 
-    res = jplephem.pulse_delay(ra/15.0, dec, int(mjd), mjd%1, 1, 0.0)  
+    res = jplephem.pulse_delay(ra/15.0, dec, int(mjd), mjd%1, 1, 0.0)
     mbjd = mjd + res['delay'][0] / (3600.0 * 24.0)
 
     # Moon Phase Calculations
-    gobs = ephem.Observer()  
-    gobs.name='Clay_Mag_2'  
-    gobs.lat=rad(latitude)  # lat/long in decimal degrees  
+    gobs = ephem.Observer()
+    gobs.name='Clay_Mag_2'
+    gobs.lat=rad(latitude)  # lat/long in decimal degrees
     gobs.long=rad(longitude)
     DDATE = h[0].header['UT-DATE']
     HHOUR = h[0].header['UT-TIME']
@@ -663,7 +663,7 @@ for nlisti in range(len(new_list)):
 
         data -= MasterBias
         data /= NorFlat
-        
+
         print '\t\t\tRecentering traces...'
         c_alls, pshift = GLOBALutils.retrace( data, c_all )
 
@@ -703,13 +703,13 @@ for nlisti in range(len(new_list)):
             sci_Ss = GLOBALutils.simple_extraction(data,c_alls,ext_aperture,min_extract_col,max_extract_col,npools)
             sci_S  = GLOBALutils.optimal_extraction(data,P,c_alls,ext_aperture,ronoise,gain,S_Marsh,NCosmic_Marsh,\
          min_extract_col,max_extract_col,npools)
-            
+
         # save as fits file
             if (os.access(sci_fits,os.F_OK)):
                 os.remove( sci_fits )
             if (os.access(sci_fits_simple,os.F_OK)):
                 os.remove( sci_fits_simple )
-            
+
             hdu = pyfits.PrimaryHDU( sci_S )
             hdu.writeto( sci_fits )
             hdu = pyfits.PrimaryHDU( sci_Ss )
@@ -719,15 +719,15 @@ for nlisti in range(len(new_list)):
             print '\t\t'+fsim, "has already been extracted, reading in product fits files..."
             sci_S = pyfits.getdata( sci_fits )
             sci_Ss = pyfits.getdata( sci_fits_simple )
-    
-    
+
+
     fout = 'proc/'+ obname + '_' + \
          h[0].header['UT-DATE'] + '_' + \
          h[0].header['UT-TIME'] + '_' + \
          iodine + '_' + 'sp.fits'
 
     #Build spectra
-    
+
     if ( os.access(dirout+fout ,os.F_OK) == False ) or (force_spectral_file_build):
         # initialize file that will have the spectra
         # n_useful should be nord_ob, but we still have not calibrated that bluest order -- TODO
@@ -742,7 +742,7 @@ for nlisti in range(len(new_list)):
         #hdu = GLOBALutils.update_header(hdu,'HIERARCH EARTH ROTATION CORRECTION (km/s) [OBSOLETE]', gcvel)
         hdu = GLOBALutils.update_header(hdu,'HIERARCH BARYCENTRIC CORRECTION (KM/S)', bcvel_baryc)
         #hdu = GLOBALutils.update_header(hdu,'HIERARCH EARTH ROTATION CORRECTION (km/s)', vel_rot)
-        hdu = GLOBALutils.update_header(hdu,'HIERARCH (LAMBDA_BARY / LAMBDA_BARY)', lbary_ltopo)    
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH (LAMBDA_BARY / LAMBDA_BARY)', lbary_ltopo)
         hdu = GLOBALutils.update_header(hdu,'HIERARCH TARGET NAME', obname)
         hdu = GLOBALutils.update_header(hdu,'HIERARCH RA',h[0].header['RA-D'])
         hdu = GLOBALutils.update_header(hdu,'HIERARCH DEC',h[0].header['DEC-D'])
@@ -763,12 +763,12 @@ for nlisti in range(len(new_list)):
         wsol_dict = pickle.load(open(pkl_wsol,'r'))
 
         # Apply new wavelength solution including barycentric correction
-        equis = np.arange( data.shape[1] )        
+        equis = np.arange( data.shape[1] )
 
         for order in range(n_useful):
             m = order + 93
             chebs = GLOBALutils.Calculate_chebs(equis, m, npix=data.shape[1], order0=93, ntotal=n_useful, Inverse=Inverse_m,nx=ncoef_x,nm=ncoef_m)
-            WavSol = lbary_ltopo * (1.0/m) * GLOBALutils.Joint_Polynomial_Cheby(wsol_dict['p1'],chebs,ncoef_x,ncoef_m)   
+            WavSol = lbary_ltopo * (1.0/m) * GLOBALutils.Joint_Polynomial_Cheby(wsol_dict['p1'],chebs,ncoef_x,ncoef_m)
             spec[0,order,:] = GLOBALutils.ToVacuum(WavSol)
             spec[1,order,:] = sci_S[order,1, :]
             spec[2,order,:] = sci_S[order,2, :]
@@ -791,7 +791,7 @@ for nlisti in range(len(new_list)):
             NN            = np.average(dlambda_dx)
             dlambda_dx    /= NN
 
-            spec[9,order,:][L] = spec[5,order,:][L] * (dlambda_dx[L] ** 1) 
+            spec[9,order,:][L] = spec[5,order,:][L] * (dlambda_dx[L] ** 1)
             spec[10,order,:][L] = spec[6,order,:][L] / (dlambda_dx[L] ** 2)
 
     #show()
@@ -803,7 +803,7 @@ for nlisti in range(len(new_list)):
             ref_RES = 54000
         elif h[0].header['SLITNAME'] == '0.3x2.5':
             ref_RES = 127000
-	print ref_RES
+        print ref_RES
         if DoClass:
             # spectral analysis
             print "\t\tSpectral Analysis..."
@@ -831,7 +831,7 @@ for nlisti in range(len(new_list)):
                 f = open(pars_file,'w')
                 f.write(line)
                 f.close()
-               
+
             else:
                 print "\t\t\tAtmospheric parameters loaded from file:"
                 T_eff, logg, Z, vsini, vel0 = np.loadtxt(pars_file,unpack=True)
@@ -857,15 +857,15 @@ for nlisti in range(len(new_list)):
         # assign mask
         sp_type, mask = GLOBALutils.get_mask_reffile(obname,reffile=reffile,base='../data/xc_masks/')
         print "\t\t\tWill use",sp_type,"mask for CCF."
-        
+
         velw  = 300
         velsh = 3.
-            
+
         # Read in mask
         ml, mh, weight = np.loadtxt(mask,unpack=True)
         ml_v = GLOBALutils.ToVacuum( ml )
         mh_v = GLOBALutils.ToVacuum( mh )
-       
+
         # make mask larger accounting for factor ~2.5 lower res in FEROS w/r to HARPS
         av_m = 0.5*( ml_v + mh_v )
         ml_v -= 1.*(av_m - ml_v)
@@ -884,7 +884,7 @@ for nlisti in range(len(new_list)):
 
         mask_hw_wide = av_m * disp / (GLOBALutils.Constants.c/1.0e3)
         ml_v = av_m - mask_hw_wide
-        mh_v = av_m + mask_hw_wide 
+        mh_v = av_m + mask_hw_wide
 
         print '\t\t\tComputing the CCF...'
         cond = True
@@ -904,17 +904,17 @@ for nlisti in range(len(new_list)):
             rvels, rxc_av, rpred, rxc_av_orig, rvel0_xc = vels.copy(), xc_av.copy(), pred.copy(), xc_av_orig.copy(), vel0_xc
             xc_av_rough = xc_av
             vels_rough  = vels
-                
+
             vel_width = np.maximum( 20.0, 6*disp )
 
             vels, xc_full, sn, nlines_ccf, W_ccf =\
                     GLOBALutils.XCor(spec, ml_v, mh_v, weight, vel0_xc, lbary_ltopo, vel_width=vel_width,vel_step=0.2,\
                                           spec_order=9,iv_order=10,sn_order=8,max_vel_rough=velw)
-        
+
             xc_av = GLOBALutils.Average_CCF(xc_full, sn, sn_min=3., Simple=True, W=W_ccf)
             pred = scipy.interpolate.splev(vels,tck1)
             xc_av /= pred
-        
+
             if sp_type == 'M5':
                 moon_sig = 2.5
             elif sp_type == 'K5':
@@ -943,11 +943,11 @@ for nlisti in range(len(new_list)):
             #print p1gau[1]
             if (not known_sigma):
                 disp = np.floor(p1gau[2])
-                if (disp < 3.0): 
+                if (disp < 3.0):
                     disp = 3.0
                 mask_hw_wide = av_m * disp / (GLOBALutils.Constants.c/1.0e3)
                 ml_v = av_m - mask_hw_wide
-                mh_v = av_m + mask_hw_wide            
+                mh_v = av_m + mask_hw_wide
                 known_sigma = True
             else:
                 cond = False
@@ -977,7 +977,7 @@ for nlisti in range(len(new_list)):
 
         airmass  = h[0].header['AIRMASS']
         seeing   = -999
-                    
+
         if sp_type=='G2':
             if T_eff < 6000:
                 D = 0.32815
@@ -995,8 +995,8 @@ for nlisti in range(len(new_list)):
         BSerr = D / float(np.round(SNR_5130)) + C
         RVerr = 0.5
 
-        RV     = np.around(p1gau_m[1],4)  
-        BS     = np.around(SP,4)   
+        RV     = np.around(p1gau_m[1],4)
+        BS     = np.around(SP,4)
         RVerr2 = np.around(RVerr,4)
         BSerr  = np.around(BSerr,4)
         print '\t\t\tRV = '+str(RV)+' +- '+str(RVerr2)

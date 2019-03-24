@@ -81,7 +81,7 @@ if reffile == 'default':
 
 ####### GLOBAL VARIABLES #####
 force_pre_process  = False
-force_flat	   = False
+force_flat         = False
 force_P            = False
 force_flat_extract = False
 force_thar_extract = False
@@ -102,7 +102,7 @@ ext_aperture       = 5
 NSigma_Marsh       = 30
 NCosmic_Marsh      = 10
 S_Marsh            = 0.4
-N_Marsh            = 3      # grado polinomio 
+N_Marsh            = 3      # grado polinomio
 min_extract_col    = 200
 max_extract_col    = 1847
 
@@ -127,24 +127,24 @@ nightlog = open(log,'r')
 loglines = nightlog.readlines()
 print "\tThese are all the images to proccess:"
 for line in loglines:
-	print '\t'+line[:-1]
+    print '\t'+line[:-1]
 print '\n'
 if stst == 'last':
-	if os.access(dirout+'findstar.txt',os.F_OK):
-		fst = open(dirout+'findstar.txt','r')
-		stst = fst.readline()
-		fst.close()
-	else:
-		raise ValueError("There is not a previously defined standard star file!!! You have to enter one (i.e. -ofind pfs0001.fits).\n")
+    if os.access(dirout+'findstar.txt',os.F_OK):
+        fst = open(dirout+'findstar.txt','r')
+        stst = fst.readline()
+        fst.close()
+    else:
+        raise ValueError("There is not a previously defined standard star file!!! You have to enter one (i.e. -ofind pfs0001.fits).\n")
 else:
-	fst = open(dirout+'findstar.txt','w')
-	fst.write(stst+'\n')
-	fst.close()
+    fst = open(dirout+'findstar.txt','w')
+    fst.write(stst+'\n')
+    fst.close()
 
-if (     (os.access(dirout+'FlatB.fits',       os.F_OK) == False)	or \
-	 (os.access(dirout+'FlatR.fits',       os.F_OK) == False)	or \
-         (os.access(dirout+'MasterBias.fits', os.F_OK) == False)	or \
-         (os.access(dirout+'trace.pkl',       os.F_OK) == False)	or \
+if (     (os.access(dirout+'FlatB.fits',       os.F_OK) == False)       or \
+         (os.access(dirout+'FlatR.fits',       os.F_OK) == False)       or \
+         (os.access(dirout+'MasterBias.fits', os.F_OK) == False)        or \
+         (os.access(dirout+'trace.pkl',       os.F_OK) == False)        or \
          (force_pre_process) ):
     print "\tNo previous pre-processing files or found"
     pre_process = 1
@@ -157,14 +157,14 @@ if (pre_process == 1):
     print "\tGenerating Master calibration frames..."
 
     if len(biases)!=0:
-	MasterBias, RO_bias, GA_bias = arcesutils.MedianCombine(biases)
-	print "\t\t-> Masterbias: done!"
+        MasterBias, RO_bias, GA_bias = arcesutils.MedianCombine(biases)
+        print "\t\t-> Masterbias: done!"
     else:
-	MasterBias, RO_bias, GA_bias = np.zeros((2048,2048)),0,1
-	print "\t\t\tWarning: 0 biases"
+        MasterBias, RO_bias, GA_bias = np.zeros((2048,2048)),0,1
+        print "\t\t\tWarning: 0 biases"
     hdu = pyfits.PrimaryHDU( MasterBias )
     if (os.access(dirout+'MasterBias.fits',os.F_OK)):
-	    os.remove(dirout+'MasterBias.fits')
+        os.remove(dirout+'MasterBias.fits')
     hdu.writeto(dirout+'MasterBias.fits')
 
     # median combine list of ob flats
@@ -181,7 +181,7 @@ if (pre_process == 1):
     if (os.access(dirout+'FlatB.fits',os.F_OK)):
         os.remove(dirout+'FlatB.fits')
     hdu.writeto(dirout+'FlatB.fits')
-    
+
     # Find orders & traces
     print "\tTracing echelle orders..."
     c_all, nord = GLOBALutils.get_them( FlatB + FlatR, ext_aperture, trace_degree, maxords=-1,mode=1 )
@@ -214,80 +214,80 @@ else:
 Pref_fits = dirout + 'P_ref.fits'
 force_Pref = False
 if ( os.access(Pref_fits,os.F_OK) == False ) or (force_Pref):
-	print "\n\tDetermining reference weights for optimal extraction..."
-	h = pyfits.open(dirin+stst)[0]
-	ron  = h.header['RDNOISE']
-	gain = h.header['GAIN']
-	hth = pyfits.getheader(dirin+stst)
-	d = h.data
-	d = arcesutils.OverscanTrim(d)
-	d = arcesutils.bad_col_corr(d)
-	d -= MasterBias
-	c_alls = c_all.copy()
-	Centers = np.zeros((len(c_alls),d.shape[1]))
-	for i in range(nord):
-		Centers[i,:]=scipy.polyval(c_alls[i,:],np.arange(len(Centers[i,:])))
-	bkg_obj_fits = dirout + 'BKG_' + 'Pref.fits'
-	if ( os.access(bkg_obj_fits,os.F_OK) == False or force_bkg):
-		bkg = GLOBALutils.get_scat(d,Centers,span=4)
-		if (os.access(bkg_obj_fits,os.F_OK)):
-			os.remove( bkg_obj_fits )
-		hdu = pyfits.PrimaryHDU( bkg )
-		hdu.writeto( bkg_obj_fits )
-	else:
-		bkg = pyfits.getdata(bkg_obj_fits)
-	d -= bkg
-	if os.access(Pref_fits,os.F_OK) == False or force_P:
-		P_ref = np.zeros( d.shape )
-		for i in range(nord):	
-			P_marsh = GLOBALutils.PCoeff( d, c_alls[i,:], ext_aperture, ron, gain, NSigma_Marsh, S_Marsh, N_Marsh, Marsh_alg , min_extract_col, max_extract_col )
-			P_ref += P_marsh
-		
-		if (os.access(Pref_fits,os.F_OK)):
-			os.remove( Pref_fits )
-		hdu = pyfits.PrimaryHDU( P_ref )
-		hdu.writeto( Pref_fits )
+    print "\n\tDetermining reference weights for optimal extraction..."
+    h = pyfits.open(dirin+stst)[0]
+    ron  = h.header['RDNOISE']
+    gain = h.header['GAIN']
+    hth = pyfits.getheader(dirin+stst)
+    d = h.data
+    d = arcesutils.OverscanTrim(d)
+    d = arcesutils.bad_col_corr(d)
+    d -= MasterBias
+    c_alls = c_all.copy()
+    Centers = np.zeros((len(c_alls),d.shape[1]))
+    for i in range(nord):
+        Centers[i,:]=scipy.polyval(c_alls[i,:],np.arange(len(Centers[i,:])))
+    bkg_obj_fits = dirout + 'BKG_' + 'Pref.fits'
+    if ( os.access(bkg_obj_fits,os.F_OK) == False or force_bkg):
+        bkg = GLOBALutils.get_scat(d,Centers,span=4)
+        if (os.access(bkg_obj_fits,os.F_OK)):
+            os.remove( bkg_obj_fits )
+        hdu = pyfits.PrimaryHDU( bkg )
+        hdu.writeto( bkg_obj_fits )
+    else:
+        bkg = pyfits.getdata(bkg_obj_fits)
+    d -= bkg
+    if os.access(Pref_fits,os.F_OK) == False or force_P:
+        P_ref = np.zeros( d.shape )
+        for i in range(nord):
+            P_marsh = GLOBALutils.PCoeff( d, c_alls[i,:], ext_aperture, ron, gain, NSigma_Marsh, S_Marsh, N_Marsh, Marsh_alg , min_extract_col, max_extract_col )
+            P_ref += P_marsh
+
+        if (os.access(Pref_fits,os.F_OK)):
+            os.remove( Pref_fits )
+        hdu = pyfits.PrimaryHDU( P_ref )
+        hdu.writeto( Pref_fits )
 else:
-	print "\tWeights for optimal extraction loaded..."
-	P_ref = pyfits.getdata(Pref_fits)
+    print "\tWeights for optimal extraction loaded..."
+    P_ref = pyfits.getdata(Pref_fits)
 
 # Extract Flat
 print '\n\tExtraction of Flat calibration frames:'
 Flat_spec_fits = dirout + 'Flat_spec.fits'
 P_fits = dirout + 'P_flat.fits'
 if ( os.access(Flat_spec_fits,os.F_OK) == False ) or (force_flat_extract):
-	print "\t\tNo previous Flat extracted or extraction forced, extracting and saving..."
-	c_alls = c_all.copy()
-	Centers = np.zeros((len(c_alls),FlatB.shape[1]))
+    print "\t\tNo previous Flat extracted or extraction forced, extracting and saving..."
+    c_alls = c_all.copy()
+    Centers = np.zeros((len(c_alls),FlatB.shape[1]))
 
-	if os.access(P_fits,os.F_OK) == False or force_P:
-		P = np.zeros( FlatB.shape )
-		for i in range(nord):
-			P_marsh = GLOBALutils.PCoeff( FlatR+FlatB, c_alls[i,:], ext_aperture,\
-                                  RO_flatR, GA_flatR, NSigma_Marsh*10, S_Marsh, 2, Marsh_alg,\
-                                  min_extract_col, max_extract_col )
-			P += P_marsh
-		if (os.access(P_fits,os.F_OK)):
-			os.remove( P_fits )
-		hdu = pyfits.PrimaryHDU( P )
-		hdu.writeto( P_fits )
-	else:
-		P = pyfits.getdata(P_fits)
+    if os.access(P_fits,os.F_OK) == False or force_P:
+        P = np.zeros( FlatB.shape )
+        for i in range(nord):
+            P_marsh = GLOBALutils.PCoeff( FlatR+FlatB, c_alls[i,:], ext_aperture,\
+                      RO_flatR, GA_flatR, NSigma_Marsh*10, S_Marsh, 2, Marsh_alg,\
+                      min_extract_col, max_extract_col )
+            P += P_marsh
+        if (os.access(P_fits,os.F_OK)):
+            os.remove( P_fits )
+        hdu = pyfits.PrimaryHDU( P )
+        hdu.writeto( P_fits )
+    else:
+        P = pyfits.getdata(P_fits)
 
-	flat_S  = GLOBALutils.optimal_extraction(FlatB+FlatR,P,c_all,ext_aperture,RO_flatB,GA_flatB,\
-                                       S_Marsh,10*NCosmic_Marsh,min_extract_col,max_extract_col,npools) 
+    flat_S  = GLOBALutils.optimal_extraction(FlatB+FlatR,P,c_all,ext_aperture,RO_flatB,GA_flatB,\
+                                   S_Marsh,10*NCosmic_Marsh,min_extract_col,max_extract_col,npools)
 
-	for i in range(nord):
-		flat_S[i,1,:] = flat_S[i,1,:][::-1]
-		flat_S[i,2,:] = flat_S[i,2,:][::-1]
-			
-        if (os.access(Flat_spec_fits,os.F_OK)):
-            os.remove( Flat_spec_fits )
-	hdu = pyfits.PrimaryHDU( flat_S )
-        hdu.writeto( Flat_spec_fits )
-else: 
-	print "\tExtracted flat found, loading..."
-	flat_S = pyfits.getdata( Flat_spec_fits )
+    for i in range(nord):
+        flat_S[i,1,:] = flat_S[i,1,:][::-1]
+        flat_S[i,2,:] = flat_S[i,2,:][::-1]
+
+    if (os.access(Flat_spec_fits,os.F_OK)):
+        os.remove( Flat_spec_fits )
+    hdu = pyfits.PrimaryHDU( flat_S )
+    hdu.writeto( Flat_spec_fits )
+else:
+    print "\tExtracted flat found, loading..."
+    flat_S = pyfits.getdata( Flat_spec_fits )
 
 thar_az,thar_al  = [],[]
 thar_ra,thar_dec = [],[]
@@ -312,10 +312,10 @@ for fsim in thars:
     if ( os.access(thar_fits,os.F_OK) == False ) or (force_thar_extract):
         print "\t\tNo previous extraction or extraction forced for ThAr file", fsim, "extracting..."
         thar_S = np.zeros( (nord,dthar.shape[1]) )
-	thar_S  = GLOBALutils.simple_extraction(dthar,c_all,ext_aperture,min_extract_col,max_extract_col,npools)
+        thar_S  = GLOBALutils.simple_extraction(dthar,c_all,ext_aperture,min_extract_col,max_extract_col,npools)
         for i in range(nord):
             thar_S[i]  = thar_S[i][::-1]
-            
+
         # save as fits file
         if (os.access(thar_fits,os.F_OK)):
             os.remove( thar_fits )
@@ -334,18 +334,18 @@ for i in range(len(thars)):
     hthar = pyfits.open( thars[index] )
     wavsol_pkl = dirout + 'ARCES_' + '_' + hthar[0].header['DATE-OBS']+'.wavsolpars.pkl'
     if ( os.access(wavsol_pkl,os.F_OK) == False ) or (force_thar_wavcal):
-        print "\t\tWorking on initial ThAr file", thars[index] 
-        
+        print "\t\tWorking on initial ThAr file", thars[index]
+
         mjd, mjd0 = arcesutils.mjd_fromheader( hthar )
         thar_fits = dirout + 'ARCES_' + hthar[0].header['DATE-OBS'] + '.ThAr.spec.fits'
         thar_S = pyfits.getdata( thar_fits )
-	hd = pyfits.getheader(thar_fits)
-	thar_out = dirout + 'ARCES_' + hthar[0].header['DATE-OBS'] + '.ThAr.wav.fits'
+        hd = pyfits.getheader(thar_fits)
+        thar_out = dirout + 'ARCES_' + hthar[0].header['DATE-OBS'] + '.ThAr.wav.fits'
 
-	thar_data = np.zeros((2,n_useful,thar_S.shape[1]))
+        thar_data = np.zeros((2,n_useful,thar_S.shape[1]))
 
         lines_thar  = thar_S.copy()
-        
+
         All_Pixel_Centers = np.array([])
         All_Wavelengths   = np.array([])
         All_Orders        = np.array([])
@@ -353,52 +353,52 @@ for i in range(len(thars)):
         All_Sigmas        = np.array([])
         All_Intensities   = np.array([])
 
-	force_corr = True
-	if os.access(dirout+'id_orders.pkl',os.F_OK) == False or force_corr:
-		maxes = 0
-		or41 = 0
-		for order in range(len(lines_thar)):
-			ccf_max, shift = GLOBALutils.cor_thar(lines_thar[order],span=10,filename=order_dir+'arces_order41.dat')
-			if ccf_max > maxes:
-				maxes       = ccf_max
-				rough_shift = shift
-				or41        =  order
-		print '\t\t\tThe real echelle order 41 is order',or41
-		print '\t\t\tShift in pixels:',rough_shift
-		or0 = or41 - 41
-		or10 = 10 + or0
-			
-		if or0 >= 0:
-			orwa = 0
-		else:
-			orwa = - or0
-			or0  = 0
-		if os.access(dirout+'id_orders.pkl',os.F_OK):
-			os.remove(dirout+'id_orders.pkl')
-			
-		pdict = {'or0':or0, 'orwa':orwa, 'or10':or10, 'rough_shift':rough_shift}
-		pickle.dump( pdict, open(dirout+'id_orders.pkl', 'w' ) )
-	else:
-		pdict = pickle.load(open(dirout+'id_orders.pkl','r'))
-		or10 = pdict['or10']
-	
-		
-	order = or10
-	worder = 10
-	medl = []
+        force_corr = True
+        if os.access(dirout+'id_orders.pkl',os.F_OK) == False or force_corr:
+            maxes = 0
+            or41 = 0
+            for order in range(len(lines_thar)):
+                ccf_max, shift = GLOBALutils.cor_thar(lines_thar[order],span=10,filename=order_dir+'arces_order41.dat')
+                if ccf_max > maxes:
+                    maxes       = ccf_max
+                    rough_shift = shift
+                    or41        =  order
+            print '\t\t\tThe real echelle order 41 is order',or41
+            print '\t\t\tShift in pixels:',rough_shift
+            or0 = or41 - 41
+            or10 = 10 + or0
+
+            if or0 >= 0:
+                orwa = 0
+            else:
+                orwa = - or0
+                or0  = 0
+            if os.access(dirout+'id_orders.pkl',os.F_OK):
+                os.remove(dirout+'id_orders.pkl')
+
+            pdict = {'or0':or0, 'orwa':orwa, 'or10':or10, 'rough_shift':rough_shift}
+            pickle.dump( pdict, open(dirout+'id_orders.pkl', 'w' ) )
+        else:
+            pdict = pickle.load(open(dirout+'id_orders.pkl','r'))
+            or10 = pdict['or10']
+
+
+        order = or10
+        worder = 10
+        medl = []
         while order <= or10 + n_useful:
             order_s = str(worder)
             if (worder < 10):
                 order_s = '0'+str(worder)
-            
+
             thar_order_orig = lines_thar[order,:]
             thar_order      = thar_order_orig - scipy.signal.medfilt(thar_order_orig, 21)
-	    
+
             coeffs_pix2wav, coeffs_pix2sigma, pixel_centers, wavelengths, rms_ms, residuals, centroids, sigmas, intensities \
                 = GLOBALutils.Initial_Wav_Calibration(order_dir+'arces_order'+order_s+'.dat', thar_order, order, np.ones(len(thar_order)),rmsmax=1000, minlines=4,FixEnds=False,Dump_Argon=dumpargon,Dump_AllLines=True, Cheby=use_cheby,porder=3,rough_shift=rough_shift)
-	    medl.append(GLOBALutils.Cheby_eval(coeffs_pix2wav,.5*len(thar_order),len(thar_order)))
+            medl.append(GLOBALutils.Cheby_eval(coeffs_pix2wav,.5*len(thar_order),len(thar_order)))
 
-            if (worder == 55): 
+            if (worder == 55):
                 if (use_cheby):
                     Global_ZP = GLOBALutils.Cheby_eval( coeffs_pix2wav, 0.5*len(thar_order), len(thar_order))
                 else:
@@ -410,32 +410,32 @@ for i in range(len(thars)):
             All_Centroids     = np.append( All_Centroids, centroids)
             All_Sigmas        = np.append( All_Sigmas, sigmas)
             All_Intensities   = np.append( All_Intensities, intensities )
-	   
-	    order +=1
-	    worder +=1
+
+            order +=1
+            worder +=1
 
         p0 = np.zeros( npar_wsol )
-        p0[0] =  (55+52) * Global_ZP 
+        p0[0] =  (55+52) * Global_ZP
         p1, G_pix, G_ord, G_wav, II, rms_ms, G_res = \
             GLOBALutils.Fit_Global_Wav_Solution(All_Pixel_Centers,All_Wavelengths,All_Orders,\
                                                      np.ones(All_Intensities.shape),p0,Cheby=use_cheby,\
                                                      maxrms=100, Inv=Inverse_m,minlines=minlines_glob,order0=52,\
-						     ntotal=n_useful,npix=len(thar_order),nx=ncoef_x,nm=ncoef_m)
+                                                     ntotal=n_useful,npix=len(thar_order),nx=ncoef_x,nm=ncoef_m)
 
-	equis = np.arange( thar_S.shape[1] )
-	order = 0
-	while order < n_useful:
+        equis = np.arange( thar_S.shape[1] )
+        order = 0
+        while order < n_useful:
             m = order + 52 + 10
             chebs = GLOBALutils.Calculate_chebs(equis, m, order0=52, ntotal=n_useful,\
-						npix=thar_S.shape[1],Inverse=Inverse_m,nx=ncoef_x,nm=ncoef_m)
-            WavSol = (1./m) * GLOBALutils.Joint_Polynomial_Cheby(p1,chebs,ncoef_x,ncoef_m)   
+                                                npix=thar_S.shape[1],Inverse=Inverse_m,nx=ncoef_x,nm=ncoef_m)
+            WavSol = (1./m) * GLOBALutils.Joint_Polynomial_Cheby(p1,chebs,ncoef_x,ncoef_m)
             thar_data[0,order] = WavSol
-	    thar_data[1,order] = lines_thar[order+or10,:]
-	    order  += 1
+            thar_data[1,order] = lines_thar[order+or10,:]
+            order  += 1
 
-	if (os.access(thar_out,os.F_OK)):
+        if (os.access(thar_out,os.F_OK)):
             os.remove( thar_out )
-            
+
         hdu = pyfits.PrimaryHDU( thar_data )
         hdu.writeto( thar_out )
 
@@ -446,19 +446,19 @@ for i in range(len(thars)):
     else:
         print "\t\tUsing previously computed wavelength solution in file",wavsol_pkl
         pdict           = pickle.load(open(wavsol_pkl,'r'))
-    
+
     if pdict['rms_ms']/np.sqrt(float(len(pdict['II']))) > 10:
-	badind.append(index)
+        badind.append(index)
 
 pditct2 = pickle.load(open(dirout+'id_orders.pkl','r'))
 or10 = pditct2['or10']
 thars = np.array(thars)
 thar_dates = np.array(thar_dates)
 if len(badind)>0:
-	thars = np.delete(thars,badind)
-	thar_dates = np.delete(thar_dates,badind)
-	thar_ra = np.delete(thar_ra,badind)
-	thar_dec = np.delete(thar_dec,badind)
+    thars = np.delete(thars,badind)
+    thar_dates = np.delete(thar_dates,badind)
+    thar_ra = np.delete(thar_ra,badind)
+    thar_dec = np.delete(thar_dec,badind)
 
 print '\n\tStarting science frame reductions'
 
@@ -518,7 +518,7 @@ for nlisti in range(len(new_list)):
     # get mjd and mjd0
     mjd,mjd0 = arcesutils.mjd_fromheader(h)
 
-    #  get gain and readnoise of object 
+    #  get gain and readnoise of object
     ronoise = h[0].header['RDNOISE']
     gain    = h[0].header['GAIN']
 
@@ -532,7 +532,7 @@ for nlisti in range(len(new_list)):
     ra  = float(ra.split(':')[0]) + float(ra.split(':')[1])/60. + float(ra.split(':')[2])/3600.
     ra  = ra * 360. / 24.
     dec         = h[0].header['DEC']
-    dec = float(dec.split(':')[0]) + float(dec.split(':')[1])/60. + float(dec.split(':')[2])/3600.	
+    dec = float(dec.split(':')[0]) + float(dec.split(':')[1])/60. + float(dec.split(':')[2])/3600.
     epoch       = h[0].header['EQUINOX']
 
     ra2,dec2 = GLOBALutils.getcoords(obname,mjd,filen=reffile)
@@ -556,9 +556,9 @@ for nlisti in range(len(new_list)):
     mbjd = mjd + res['delay'][0] / (3600.0 * 24.0)
 
     # Moon Phase Calculations
-    gobs = ephem.Observer()  
-    gobs.name='APO3.5'  
-    gobs.lat=rad(latitude)  # lat/long in decimal degrees  
+    gobs = ephem.Observer()
+    gobs.name='APO3.5'
+    gobs.lat=rad(latitude)  # lat/long in decimal degrees
     gobs.long=rad(longitude)
 
     DDATE = h[0].header['DATE-OBS'].split('T')[0]
@@ -612,7 +612,7 @@ for nlisti in range(len(new_list)):
         data -= bkg
 
         print '\t\tExtraction:'
-	    #print '\t\tComputing weights...'
+            #print '\t\tComputing weights...'
 
         if os.access(P_fits,os.F_OK) == False or force_P:
             P = GLOBALutils.obtain_P(data,c_alls,ext_aperture,ronoise,\
@@ -667,7 +667,7 @@ for nlisti in range(len(new_list)):
         hdu = GLOBALutils.update_header(hdu,'HIERARCH SHUTTER START UT',  h[0].header['DATE-OBS'].split('T')[1])
         hdu = GLOBALutils.update_header(hdu,'HIERARCH TEXP (S)',h[0].header['EXPTIME'])
         hdu = GLOBALutils.update_header(hdu,'HIERARCH BARYCENTRIC CORRECTION (KM/S)', bcvel_baryc)
-        hdu = GLOBALutils.update_header(hdu,'HIERARCH (LAMBDA_BARY / LAMBDA_TOPO)', lbary_ltopo)    
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH (LAMBDA_BARY / LAMBDA_TOPO)', lbary_ltopo)
         hdu = GLOBALutils.update_header(hdu,'HIERARCH TARGET NAME', obname)
         hdu = GLOBALutils.update_header(hdu,'HIERARCH RA',h[0].header['RA'])
         hdu = GLOBALutils.update_header(hdu,'HIERARCH DEC',h[0].header['DEC'])
@@ -705,12 +705,12 @@ for nlisti in range(len(new_list)):
         wsol_dict = pickle.load(open(pkl_wsol,'r'))
 
         # Apply new wavelength solution including barycentric correction
-        equis = np.arange( data.shape[1] )        
-        #print '\t\tMaking final output...' 
+        equis = np.arange( data.shape[1] )
+        #print '\t\tMaking final output...'
         for order in range(n_useful):
             m = order + 10 + 52
             chebs = GLOBALutils.Calculate_chebs(equis, m, npix=data.shape[1], order0=52, ntotal=n_useful, Inverse=Inverse_m,nx=ncoef_x,nm=ncoef_m)
-            WavSol = lbary_ltopo * (1.0/m) * GLOBALutils.Joint_Polynomial_Cheby(wsol_dict['p1'],chebs,ncoef_x,ncoef_m)   
+            WavSol = lbary_ltopo * (1.0/m) * GLOBALutils.Joint_Polynomial_Cheby(wsol_dict['p1'],chebs,ncoef_x,ncoef_m)
             spec[0,order,:] = GLOBALutils.ToVacuum(WavSol)
             spec[1,order,:] = sci_S[order+or10,1, :]
             spec[2,order,:] = sci_S[order+or10,2, :]
@@ -723,7 +723,7 @@ for nlisti in range(len(new_list)):
             spec[3,order,nJ2] = 1.
             IJJ = np.where(spec[3,order]!=0)[0]
             if len(IJJ)>0:
-                cont_coef = GLOBALutils.get_cont_single(spec[0,order],spec[3,order],spec[4,order],ll=1.5,lu=5,nc=3)   
+                cont_coef = GLOBALutils.get_cont_single(spec[0,order],spec[3,order],spec[4,order],ll=1.5,lu=5,nc=3)
                 ratio = np.polyval(cont_coef, spec[0,order,:])
             else:
                 ratio = np.ones(len(spec[3,order]))
@@ -743,7 +743,7 @@ for nlisti in range(len(new_list)):
             NN            = np.average(dlambda_dx)
             dlambda_dx    /= NN
 
-            spec[9,order,:][L] = spec[5,order,:][L] * (dlambda_dx[L] ** 1) 
+            spec[9,order,:][L] = spec[5,order,:][L] * (dlambda_dx[L] ** 1)
             spec[10,order,:][L] = spec[6,order,:][L] / (dlambda_dx[L] ** 2)
 
     else:
@@ -826,7 +826,7 @@ for nlisti in range(len(new_list)):
 
         mask_hw_wide = av_m * disp / (GLOBALutils.Constants.c/1.0e3)
         ml_v = av_m - mask_hw_wide
-        mh_v = av_m + mask_hw_wide 
+        mh_v = av_m + mask_hw_wide
 
         print '\t\t\tComputing the CCF...'
         cond = True
@@ -836,7 +836,7 @@ for nlisti in range(len(new_list)):
                     GLOBALutils.XCor(spec, ml_v, mh_v, weight, 0, lbary_ltopo, vel_width=300,vel_step=3,\
                                           spec_order=9,iv_order=10,sn_order=8,max_vel_rough=300)
             xc_av = GLOBALutils.Average_CCF(xc_full, sn, sn_min=3.0, Simple=True, W=W_ccf)
-            # Normalize the continuum of the CCF robustly with R     
+            # Normalize the continuum of the CCF robustly with R
             yy = scipy.signal.medfilt(xc_av,11)
             I = np.where(np.isnan(yy))[0]
             if len(I)==0:
@@ -844,15 +844,15 @@ for nlisti in range(len(new_list)):
                 tck1 = scipy.interpolate.splrep(vels,pred,k=1)
                 xc_av_orig = xc_av.copy()
                 xc_av /= pred
-                vel0_xc = vels[ np.argmin( xc_av ) ] 
+                vel0_xc = vels[ np.argmin( xc_av ) ]
                 rvels, rxc_av, rpred, rxc_av_orig, rvel0_xc = vels.copy(), xc_av.copy(), pred.copy(), xc_av_orig.copy(), vel0_xc
                 xc_av_rough = xc_av
                 vels_rough  = vels
 
                 vel_width = np.maximum( 20.0, 6*disp )
                 vels, xc_full, sn, nlines_ccf, W_ccf =\
-		            GLOBALutils.XCor(spec, ml_v, mh_v, weight, vel0_xc, lbary_ltopo, vel_width=vel_width,vel_step=0.3,\
-		                                  spec_order=9,iv_order=10,sn_order=8,max_vel_rough=300)
+                            GLOBALutils.XCor(spec, ml_v, mh_v, weight, vel0_xc, lbary_ltopo, vel_width=vel_width,vel_step=0.3,\
+                                                  spec_order=9,iv_order=10,sn_order=8,max_vel_rough=300)
 
                 xc_av = GLOBALutils.Average_CCF(xc_full, sn, sn_min=3.0, Simple=True, W=W_ccf)
                 pred = scipy.interpolate.splev(vels,tck1)
@@ -891,11 +891,11 @@ for nlisti in range(len(new_list)):
 
                 if (not known_sigma):
                     disp = np.floor(p1gau[2])
-                    if (disp < 3.0): 
+                    if (disp < 3.0):
                         disp = 3.0
                     mask_hw_wide = av_m * disp / (GLOBALutils.Constants.c/1.0e3)
                     ml_v = av_m - mask_hw_wide
-                    mh_v = av_m + mask_hw_wide            
+                    mh_v = av_m + mask_hw_wide
                     known_sigma = True
                 else:
                     cond = False
@@ -908,13 +908,13 @@ for nlisti in range(len(new_list)):
         if not problem:
 
             xc_dict = {'vels':vels,'xc_av':xc_av,'XCmodelgau':XCmodelgau,'Ls2':Ls2,'refvel':refvel,\
-			       'rvels':rvels,'rxc_av':rxc_av,'rpred':rpred,'rxc_av_orig':rxc_av_orig,\
-			       'rvel0_xc':rvel0_xc,'xc_full':xc_full, 'p1':p1, 'sn':sn, 'p1gau':p1gau,\
-			       'p1_m':p1_m,'XCmodel_m':XCmodel_m,'p1gau_m':p1gau_m,'Ls2_m':Ls2_m,\
-			       'XCmodelgau_m':XCmodelgau_m}
+                               'rvels':rvels,'rxc_av':rxc_av,'rpred':rpred,'rxc_av_orig':rxc_av_orig,\
+                               'rvel0_xc':rvel0_xc,'xc_full':xc_full, 'p1':p1, 'sn':sn, 'p1gau':p1gau,\
+                               'p1_m':p1_m,'XCmodel_m':XCmodel_m,'p1gau_m':p1gau_m,'Ls2_m':Ls2_m,\
+                               'XCmodelgau_m':XCmodelgau_m}
 
             moon_dict = {'moonmatters':moonmatters,'moon_state':moon_state,'moonsep':moonsep,\
-				 'lunation':lunation,'mephem':mephem,'texp':h[0].header['EXPTIME']}
+                                 'lunation':lunation,'mephem':mephem,'texp':h[0].header['EXPTIME']}
 
             pkl_xc = dirout + fsim.split('/')[-1][:-8]+obname+'_XC_'+sp_type+'.pkl'
             pickle.dump( xc_dict, open( pkl_xc, 'w' ) )
@@ -933,20 +933,20 @@ for nlisti in range(len(new_list)):
                 C = 0.00181
             elif  sp_type == 'K5':
                 A = 0.05348
-                B = 0.00147	
+                B = 0.00147
                 D = 0.20695
                 C = 0.00321
             else:
                 A = 0.05348
-                B = 0.00147	
+                B = 0.00147
                 D = 0.20695
                 C = 0.00321
 
 
             BSerr = D / float(np.round(SNR_5130)) + C
             RVerr2 = 0.5
-            RV     = np.around(p1gau_m[1],3)  
-            BS     = np.around(SP,3) 
+            RV     = np.around(p1gau_m[1],3)
+            BS     = np.around(SP,3)
             BSerr = np.around(BSerr,4)
 
             print '\t\t\tRV = '+str(RV)+' +- '+str(RVerr2)
@@ -978,7 +978,7 @@ for nlisti in range(len(new_list)):
 
             line_out = "%-15s %18.8f %8.3f %5.3f %5.3f %5.3f arces ceres  40000 %6d %4.1f %4.1f %5.1f %3.1f %3.1f %6.1f %4d %s\n"%\
                       (obname, bjd_out, RV, RVerr2, BS, BSerr, T_eff_epoch, logg_epoch, Z_epoch, vsini_epoch, XC_min, disp_epoch,\
-		       TEXP, SNR_5130_R, ccf_pdf)
+                       TEXP, SNR_5130_R, ccf_pdf)
             f_res.write(line_out)
 
     if (os.access( dirout + fout,os.F_OK)):

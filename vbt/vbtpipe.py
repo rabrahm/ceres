@@ -14,7 +14,7 @@ sys.path.append(base+"utils/OptExtract/")
 baryc_dir= base+'utils/SSEphem/'
 sys.path.append(baryc_dir)
 ephemeris='DEc403'
- 
+
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
@@ -103,7 +103,7 @@ force_bl           = False  #
 force_bkg          = False
 force_P            = False
 force_thar_extract = False
-force_thar_wavcal  = True 
+force_thar_wavcal  = True
 force_sci_extract  = False
 force_sci_proc     = False  #
 force_RV           = False  #
@@ -213,7 +213,7 @@ if (pre_process == 1):
     dark_times = []
 
     if dark_substraction:
-        
+
         for dark in darks:
             hd = pyfits.getheader(dark)
             if len(dark_times) == 0:
@@ -222,7 +222,7 @@ if (pre_process == 1):
                 if dark_times.count(hd['EXPTIME']) == 0:
                     dark_times.append(hd['EXPTIME'])
         dark_groups = []
-        ndark_times = []    
+        ndark_times = []
         for time in dark_times:
             group = []
             for dark in darks:
@@ -263,7 +263,7 @@ if (pre_process == 1):
     d -= MasterBias
     c_all, nord = GLOBALutils.get_them(d,20,trace_degree,mode=1,nsigmas=3,endat=4100)
     print '\t\t'+str(nord)+' orders found...'
-    
+
     trace_dict = {'c_all':c_all, 'nord':nord, 'DARKS':MDARKS, 'dtimes':dark_times, 'RO_flat':RO_flat, 'GA_flat':GA_flat}
     pickle.dump( trace_dict, open( dirout+"trace.pkl", 'w' ) )
 
@@ -289,7 +289,7 @@ print '\n\tExtraction of Master Flat:'
 flat_simple_fits = dirout + 'Flat.spec.simple.fits'
 flat_fits        = dirout + 'Flat.spec.fits'
 P_fits           = dirout + 'P.fits'
-if ( os.access(flat_simple_fits,os.F_OK) == False ) or ( os.access(flat_fits,os.F_OK) == False ) or force_flat_extract: 
+if ( os.access(flat_simple_fits,os.F_OK) == False ) or ( os.access(flat_fits,os.F_OK) == False ) or force_flat_extract:
     Centers = np.zeros((len(c_all),Flat.shape[1]))
     for i in range(nord):
         Centers[i,:]=scipy.polyval(c_all[i,:],np.arange(len(Centers[i,:])))
@@ -329,7 +329,7 @@ for fsim in ThAr_ref:
 
     thar_fits_simple = dirout+'ThAr_'+hth['DATE-OBS']+'.spec.simple.fits'
 
-    if ( os.access(thar_fits_simple,os.F_OK) == False ) or (force_thar_extract): 
+    if ( os.access(thar_fits_simple,os.F_OK) == False ) or (force_thar_extract):
         print "\t\tNo previous extraction or extraction forced for ThAr file", fsim, "extracting..."
         Centers = np.zeros((len(c_all),dth.shape[1]))
         for i in range(nord):
@@ -362,13 +362,13 @@ for thar in ThAr_ref:
     GAIN = hth['GAIN']
 
     if ( os.access(wavsol_pkl,os.F_OK) == False ) or (force_thar_wavcal):
-        print " \t\tWorking on ThAr file", thar 
+        print " \t\tWorking on ThAr file", thar
         lines_thar = thar_Ss[:,:]
 
         orders_offset, rough_shift = vbtutils.get_thar_offsets(lines_thar,binning=1,pref='order_',suf=sufix)
         print 'orders_ofset:',orders_offset
         print 'rough_shift:',rough_shift
-        
+
         orderi = 0
         if orders_offset < 0:
             orderi = - orders_offset
@@ -386,7 +386,7 @@ for thar in ThAr_ref:
         All_Intensities   = np.array([])
         All_Residuals     = np.array([])
         All_Sigmas        = np.array([])
-    
+
         for order in range(orderi,orderf+1):
             order_s = str(order)
             if (order < 10):
@@ -407,7 +407,7 @@ for thar in ThAr_ref:
                 """
                 fwhms_lns = sigmas*2.355
                 inis_lns  = pixel_centers - fwhms_lns*0.5
-                fins_lns  = pixel_centers + fwhms_lns*0.5           
+                fins_lns  = pixel_centers + fwhms_lns*0.5
                 inis_wvs  = GLOBALutils.Cheby_eval(coeffs_pix2wav,inis_lns,float(len(thar_order)))
                 fins_wvs  = GLOBALutils.Cheby_eval(coeffs_pix2wav,fins_lns,float(len(thar_order)))
                 fwhms_wvs = inis_wvs - fins_wvs
@@ -415,7 +415,7 @@ for thar in ThAr_ref:
 
                 print "\t\t\tmedian Resolution of order", order, '=', np.around(np.median(resolution2))
                 #"""
-                if (order == int(0.5*n_useful)): 
+                if (order == int(0.5*n_useful)):
                     if (use_cheby):
                         Global_ZP = GLOBALutils.Cheby_eval( coeffs_pix2wav, 0.5*len(thar_order), len(thar_order) )
                     else:
@@ -429,7 +429,7 @@ for thar in ThAr_ref:
                 All_Intensities   = np.append( All_Intensities, intensities )
                 All_residuals     = np.append( All_Residuals, residuals)
                 All_Sigmas        = np.append( All_Sigmas,sigmas)
-            
+
         p0    = np.zeros( npar_wsol )
         p0[0] = int(.5*n_useful) * Global_ZP
 
@@ -467,7 +467,7 @@ for thar in ThAr_ref:
                 if i<10:
                     si = '0'+str(int(i))
                 else:
-                    si = str(int(i)) 
+                    si = str(int(i))
                 fr = open('wavcals/order_'+si+sufix,'r')
                 tmplines = fr.readlines()
                 f = open('wavcals/order_'+si+sufix,'w')
@@ -544,12 +544,12 @@ for obj in objects:
     RON, GAIN = hd['RDNOISE'], hd['GAIN']
 
     print "\t\tObject name:",nombre
-    
-    nama = nombre + '_' + hd['DATE-OBS'] 
+
+    nama = nombre + '_' + hd['DATE-OBS']
 
     obj_fits        = dirout + nama + '.spec.fits.S'
     obj_fits_simple = dirout + nama + '.spec.simple.fits.S'
-    bkg_obj_fits    = dirout + 'Bkg_' + nama + '.fits'  
+    bkg_obj_fits    = dirout + 'Bkg_' + nama + '.fits'
     P_fits          = dirout + 'P_' + nama + '.fits'
 
     if ( os.access(obj_fits,os.F_OK) == False )  or\
@@ -599,7 +599,7 @@ for obj in objects:
         hdu.writeto( obj_fits )
 
         obj_Ss = GLOBALutils.simple_extraction(dat,c_alls,ext_aperture,min_extract_col,max_extract_col,npools)[::-1]
-        
+
         if (os.access(obj_fits_simple,os.F_OK)):
             os.remove( obj_fits_simple )
         hdu = pyfits.PrimaryHDU( obj_Ss )
@@ -615,7 +615,7 @@ print "\n\tBuilding the final output spectra..."
 for obj in objects:
     hd     = pyfits.getheader(obj)
     nombre = hd['OBJECT'].replace(' ','')
-    nama = nombre + '_' + hd['DATE-OBS'] 
+    nama = nombre + '_' + hd['DATE-OBS']
     nf     = nama+'_final.fits'
     print "\n\t\t-->Building", nf
     print dirout+'proc/'+nf
@@ -688,10 +688,10 @@ for obj in objects:
         Sp   = jplephem.barycentric_object_track("Sun", int(scmjd), float(scmjd%1), 1, 0.0)
         res      = jplephem.object_doppler("Moon", int(scmjd), scmjd%1, 1, 0.0)
         lunation,moon_state,moonsep2,moonvel = GLOBALutils.get_lunar_props(ephem,gobs,Mcoo,Mp,Sp,res,RA,DEC)
-        refvel = bcvel_baryc + moonvel  #This is the velocity of the spectrum of the moon with the applied barycentric correction in the direction of the target. 
+        refvel = bcvel_baryc + moonvel  #This is the velocity of the spectrum of the moon with the applied barycentric correction in the direction of the target.
 
         print '\t\t\tBarycentric velocity:',refvel
-        
+
         obj_fits        = dirout+nama+'.spec.fits.S'
         obj_fits_simple = dirout+nama+'.spec.simple.fits.S'
         obj_S           = pyfits.getdata(obj_fits)
@@ -712,7 +712,7 @@ for obj in objects:
 
 
         final  = np.zeros( [11, orderf - orderi + 1, np.shape(obj_S)[2]] )
-        equis  = np.arange( obj_S.shape[2] ) 
+        equis  = np.arange( obj_S.shape[2] )
 
         for order in range(orderi,orderf+1):
             m = order + oro0
@@ -743,7 +743,7 @@ for obj in objects:
 
             LL = np.where(final[5,order] > 1 + 10. / scipy.signal.medfilt(final[8,order],21))[0]
             final[5,order,LL] = 1.
-            final[9,order][L] = final[5,order][L] * (dlambda_dx[L] ** 1) 
+            final[9,order][L] = final[5,order][L] * (dlambda_dx[L] ** 1)
             final[10,order][L] = final[6,order][L] / (dlambda_dx[L] ** 2)
 
         hdu = pyfits.PrimaryHDU( final )
@@ -757,7 +757,7 @@ for obj in objects:
         hdu = GLOBALutils.update_header(hdu,'HIERARCH RA',RA)
         hdu = GLOBALutils.update_header(hdu,'HIERARCH DEC',DEC)
         hdu = GLOBALutils.update_header(hdu,'HIERARCH RA BARY',RA)
-        hdu = GLOBALutils.update_header(hdu,'HIERARCH DEC BARY',DEC)            
+        hdu = GLOBALutils.update_header(hdu,'HIERARCH DEC BARY',DEC)
         hdu = GLOBALutils.update_header(hdu,'HIERARCH EQUINOX',2000)
         hdu = GLOBALutils.update_header(hdu,'HIERARCH OBS LATITUDE',latitude)
         hdu = GLOBALutils.update_header(hdu,'HIERARCH OBS LONGITUDE',longitude)
@@ -804,7 +804,7 @@ if not JustExtract:
     for obj in objects:
         hdo     = pyfits.getheader(obj)
         nombre = hdo['OBJECT'].replace(' ','')
-        nama = nombre + '_' + hdo['DATE-OBS'] 
+        nama = nombre + '_' + hdo['DATE-OBS']
         fit    = dirout + 'proc/' + nama + '_final.fits'
         print '\n\t\tWorking on spectrum:', fit
         know_moon = False
@@ -878,7 +878,7 @@ if not JustExtract:
         Z_epoch     = Z
         vsini_epoch = vsini
         vel0_epoch  = vel0
-    
+
         hdu[0] = GLOBALutils.update_header(hdu[0],'HIERARCH VEL0', vel0)
         hdu[0] = GLOBALutils.update_header(hdu[0],'HIERARCH TEFF', float(T_eff))
         hdu[0] = GLOBALutils.update_header(hdu[0],'HIERARCH LOGG', float(logg))
@@ -903,7 +903,7 @@ if not JustExtract:
                 break
 
         spec1 = spec[:,first_o:last_o+1,:]
-    
+
         # Read in mask
         ml, mh, weight = np.loadtxt(mask,unpack=True)
         ml_v = GLOBALutils.ToVacuum( ml )
@@ -929,7 +929,7 @@ if not JustExtract:
         mask_hw_wide = av_m * disp / (GLOBALutils.Constants.c/1.0e3)
         ml_v = av_m - mask_hw_wide
         mh_v = av_m + mask_hw_wide
-        
+
         print '\t\t\tComputing the CCF...'
         cond = True
         while (cond):
@@ -938,7 +938,7 @@ if not JustExtract:
                                     weight, 0, lbary_ltopo, vel_width=300, vel_step=3, start_order=0,\
                                     spec_order=9, iv_order=10, sn_order=8,max_vel_rough=300)
             xc_av = GLOBALutils.Average_CCF(xc_full, sn, sn_min=3, Simple=True, start_order=0, W=W_ccf)
-            #Normalize the continuum of the CCF robustly with R     
+            #Normalize the continuum of the CCF robustly with R
             yy = scipy.signal.medfilt(xc_av,11)
             pred = lowess(yy, vels,frac=0.4,it=10,return_sorted=False)
             tck1 = scipy.interpolate.splrep(vels,pred,k=1)
@@ -946,19 +946,19 @@ if not JustExtract:
             xc_av /= pred
             pred_rough = pred.copy()
 
-            vel0_xc = vels[ np.argmin( xc_av ) ] 
+            vel0_xc = vels[ np.argmin( xc_av ) ]
 
             rvels, rxc_av, rpred, rxc_av_orig, rvel0_xc = vels.copy(), \
                 xc_av.copy(), pred.copy(), xc_av_orig.copy(), vel0_xc
             xc_av_rough = xc_av
             vels_rough  = vels
-                
+
             vel_width = np.maximum( 20.0, 6*disp )
             vels, xc_full, sn, nlines_ccf, W_ccf =\
                     GLOBALutils.XCor(spec1, ml_v, mh_v, weight, vel0_xc, lbary_ltopo,\
                                 start_order=0, vel_width=vel_width, vel_step=0.1, spec_order=9, \
                                 iv_order=10, sn_order=8,max_vel_rough=300)
-                
+
             xc_av = GLOBALutils.Average_CCF(xc_full, sn, sn_min=3,\
                                 Simple=True, W=W_ccf, start_order=0)
 
@@ -994,11 +994,11 @@ if not JustExtract:
 
             if (not known_sigma):
                 disp = np.floor(p1gau[2])
-                if (disp < 3.0): 
+                if (disp < 3.0):
                     disp = 3.0
                 mask_hw_wide = av_m * disp / (GLOBALutils.Constants.c/1.0e3)
                 ml_v = av_m - mask_hw_wide
-                mh_v = av_m + mask_hw_wide            
+                mh_v = av_m + mask_hw_wide
                 known_sigma = True
             else:
                 cond = False
@@ -1028,15 +1028,15 @@ if not JustExtract:
             else:
                 D = 0.33491
                 C = 0.00113
-        elif  sp_type == 'K5':  
+        elif  sp_type == 'K5':
             D = 0.20695
             C = 0.00321
-        else:   
+        else:
             D = 0.20695
             C = 0.00321
 
-        RV     = np.around(p1gau_m[1],4)  
-        BS     = np.around(SP,4)  
+        RV     = np.around(p1gau_m[1],4)
+        BS     = np.around(SP,4)
         RVerr2 = 0.400
         BSerr  = np.around(D / float(np.round(SNR_5130)) + C,4)
 
