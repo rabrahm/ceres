@@ -94,13 +94,13 @@ static PyObject *Marsh_ObtainP(PyObject *self, PyObject *args){
    *
    * marray:   Vector of the flattened-matrix of the Echelle Spectra data.
    *
-   * varray:   Vector containing the coefficients of the trace of the spectrum.
+   * varray:   Vector containing the trace of the spectrum.
    *
    * len_rows: Length of the rows of the flattened-matrix.
    *
    * len_cols: Length of the columns of the flattened-matrix.
    *
-   * len_v:    Length of the coefficient-vector.
+   * len_v:    Length of the trace vector.
    *
    * Length:   Given that the trace is centered on the spectrum, Length gives the length,
    *           in pixels from the center, where we'll consider the spectrum.
@@ -305,7 +305,7 @@ static PyObject *Marsh_ObtainSpectrum(PyObject *self, PyObject *args){
    *
    * marray:   Vector of the flattened-matrix of the Echelle Spectra data.
    *
-   * varray:   Vector containing the coefficients of the trace of the spectrum.
+   * varray:   Vector containing the trace of the spectrum.
    *
    * parray:   Vector of the flattened-matrix of the Echelle Spectra P_{ij} coefficents.
    *
@@ -313,7 +313,7 @@ static PyObject *Marsh_ObtainSpectrum(PyObject *self, PyObject *args){
    *
    * len_cols: Length of the columns of the flattened-matrix.
    *
-   * len_v:    Length of the coefficient-vector.
+   * len_v:    Length of the trace vector.
    * 
    * Length:   Aperture to be used in the obtention of the spectrum.
    *
@@ -512,25 +512,18 @@ static PyObject *Marsh_SObtainP(PyObject *self, PyObject *args){
    * After initialization of the PyObject pointers, we wish to recover the following inputs:
    *
    * marray:   Vector of the flattened-matrix of the Echelle Spectra data.
-   *
-   * varray:   Vector containing the coefficients of the trace of the spectrum.
-   *
+   * barray:   Bad pixel map (1=good, other values=bad) 
+   * vararray: Vector of variance guesses 
+   * varray:   Vector containing the trace of the spectrum.
    * len_rows: Length of the rows of the flattened-matrix.
-   *
    * len_cols: Length of the columns of the flattened-matrix.
-   *
-   * len_v:    Length of the coefficient-vector.
-   *
+   * len_v:    Length of the trace vector
    * Length:   Given that the trace is centered on the spectrum, Length gives the length,
    *           in pixels from the center, where we'll consider the spectrum.
-   *
    * RON:      The Read Out Noise of our measurements in electrons.
-   *
    * GAIN:     The Gain of the detector, in electrons/ADU.
-   * 
    * mode:     Set this to 0 to apply Marsh's Algorithm (curved trace) to the data.
    *           Set this to 1 to apply Horne's Algorithm (trace paralell to the rows) to the data.
-   *
    * ------------------------------------------------------------------------------
    */
   PyArg_ParseTuple(args,"OOOOiiidddddiiii",&marray,&barray,&vararray,&varray,&len_rows,&len_cols,&len_v,&Length,&RON,&GAIN,&NSigma,&S,&N,&mode,&col_min,&col_max);
@@ -737,25 +730,17 @@ static PyObject *Marsh_SObtainSpectrum(PyObject *self, PyObject *args){
    * After initialization of the PyObject pointers, we wish to recover the following inputs:
    *
    * marray:   Vector of the flattened-matrix of the Echelle Spectra data.
-   *
-   * varray:   Vector containing the coefficients of the trace of the spectrum.
-   *
+   * barray:   Bad pixel map (1=good, other values=bad) 
+   * vararray: Vector of variance guesses 
+   * varray:   Vector containing the trace of the spectrum.
    * parray:   Vector of the flattened-matrix of the Echelle Spectra P_{ij} coefficents.
-   *
    * len_rows: Length of the rows of the flattened-matrix.
-   *
    * len_cols: Length of the columns of the flattened-matrix.
-   *
-   * len_v:    Length of the coefficient-vector.
-   * 
+   * len_v:    Length of the trace vector
    * Length:   Aperture to be used in the obtention of the spectrum.
-   *
    * RON:      The Read Out Noise of our measurements.
-   * 
    * GAIN:     The Gain of the detector, in electrons/ADU.
-   * 
    * S:        Spacing of the polynomials obtained in the ObtainP function.
-   * 
    * CosmicSigma: Number of times sigma is multiplied by to reject Cosmic Rays.
    *
    * ------------------------------------------------------------------------------
@@ -946,7 +931,7 @@ static PyObject *Marsh_BObtainSpectrum(PyObject *self, PyObject *args){
    *
    * marray:   Vector of the flattened-matrix of the Echelle Spectra data.
    *
-   * varray:   Vector containing the coefficients of the trace of the spectrum.
+   * varray:   Vector containing the trace of the spectrum.
    *
    * parray:   Vector of the flattened-matrix of the Echelle Spectra P_{ij} coefficents.
    *
@@ -954,7 +939,7 @@ static PyObject *Marsh_BObtainSpectrum(PyObject *self, PyObject *args){
    *
    * len_cols: Length of the columns of the flattened-matrix.
    *
-   * len_v:    Length of the coefficient-vector.
+   * len_v:    Length of the trace vector.
    * 
    * Length:   Aperture to be used in the obtention of the spectrum.
    *
@@ -1134,8 +1119,8 @@ static PyObject *Marsh_SimpleExtraction(PyObject *self, PyObject *args){
   double t1=tim.tv_sec+(tim.tv_usec/1000000.0),vMin,vMax,dvalue=0;
   double *mflat;
   double *v;
-  double Length,C,S;
-  int len_v,len_cols,len_rows,K,range;
+  double Length,S;
+  int len_v,len_cols,len_rows,range;
   PyObject *marray,*varray;
   /* 
    *--------------------------------THE DATA---------------------------------------
@@ -1143,13 +1128,13 @@ static PyObject *Marsh_SimpleExtraction(PyObject *self, PyObject *args){
    *
    * marray:   Vector of the flattened-matrix of the Echelle Spectra data.
    *
-   * varray:   Vector containing the coefficients of the trace of the spectrum.
+   * varray:   Vector containing the trace of the spectrum.
    *
    * len_rows: Length of the rows of the flattened-matrix.
    *
    * len_cols: Length of the columns of the flattened-matrix.
    *
-   * len_v:    Length of the coefficient-vector.
+   * len_v:    Length of the trace vector.
    * 
    * Length:   Aperture (in pixels) to be taken from the center to cover the entire spectrum.
    *
@@ -1168,10 +1153,6 @@ static PyObject *Marsh_SimpleExtraction(PyObject *self, PyObject *args){
   real_cols=len_cols;
   S=1.0;
   Length = CheckAperture(v, len_rows, len_v, S, Length);
-  K=(int)(2*(int)((Length/S))+1);
-
-  C=-(S*(1.0+(((double)K-1.0)/2.0)));               /* We get the C constant for the Q coefficients. This number
-						       is the polynomial number of the center.                       */
 
   double* Range = SimpleRangeDetector(v,Length,len_v,len_rows,len_cols,range);                  /* This vector
 												   containts the detected starting and final column pixels that "swims in" and "out" of the image, respectively (F) */
@@ -1326,12 +1307,11 @@ static PyObject *Marsh_SimpleExtraction(PyObject *self, PyObject *args){
 
 static PyMethodDef MarshMethods[] = {
   {"ObtainP", Marsh_ObtainP, METH_VARARGS, "First step in the Method for optimum spectra obtention from Echelle Spectrographs: The obtention of the light fractions P."},
-  {"SObtainP", Marsh_ObtainP, METH_VARARGS, "Special function same as ObtainP, but for the case when we have a variance image."},
+  {"SObtainP", Marsh_SObtainP, METH_VARARGS, "Same as ObtainP, but accepts a bad pixel map and variance image."},
   {"BObtainSpectrum", Marsh_BObtainSpectrum, METH_VARARGS, "Final step in the Method for optimum spectra obtention from Echelle Spectrographs: The obtention of the spectrum."},
   {"ObtainSpectrum", Marsh_ObtainSpectrum, METH_VARARGS, "Final step in the Method for optimum spectra obtention from Echelle Spectrographs: The obtention of the spectrum."},
   {"SimpleExtraction", Marsh_SimpleExtraction,METH_VARARGS, "Function that performs a simple extraction for comparison with the Optimal Extraction algorithm."},
-  {"SObtainSpectrum", Marsh_ObtainSpectrum, METH_VARARGS, "Special function, same as ObtainSpectrum but when we have a variance image."},
-  {"SSimpleExtraction", Marsh_SimpleExtraction,METH_VARARGS, "Special function, same as SObtainSpectrum, but when we have a variance image."},
+  {"SObtainSpectrum", Marsh_SObtainSpectrum, METH_VARARGS, "Same as ObtainSpectrum, but accepts a bad pixel map and variance image."},
   {NULL, NULL, 0, NULL}
 };
 
@@ -2151,9 +2131,8 @@ void getRowSumW(double** A,double** V,double** P,double* pmin,double* pmax,doubl
 
 void getW(double** A,double** P,double** V,double* RSW,double** W,double* pmin,double* pmax,int len_cols){
   int vMin,vMax,j,i;
-  double PartialSum;
+
   for(j=0;j<len_cols;j++){
-    PartialSum=0;
     vMin=pmin[j];         // If the value extends to a lower pixel, we take it into account.
     vMax=pmax[j];         // If the value extends to a higher pixel, we take it into account.
     for(i=vMin;i<=vMax;i++){
