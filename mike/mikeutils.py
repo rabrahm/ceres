@@ -1,3 +1,4 @@
+from __future__ import print_function
 import matplotlib
 matplotlib.use("Agg")
 from astropy.io import fits as pyfits
@@ -369,7 +370,7 @@ def get_sky_shift(spec,lbary_ltopo,path):
                 del_vels.append(del_vel)
     del_vels = np.array(del_vels)
     del_sky_ms, rms_sky_ms, ndel_vels = sig_cl_sky(del_vels)
-    print 'sky_shift =', del_sky_ms, rms_sky_ms, rms_sky_ms / np.sqrt(float(len(ndel_vels)))
+    print('sky_shift =', del_sky_ms, rms_sky_ms, rms_sky_ms / np.sqrt(float(len(ndel_vels))))
     #hist(ndel_vels,20)
     #show()
     return del_sky_ms, rms_sky_ms, rms_sky_ms / np.sqrt(float(len(ndel_vels)))

@@ -1,3 +1,4 @@
+from __future__ import print_function
 import matplotlib
 matplotlib.use("Agg")
 import numpy as np
@@ -199,7 +200,7 @@ def bac_flat(flat,traces,ext):
     return bac
 
 def ccd_flat(flat,traces,ext):
-    print ext
+    print(ext)
     nflat = np.ones(flat.shape)
     ext = int(np.around(ext))
     ejex = np.arange(flat.shape[0])

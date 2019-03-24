@@ -1,7 +1,8 @@
+from __future__ import print_function
 import matplotlib.pylab as plt
 import os
 import sys
-print sys.path
+print(sys.path)
 
 import numpy
 import scipy
@@ -38,7 +39,7 @@ def CCF(L1,F1,L2,F2,vi,vf):
         I = numpy.where((L1 >= ini) & (L1 <= fin))[0]
         II = numpy.where((L2p >= ini) & (L2p <= fin))[0]
         if len(I)==0 or len(II)==0:
-            print 'Problem: no wavelenght intersection'
+            print('Problem: no wavelenght intersection')
 
         wav = numpy.arange(ini,fin,delta)
         tck1 = interpolate.splrep(L1,F1,k=3,s=0)

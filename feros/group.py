@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 from pylab import *
 f = open('/data/echelle/feros/k2_list.txt','r')

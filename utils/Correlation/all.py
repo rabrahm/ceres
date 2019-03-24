@@ -1,3 +1,4 @@
+from __future__ import print_function
 import pyfits
 import numpy
 import os
@@ -14,7 +15,7 @@ v=[]
 nam = []
 mods = mods[:-5]
 for fits in mods:
-    print fits
+    print(fits)
     sc = pyfits.getdata(dire+fits)
     L,F = sc[0],sc[1]
     Ln,Fn = continuum.NORM2(L,F)
@@ -30,5 +31,5 @@ cant = len(t)
 
 o=0
 while o< cant:
-    print nam[o],t[o],g[o],z[o],r[o],v[o]
+    print(nam[o],t[o],g[o],z[o],r[o],v[o])
     o+=1

@@ -1,3 +1,4 @@
+from __future__ import print_function
 import matplotlib
 matplotlib.use("Agg")
 from astropy.io import fits as pyfits

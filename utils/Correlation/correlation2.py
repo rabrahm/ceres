@@ -1,3 +1,4 @@
+from __future__ import print_function
 #!/usr/bin/python
 from pylab import *
 base = '/data/echelle/'
@@ -778,7 +779,7 @@ def CCF(spec, model_path='/dummy/path/',doplot = False, plot_dir = '/home/rabrah
                     maxZ   = Z
 
                 elif NCCF < 0:
-                    print "Problem with spectrum!!! -> Negative value of CCF."
+                    print("Problem with spectrum!!! -> Negative value of CCF.")
                     maxG   = 4.5
                     maxT   = 5500
                     maxZ   = 0

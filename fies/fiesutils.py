@@ -1,3 +1,4 @@
+from __future__ import print_function
 import matplotlib
 matplotlib.use("Agg")
 from astropy.io import fits as pyfits
@@ -149,11 +150,11 @@ def FileClassify(diri, log,binning=1,mode='F1', dark_corr=False):
                 isdark=True
 
         if dump == False and isdark == False:
-            print archivo
+            print(archivo)
             h = pyfits.open(archivo)
             hd = pyfits.getheader(archivo)
             if int(h[0].header['DETXBIN']) == binning and int(h[0].header['DETYBIN']) == binning and (mode in h[0].header['FIFMSKNM']) and h[0].header['IMAGETYP'] != 'COUNTTEST':
-                print archivo, h[0].header['IMAGETYP'], h[0].header['SHSTAT'], h[0].header['EXPTIME'], h[0].header['OBJECT'], h[0].header['TCSTGT'], int(h[0].header['DETYBIN'])
+                print(archivo, h[0].header['IMAGETYP'], h[0].header['SHSTAT'], h[0].header['EXPTIME'], h[0].header['OBJECT'], h[0].header['TCSTGT'], int(h[0].header['DETYBIN']))
 
                 if h[0].header['IMAGETYP'] == 'BIAS':
                     biases.append(archivo)

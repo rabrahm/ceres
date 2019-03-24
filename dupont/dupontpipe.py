@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 import matplotlib
 matplotlib.use("Agg")
@@ -139,10 +140,10 @@ order_dir   = base+'dupont/wavcals/'
 
 models_path = base+'data/COELHO_MODELS/R_40000b/'
 
-print "\n\n\tEchelle Du Pont 2.5m  PIPELINE\n"
-print "\tRAW data is in ",dirin
-print "\tProducts of reduction will be in",dirout
-print '\n'
+print("\n\n\tEchelle Du Pont 2.5m  PIPELINE\n")
+print("\tRAW data is in ",dirin)
+print("\tProducts of reduction will be in",dirout)
+print('\n')
 
 # file containing the log
 log = dirout+'night.log'
@@ -154,21 +155,21 @@ if dark_substraction == True and len(darks)<3:
 f = open(log,'r')
 lines = f.readlines()
 
-print '\tThese are all the images to proccess:'
+print('\tThese are all the images to proccess:')
 for bias in biases:
     hd = pyfits.getheader(bias)
-    print '\tbias', hd['EXPTYPE'], hd['EXPTIME'], hd['UT-DATE'],hd['UT-TIME'],bias
-print '\n'
+    print('\tbias', hd['EXPTYPE'], hd['EXPTIME'], hd['UT-DATE'],hd['UT-TIME'],bias)
+print('\n')
 for dark in darks:
     hd = pyfits.getheader(dark)
-    print '\tdark', hd['EXPTYPE'], hd['EXPTIME'], hd['UT-DATE'],hd['UT-TIME'],dark
-print '\n'
+    print('\tdark', hd['EXPTYPE'], hd['EXPTIME'], hd['UT-DATE'],hd['UT-TIME'],dark)
+print('\n')
 for milky in milkyflats:
     hd = pyfits.getheader(milky)
-    print '\tmilky', hd['EXPTYPE'], hd['EXPTIME'], hd['UT-DATE'],hd['UT-TIME'],milky
-print '\n'
+    print('\tmilky', hd['EXPTYPE'], hd['EXPTIME'], hd['UT-DATE'],hd['UT-TIME'],milky)
+print('\n')
 for line in lines:
-    print '\t'+line[:-1]
+    print('\t'+line[:-1])
 
 if stst == 'last':
     if os.access(dirout+'findstar.txt',os.F_OK):
@@ -183,28 +184,28 @@ else:
     fst.close()
 
 if stblaze == 'same':
-    print '\n\tThe pipeline will use the image that traces the orders to derive the blaze function ...'
+    print('\n\tThe pipeline will use the image that traces the orders to derive the blaze function ...')
     stblaze = stst
 
 if ( (os.access(dirout+'Flat.fits',os.F_OK) == False) or\
    (os.access(dirout+'trace.pkl',os.F_OK) == False) or \
    (os.access(dirout+'MasterBias.fits',os.F_OK) == False) or \
    (force_pre_process) ):
-    print "\tNo previous pre-processing files or found"
+    print("\tNo previous pre-processing files or found")
     pre_process = 1
 else:
-    print "\tPre-processing files found, going straight to extraction"
+    print("\tPre-processing files found, going straight to extraction")
     pre_process = 0
 
 if (pre_process == 1):
-    print "\n\tGenerating Master calibration frames..."
+    print("\n\tGenerating Master calibration frames...")
     MasterBias, RO_bias, GA_bias = dupontutils.MedianCombine(biases, zero_bo=False, dark_bo=False, flat_bo=False)
     hdu = pyfits.PrimaryHDU( MasterBias )
 
     if (os.access(dirout+'MasterBias.fits',os.F_OK)):
         os.remove(dirout+'MasterBias.fits')
     hdu.writeto(dirout+'MasterBias.fits')
-    print "\t\t-> Masterbias: done!"
+    print("\t\t-> Masterbias: done!")
 
     MDARKS = []
     dark_times = []
@@ -241,7 +242,7 @@ if (pre_process == 1):
             hdu.writeto( dirout+'DARK_'+str(int(dark_times[i]))+'s.fits' )
             MDARKS.append(dirout+'DARK_'+str(int(dark_times[i]))+'s.fits')
             i+=1
-    print "\t\t-> Masterdarks: done!"
+    print("\t\t-> Masterdarks: done!")
 
     force_flat_comb = True
     if force_flat_comb or os.access(dirout+'Flat.fits',os.F_OK) == False:
@@ -266,13 +267,13 @@ if (pre_process == 1):
         Flat = h[0].data
         RON  = h[0].header['RON']
         GAIN = h[0].header['GAIN']
-    print "\t\t-> Masterflat: done!"
+    print("\t\t-> Masterflat: done!")
 
     ftra = True
     median_filter = False
 
     # Find orders & traces
-    print "\tTracing echelle orders..."
+    print("\tTracing echelle orders...")
     if ftra or os.access(dirout+'trace.pkl',os.F_OK) == False:
         h = pyfits.open(dirin+stst)[0]
         hth = pyfits.getheader(dirin+stst)
@@ -292,7 +293,7 @@ if (pre_process == 1):
             c_all,pshift = GLOBALutils.retrace( d, c_comp )
         else:
             c_all, nord = GLOBALutils.get_them(d,5,trace_degree,mode=1)
-            print '\t\t'+str(nord)+' orders found...'
+            print('\t\t'+str(nord)+' orders found...')
     else:
         trace_dict = pickle.load( open( dirout+"trace.pkl", 'r' ) )
         c_all = trace_dict['c_all']
@@ -322,7 +323,7 @@ else:
     h = pyfits.open(dirout+'Flat.fits')
     Flat = h[0].data
 
-print '\n\tExtraction of ThAr calibration frames:'
+print('\n\tExtraction of ThAr calibration frames:')
 
 for fsim in ThAr_ref:
     hth = pyfits.getheader(fsim)
@@ -336,7 +337,7 @@ for fsim in ThAr_ref:
                        '-'+hth['UT-TIME'][3:5]+'-'+hth['UT-TIME'][6:]+'.spec.simple.fits'
 
     if ( os.access(thar_fits_simple,os.F_OK) == False ) or (force_thar_extract):
-        print "\t\tNo previous extraction or extraction forced for ThAr file", fsim, "extracting..."
+        print("\t\tNo previous extraction or extraction forced for ThAr file", fsim, "extracting...")
         close_spec = dupontutils.get_close(thmjd,hth['RA-D'],hth['DEC-D'],objects)
         temp_spec = pyfits.getdata(close_spec)
         temp_hd   = pyfits.getheader(close_spec)
@@ -354,9 +355,9 @@ for fsim in ThAr_ref:
         hdu = pyfits.PrimaryHDU( thar_Ss )
         hdu.writeto( thar_fits_simple )
     else:
-        print "\t\tThAr file", fsim, "all ready extracted, loading..."
+        print("\t\tThAr file", fsim, "all ready extracted, loading...")
 
-print "\n\tWavelength solution of ThAr calibration spectra:"
+print("\n\tWavelength solution of ThAr calibration spectra:")
 # compute wavelength calibration files
 
 thtimes = []
@@ -380,7 +381,7 @@ for thar in ThAr_ref:
     thar_Ss = pyfits.getdata(thar_fits_simple)
 
     if ( os.access(wavsol_pkl,os.F_OK) == False ) or (force_thar_wavcal):
-        print " \t\tWorking on ThAr file", thar
+        print(" \t\tWorking on ThAr file", thar)
 
         RON  = hth['ENOISE']
         GAIN = hth['EGAIN']
@@ -468,7 +469,7 @@ for thar in ThAr_ref:
             resolution2 = wavelengths / fwhms_wvs
 
             if wavelengths.max() > 5500 and wavelengths.min()<5500:
-                print "\t\t\tmedian Resolution of order", order, '=', np.around(np.median(resolution2))
+                print("\t\t\tmedian Resolution of order", order, '=', np.around(np.median(resolution2)))
 
             if (order == 32):
                 if (use_cheby):
@@ -507,7 +508,7 @@ for thar in ThAr_ref:
         else:
             bad_thars.append(counter)
     else:
-        print "\t\tUsing previously computed wavelength solution in file",wavsol_pkl
+        print("\t\tUsing previously computed wavelength solution in file",wavsol_pkl)
         pdict_temp = pickle.load(open(wavsol_pkl, 'r'))
         if pdict_temp['rms_ms']/np.sqrt(float(len(pdict_temp['G_pix']))) < 20:
             thtimes.append(thmjd)
@@ -582,7 +583,7 @@ else:
         P = pyfits.getdata(P_fits)
 """
 
-print '\n\tProcessing of science images:'
+print('\n\tProcessing of science images:')
 
 sthd   = pyfits.getheader(dirin+stblaze)
 stname = sthd['OBJECT']
@@ -608,14 +609,14 @@ objects = objects[:5]
 
 for obj in objects:
 
-    print '\n'
-    print "\t--> Working on image: ", obj
+    print('\n')
+    print("\t--> Working on image: ", obj)
 
     hd = pyfits.getheader(obj)
     nombre    = hd['OBJECT']
     RON, GAIN = hd['ENOISE'], hd['EGAIN']
 
-    print "\t\tObject name:",nombre
+    print("\t\tObject name:",nombre)
 
     nama = nombre + '_' + hd['DATE-OBS'] + '_' + hd['UT-TIME'][:2] +\
            '-' + hd['UT-TIME'][3:5]+'-' + hd['UT-TIME'][6:]
@@ -639,7 +640,7 @@ for obj in objects:
 
     if cond2:
 
-        print "\t\tNo previous extraction or extraction forced for science file", obj, "extracting..."
+        print("\t\tNo previous extraction or extraction forced for science file", obj, "extracting...")
 
         dat = pyfits.getdata(obj)
         hdt = pyfits.getheader(obj)
@@ -719,7 +720,7 @@ for obj in objects:
 ###################################################################################################################
 ############################################### get blaze function ################################################
 ###################################################################################################################
-print '\n\tComputing the blaze function using the standard star...'
+print('\n\tComputing the blaze function using the standard star...')
 
 if os.access(dirout+'blaze_f.fits',os.F_OK) == False or force_bl:
     index = -1
@@ -764,7 +765,7 @@ if os.access(dirout+'blaze_f.fits',os.F_OK) == False or force_bl:
     res  = jplephem.object_doppler("Moon", int(scmjd), scmjd%1, 1, 0.0)
     lunation,moon_state,moonsep2,moonvel = GLOBALutils.get_lunar_props(ephem,gobs,Mcoo,Mp,Sp,res,RA,DEC)
     refvel = bcvel_baryc + moonvel
-    print '\t\tBarycentric velocity:',refvel
+    print('\t\tBarycentric velocity:',refvel)
 
     i=0
     mind = 1000.0
@@ -818,7 +819,7 @@ for i in range(blaze.shape[1]):
 ############################################  Final output ######################################################
 #################################################################################################################
 
-print "\n\tBuilding the final output spectra..."
+print("\n\tBuilding the final output spectra...")
 
 for obj in objects:
     hd     = pyfits.getheader(obj)
@@ -826,7 +827,7 @@ for obj in objects:
     nama   = nombre+'_'+hd['DATE-OBS']+'_'+hd['UT-TIME'][:2]+'-'+hd['UT-TIME'][3:5]+'-'+hd['UT-TIME'][6:]
     nf     = nama+'_final.fits'
     nfS    = nama+'_finalS.fits'
-    print "\n\t\t-->Building", nf
+    print("\n\t\t-->Building", nf)
     if (os.access(dirout+'proc/'+nf,os.F_OK)) == False or force_sci_proc:
         index1,index2 = -1,-1
 
@@ -849,7 +850,7 @@ for obj in objects:
             RA = ra2
             DEC = dec2
         else:
-            print '\t\tUsing the coordinates found in the image header.'
+            print('\t\tUsing the coordinates found in the image header.')
 
         # set info for compute the baricentric correction
         iers          = GLOBALutils.JPLiers( baryc_dir, scmjd-999.0, scmjd+999.0 )
@@ -880,7 +881,7 @@ for obj in objects:
         lunation,moon_state,moonsep2,moonvel = GLOBALutils.get_lunar_props(ephem,gobs,Mcoo,Mp,Sp,res,RA,DEC)
         refvel = bcvel_baryc + moonvel  #This is the velocity of the spectrum of the moon with the applied barycentric correction in the direction of the target.
 
-        print '\t\t\tBarycentric velocity:',refvel
+        print('\t\t\tBarycentric velocity:',refvel)
 
         # Set the ThAr lamps for applying the wavelength solution
         if scmjd < thtimes[0]:
@@ -1038,7 +1039,7 @@ else:
 spec_moon = np.array(spec_moon)
 use_moon  = np.array(use_moon)
 
-print 'Starting with the Post-processing of the spectra...'
+print('Starting with the Post-processing of the spectra...')
 
 if not JustExtract:
 
@@ -1047,7 +1048,7 @@ if not JustExtract:
         nombre = hd['OBJECT']
         nama   = dirout+'proc/' + nombre+'_'+hd['DATE-OBS']+'_'+hd['UT-TIME'][:2]+'-'+hd['UT-TIME'][3:5]+'-'+hd['UT-TIME'][6:]
         fit    = nama+'_final.fits'
-        print '\n\t\tWorking on spectrum:', fit
+        print('\n\t\tWorking on spectrum:', fit)
         know_moon = False
         if fsim.split('/')[-1] in spec_moon:
             I = np.where(obj.split('/')[-1] == spec_moon)[0]
@@ -1077,7 +1078,7 @@ if not JustExtract:
         SNR_5130 = np.median(spec[8,tuc][800:1200] )
 
         if DoClass:
-            print '\t\tSpectral Analysis:'
+            print('\t\tSpectral Analysis:')
             # spectral analysis
             # First, query SIMBAD with the object name
             query_success = False
@@ -1085,7 +1086,7 @@ if not JustExtract:
             # Now, query SIMBAD by coordinates if above not successful
             if (not query_success):
                 query_success,sp_type_query = GLOBALutils.simbad_query_coords('12:00:00','00:00:00')
-            print "\t\t\tSpectral type returned by SIMBAD query:",sp_type_query
+            print("\t\t\tSpectral type returned by SIMBAD query:",sp_type_query)
 
             hdu[0] = GLOBALutils.update_header(hdu[0],'HIERARCH SIMBAD SPTYP', sp_type_query)
 
@@ -1094,7 +1095,7 @@ if not JustExtract:
                                 '-' + hd['HIERARCH SHUTTER START UT'][6:] + '_stellar_pars.txt'
 
             if os.access(pars_file,os.F_OK) == False or force_stellar_pars:
-                print "\t\t\tEstimating atmospheric parameters:"
+                print("\t\t\tEstimating atmospheric parameters:")
                 spec2 = spec.copy()
                 if resolution > 45000:
                     Rx = np.around(1./np.sqrt(1./40000.**2 - 1./resolution**2))
@@ -1107,10 +1108,10 @@ if not JustExtract:
                 f.write(line)
                 f.close()
             else:
-                print "\t\t\tAtmospheric parameters loaded from file:"
+                print("\t\t\tAtmospheric parameters loaded from file:")
                 T_eff, logg, Z, vsini, vel0 = np.loadtxt(pars_file,unpack=True)
 
-            print "\t\t\t\tT_eff=",T_eff,"log(g)=",logg,"Z=",Z,"vsin(i)=",vsini,"vel0",vel0
+            print("\t\t\t\tT_eff=",T_eff,"log(g)=",logg,"Z=",Z,"vsin(i)=",vsini,"vel0",vel0)
 
         else:
             T_eff, logg, Z, vsini, vel0 = -999,-999,-999,-999,-999
@@ -1128,10 +1129,10 @@ if not JustExtract:
         hdu[0] = GLOBALutils.update_header(hdu[0],'HIERARCH Z', Z)
         hdu[0] = GLOBALutils.update_header(hdu[0],'HIERARCH VSINI', vsini)
 
-        print "\t\tRadial Velocity analysis:"
+        print("\t\tRadial Velocity analysis:")
         # assign mask
         sp_type, mask = GLOBALutils.get_mask_reffile(obname,reffile=reffile,base='../data/xc_masks/')
-        print "\t\t\tWill use",sp_type,"mask for CCF."
+        print("\t\t\tWill use",sp_type,"mask for CCF.")
 
         first_o = 0
         for i in range(spec.shape[1]):
@@ -1173,7 +1174,7 @@ if not JustExtract:
         ml_v = av_m - mask_hw_wide
         mh_v = av_m + mask_hw_wide
 
-        print '\t\t\tComputing the CCF...'
+        print('\t\t\tComputing the CCF...')
         cond = True
         while (cond):
             #first rough correlation to find the minimum
@@ -1283,8 +1284,8 @@ if not JustExtract:
         RVerr2 = 0.400
         BSerr  = np.around(D / float(np.round(SNR_5130)) + C,4)
 
-        print '\t\t\tRV = '+str(RV)+' +- '+str(RVerr2)
-        print '\t\t\tBS = '+str(BS)+' +- '+str(BSerr)
+        print('\t\t\tRV = '+str(RV)+' +- '+str(RVerr2))
+        print('\t\t\tBS = '+str(BS)+' +- '+str(BSerr))
 
         bjd_out = 2400000.5 + mbjd
         T_eff_err = 100

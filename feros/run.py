@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 
 f = open('/home/rabrahm/hd72673.list','r')

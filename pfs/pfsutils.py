@@ -1,3 +1,4 @@
+from __future__ import print_function
 import matplotlib
 matplotlib.use("Agg")
 from astropy.io import fits as pyfits
@@ -64,7 +65,7 @@ def FileClassify(dir, log,binning):
                 line = "%-15s %10s %10s %8.2f %4.2f %8s %8s %s\n" % (obname, ra, delta, texp, airmass, date, hour, archivo)
                 f.write(line)
             elif h[0].header['EXPTYPE'] == 'Bias':
-                print h[0].data.shape
+                print(h[0].data.shape)
                 biases.append(archivo)
             elif h[0].header['EXPTYPE'] == 'Quartz' or h[0].header['EXPTYPE'] == 'Flat':
                 if h[0].header['IODINE'] == 'Window':
@@ -107,7 +108,7 @@ def MedianCombine(ImgList, bs, os, bias = 0.):
     #if n==0:
     #    raise ValueError("empty list provided!")
     if n == 0:
-        print "\t\t\tWarning: 0 biases"
+        print("\t\t\tWarning: 0 biases")
         return 0, 0, 0
     h = pyfits.open(ImgList[0])[0]
     d = h.data

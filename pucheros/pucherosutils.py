@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 import matplotlib
 matplotlib.use("Agg")
@@ -373,7 +374,7 @@ def get_coords(obname,mjd):
         try:
             c.perform()
         except:
-            print 'Trying again to perform query to SIMBAD'
+            print('Trying again to perform query to SIMBAD')
         else:
             cond = False
     c.close()

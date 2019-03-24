@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 from pylab import *
 f = open('/data/echelle/harps/list.txt','r')

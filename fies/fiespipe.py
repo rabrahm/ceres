@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 import matplotlib
 matplotlib.use("Agg")
@@ -143,10 +144,10 @@ if binning == 2:
 # file containing the log
 log = dirout+'night.log'
 
-print "\n\n\tFIES NOT2.5m  PIPELINE\n"
-print "\tRAW data is in ",dirin
-print "\tProducts of reduction will be in",dirout
-print '\n'
+print("\n\n\tFIES NOT2.5m  PIPELINE\n")
+print("\tRAW data is in ",dirin)
+print("\tProducts of reduction will be in",dirout)
+print('\n')
 
 biases, flats, ThAr_ref, sim_sci, ThAr_ref_dates, obnames, exptimes, darks, flats_co, flats_co_dates, ThAr_sim, ThAr_sim_dates, ThAr_co, ThAr_co_dates = fiesutils.FileClassify(dirin,log,binning=binning, mode=mode, dark_corr=dark_corr)
 IS = np.argsort(ThAr_ref_dates)
@@ -160,33 +161,33 @@ if mjd > 2457661.5 - 2400000.5:
     oii = 100
     off = 2048
 
-print '\tThese are all the images to proccess:'
+print('\tThese are all the images to proccess:')
 f = open(log)
 flines = f.readlines()
 for line in flines:
-    print '\t'+line[:-1]
-print '\n'
+    print('\t'+line[:-1])
+print('\n')
 
 if (     (os.access(dirout+'Flat.fits',os.F_OK) == False) or \
          (os.access(dirout+'trace.pkl',os.F_OK) == False)  or \
          (os.access(dirout+'MasterBias.fits',os.F_OK) == False)  or \
          (force_pre_process) ):
-    print "\tNo previous pre-processing files or found"
+    print("\tNo previous pre-processing files or found")
     pre_process = 1
 else:
-    print "\tPre-processing files found, going straight to extraction"
+    print("\tPre-processing files found, going straight to extraction")
     pre_process = 0
 
 if (pre_process == 1):
     # median combine Biases
-    print "\tGenerating Master calibration frames..."
+    print("\tGenerating Master calibration frames...")
     if len(biases)>0:
         MasterBias, RO_bias, GA_bias = fiesutils.MedianCombine(biases, binning=binning, off=off, oii=oii)
     else:
         MasterBias = np.zeros(fiesutils.OverscanTrim(pyfits.getdata(flats[0]),binning=binning).shape,ii=oii,ff=off)
         RO_bias = 0.
         GA_bias = 1.
-    print "\t\t-> Masterbias: done!"
+    print("\t\t-> Masterbias: done!")
     hdu = pyfits.PrimaryHDU( MasterBias )
     if (os.access(dirout+'MasterBias.fits',os.F_OK)):
         os.remove(dirout+'MasterBias.fits')
@@ -204,7 +205,7 @@ if (pre_process == 1):
             if (os.access(dark_names[-1],os.F_OK)):
                 os.remove(dark_names[-1])
             hdu.writeto(dark_names[-1])
-        print "\t\t-> MasterDarks: done!"
+        print("\t\t-> MasterDarks: done!")
     dark_names, dark_utimes = np.array(dark_names), np.array(dark_utimes)
 
     # median combine list of flats
@@ -224,16 +225,16 @@ if (pre_process == 1):
     else:
         c_co = []
         nord_co = 0
-    print "\t\t-> Masterflats: done!"
+    print("\t\t-> Masterflats: done!")
 
-    print "\tTracing echelle orders..."
+    print("\tTracing echelle orders...")
     c_all,nord = GLOBALutils.get_them(Flat.T, ext_aperture, trace_degree, maxords=-1, mode=1,nsigmas=5.)
     c_all,nord = GLOBALutils.good_orders(c_all,nord,Flat.shape[1],Flat.shape[0],ext_aperture)
-    print '\t\t'+ str(nord)+' orders found.'
+    print('\t\t'+ str(nord)+' orders found.')
     if len(flats_co)>0:
         c_co, nord_co = GLOBALutils.get_them(Flat_co.T, ext_aperture, trace_degree, maxords=-1, mode=1,nsigmas=5.)
         c_co, nord_co = GLOBALutils.good_orders(c_co,nord_co,Flat_co.shape[1],Flat_co.shape[0],ext_aperture)
-        print '\t\t'+ str(nord_co)+' comparison orders found.'
+        print('\t\t'+ str(nord_co)+' comparison orders found.')
     # pickle traces
     trace_dict = {'c_all':c_all, 'c_co':c_co,
               'nord':nord, 'nord_co':nord_co,
@@ -265,7 +266,7 @@ else:
     h = pyfits.open(dirout+'MasterBias.fits')
     MasterBias = h[0].data
 
-print '\n\tExtraction of Flat calibration frames:'
+print('\n\tExtraction of Flat calibration frames:')
 if len(c_co)>0:
     c_tot = GLOBALutils.Mesh(c_all,c_co)
 P_fits      = dirout + 'P.fits'
@@ -275,7 +276,7 @@ S_flat      = np.zeros((nord, 3, Flat.shape[1]) )
 if ( os.access(P_fits,os.F_OK) == False ) or \
    ( os.access(S_flat_fits,os.F_OK) == False ) or \
    (force_flat_extract):
-    print "\t\tNo extracted flat object spectra found or extraction forced, extracting and saving..."
+    print("\t\tNo extracted flat object spectra found or extraction forced, extracting and saving...")
 
     Centers = np.zeros((len(c_all),Flat.shape[0]))
     for i in range(nord):
@@ -289,7 +290,7 @@ if ( os.access(P_fits,os.F_OK) == False ) or \
     hdbac = pyfits.PrimaryHDU( bac )
     hdbac.writeto(bacfile)
 
-    print "\t\tWill extract",nord,"orders for object fibre..."
+    print("\t\tWill extract",nord,"orders for object fibre...")
     P = GLOBALutils.obtain_P(fl,c_all,ext_aperture,RO_fl,\
                                     GA_fl,NSigma_Marsh, S_Marsh, \
                     N_Marsh, Marsh_alg, min_extract_col,\
@@ -310,7 +311,7 @@ if ( os.access(P_fits,os.F_OK) == False ) or \
     hdu.writeto( S_flat_fits )
 
 else:
-    print "\t\tExtracted flat object spectra found, loading..."
+    print("\t\tExtracted flat object spectra found, loading...")
     P    = pyfits.getdata( P_fits )
     S_flat = pyfits.getdata( S_flat_fits )
 
@@ -322,7 +323,7 @@ if nord_co>0:
     if ( os.access(P_co_fits,os.F_OK) == False ) or \
        ( os.access(S_flat_co_fits,os.F_OK) == False ) or \
        (force_flat_extract):
-        print "\t\tNo extracted flat comparison spectra found or extraction forced, extracting and saving..."
+        print("\t\tNo extracted flat comparison spectra found or extraction forced, extracting and saving...")
 
         Centers = np.zeros((len(c_co),Flat_co.shape[0]))
         for i in range(nord_co):
@@ -336,7 +337,7 @@ if nord_co>0:
         hdbac = pyfits.PrimaryHDU( bac )
         hdbac.writeto(bacfile)
 
-        print "\t\tWill extract",nord_co,"orders for comparison fibre..."
+        print("\t\tWill extract",nord_co,"orders for comparison fibre...")
         P_co = GLOBALutils.obtain_P(fl,c_co,ext_aperture,RO_fl,\
                                         GA_fl,NSigma_Marsh, S_Marsh, \
                         N_Marsh, Marsh_alg, min_extract_col,\
@@ -357,7 +358,7 @@ if nord_co>0:
         hdu.writeto( S_flat_co_fits )
 
     else:
-        print "\t\tExtracted flat object spectra found, loading..."
+        print("\t\tExtracted flat object spectra found, loading...")
         P_co    = pyfits.getdata( P_co_fits )
         S_flat_co = pyfits.getdata( S_flat_co_fits )
 
@@ -366,7 +367,7 @@ S_flat_n, Snorms = GLOBALutils.FlatNormalize_single( S_flat, mid = int(.5*S_flat
 if nord_co>0:
     S_flat_co_n, Snorms_co = GLOBALutils.FlatNormalize_single( S_flat_co, mid = int(.5*S_flat_co.shape[2]) )
 
-print '\n\tExtraction of ThAr calibration frames:'
+print('\n\tExtraction of ThAr calibration frames:')
 
 # Extract all ThAr files
 for fsim in ThAr_ref:
@@ -380,7 +381,7 @@ for fsim in ThAr_ref:
             Centers[i,:]=scipy.polyval(c_all[i,:],np.arange(len(Centers[i,:])))
         bac = GLOBALutils.get_scat(dthar.T,Centers,span=ext_aperture,option=1,allow_neg=True)
         sdthar = dthar.T - bac
-        print "\t\tNo previous extraction or extraction forced for ThAr file", fsim, "extracting..."
+        print("\t\tNo previous extraction or extraction forced for ThAr file", fsim, "extracting...")
         thar_S  = np.zeros( (nord,3,dthar.shape[0]) )
         thar_Ss = np.zeros( (nord,dthar.shape[0]) )
 
@@ -400,7 +401,7 @@ for fsim in ThAr_ref:
         hdu = pyfits.PrimaryHDU( thar_Ss )
         hdu.writeto( thar_simple_fits )
     else:
-        print "\t\tThAr file", fsim, "all ready extracted, loading..."
+        print("\t\tThAr file", fsim, "all ready extracted, loading...")
 
 # Extract all ThAr files
 for fsim in ThAr_co:
@@ -414,7 +415,7 @@ for fsim in ThAr_co:
             Centers[i,:]=scipy.polyval(c_co[i,:],np.arange(len(Centers[i,:])))
         bac = GLOBALutils.get_scat(dthar.T,Centers,span=ext_aperture+2)
         sdthar = dthar.T - bac
-        print "\t\tNo previous extraction or extraction forced for ThAr file", fsim, "extracting..."
+        print("\t\tNo previous extraction or extraction forced for ThAr file", fsim, "extracting...")
         thar_S  = np.zeros( (nord_co,3,dthar.shape[0]) )
         thar_Ss = np.zeros( (nord_co,dthar.shape[0]) )
 
@@ -434,7 +435,7 @@ for fsim in ThAr_co:
         hdu = pyfits.PrimaryHDU( thar_Ss )
         hdu.writeto( thar_co_simple_fits )
     else:
-        print "\t\tThAr file", fsim, "all ready extracted, loading..."
+        print("\t\tThAr file", fsim, "all ready extracted, loading...")
 
 for fsim in ThAr_sim:
     thar_fits        = dirout + fsim.split('/')[-1][:-4]+'spec.fits.S'
@@ -453,7 +454,7 @@ for fsim in ThAr_sim:
         bac = GLOBALutils.get_scat(dthar.T,Centers,span=ext_aperture,option=1)
         sdthar = dthar.T - bac
 
-        print "\t\tNo previous extraction or extraction forced for simultaneous ThAr file", fsim, "extracting..."
+        print("\t\tNo previous extraction or extraction forced for simultaneous ThAr file", fsim, "extracting...")
         thar_S  = np.zeros( (nord,3,dthar.shape[0]) )
         thar_Ss = np.zeros( (nord,dthar.shape[0]) )
         thar_S_co  = np.zeros( (nord_co,3,dthar.shape[0]) )
@@ -489,7 +490,7 @@ for fsim in ThAr_sim:
         hdu = pyfits.PrimaryHDU( thar_Ss_co )
         hdu.writeto( thar_co_simple_fits )
     else:
-        print "\t\tThAr file", fsim, "all ready extracted, loading..."
+        print("\t\tThAr file", fsim, "all ready extracted, loading...")
 
 """
 p0    = np.zeros( npar_wsol )
@@ -569,14 +570,14 @@ show()
 print p1
 """
 
-print "\n\tWavelength solution of ThAr calibration spectra of object fibre:"
+print("\n\tWavelength solution of ThAr calibration spectra of object fibre:")
 for fsim in ThAr_ref:
     wavsol_pkl = dirout + fsim.split('/')[-1][:-4]+'wavsolpars.pkl'
     h = pyfits.open(fsim)
     hd = pyfits.getheader(fsim)
     ron,gain = fiesutils.get_RONGAIN(h[1].header)
     if ( os.access(wavsol_pkl,os.F_OK) == False ) or (force_thar_wavcal):
-        print "\t\tWorking on simple ThAr file", fsim
+        print("\t\tWorking on simple ThAr file", fsim)
         hthar = pyfits.open( fsim )
         mjd, mjd0 = fiesutils.mjd_fromheader2( hthar )
         thar_fits = dirout + fsim.split('/')[-1][:-4]+'spec.simple.fits.S'
@@ -592,8 +593,8 @@ for fsim in ThAr_ref:
         All_residuals     = np.array([])
 
         orders_offset, rough_shift = fiesutils.get_thar_offsets(lines_thar,binning=binning, delt_or=25,suf=sufix)
-        print 'orders_ofset:',orders_offset
-        print 'rough_shift:',rough_shift
+        print('orders_ofset:',orders_offset)
+        print('rough_shift:',rough_shift)
 
         orderi = 0
         if orders_offset < 0:
@@ -646,10 +647,10 @@ for fsim in ThAr_ref:
 
         pickle.dump( pdict, open(wavsol_pkl, 'w' ) )
     else:
-        print "\t\tUsing previously computed wavelength solution in file",wavsol_pkl
+        print("\t\tUsing previously computed wavelength solution in file",wavsol_pkl)
         pdict = pickle.load(open(wavsol_pkl,'r'))
 
-print "\n\tWavelength solution of ThAr calibration spectra of comparison fibre:"
+print("\n\tWavelength solution of ThAr calibration spectra of comparison fibre:")
 for fsim in ThAr_co:
     wavsol_pkl = dirout + fsim.split('/')[-1][:-4]+'wavsolpars.pkl'
     h = pyfits.open(fsim)
@@ -657,7 +658,7 @@ for fsim in ThAr_co:
     hd = pyfits.getheader(fsim)
     ron,gain = fiesutils.get_RONGAIN(h[1].header)
     if ( os.access(wavsol_pkl,os.F_OK) == False ) or (force_thar_wavcal):
-        print "\t\tWorking on simple ThAr file", fsim
+        print("\t\tWorking on simple ThAr file", fsim)
         hthar = pyfits.open( fsim )
 
         thar_fits = dirout + fsim.split('/')[-1][:-4]+'spec.co.simple.fits.S'
@@ -673,8 +674,8 @@ for fsim in ThAr_co:
         All_residuals     = np.array([])
 
         orders_offset, rough_shift = fiesutils.get_thar_offsets(lines_thar,binning=binning,suf=sufix,delt_or=25)
-        print 'orders_ofset:',orders_offset
-        print 'rough_shift:',rough_shift
+        print('orders_ofset:',orders_offset)
+        print('rough_shift:',rough_shift)
 
         orderi = 0
         if orders_offset < 0:
@@ -730,7 +731,7 @@ for fsim in ThAr_co:
 
         pickle.dump( pdict, open(wavsol_pkl, 'w' ) )
     else:
-        print "\t\tUsing previously computed wavelength solution in file",wavsol_pkl
+        print("\t\tUsing previously computed wavelength solution in file",wavsol_pkl)
         pdict = pickle.load(open(wavsol_pkl,'r'))
 
 for fsim in ThAr_sim:
@@ -739,7 +740,7 @@ for fsim in ThAr_sim:
     hd = pyfits.getheader(fsim)
     ron,gain = fiesutils.get_RONGAIN(h[1].header)
     if ( os.access(wavsol_pkl,os.F_OK) == False ) or (force_thar_wavcal):
-        print "\t\tWorking on sim ThAr file", fsim
+        print("\t\tWorking on sim ThAr file", fsim)
         hthar = pyfits.open( fsim )
         mjd, mjd0 = fiesutils.mjd_fromheader2( hthar )
         thar_fits = dirout + fsim.split('/')[-1][:-4]+'spec.simple.fits.S'
@@ -756,8 +757,8 @@ for fsim in ThAr_sim:
         xcs = []
 
         orders_offset, rough_shift = fiesutils.get_thar_offsets(lines_thar,binning=binning,suf=sufix,delt_or=25)
-        print 'orders_ofset:',orders_offset
-        print 'rough_shift:',rough_shift
+        print('orders_ofset:',orders_offset)
+        print('rough_shift:',rough_shift)
 
         orderi = 0
         if orders_offset < 0:
@@ -817,8 +818,8 @@ for fsim in ThAr_sim:
         All_residuals_co     = np.array([])
 
         orders_offset_co, rough_shift_co = fiesutils.get_thar_offsets(lines_thar,binning=binning,suf=sufix)
-        print 'orders_ofset_co:',orders_offset_co
-        print 'rough_shift_co:',rough_shift_co
+        print('orders_ofset_co:',orders_offset_co)
+        print('rough_shift_co:',rough_shift_co)
 
         orderi = 0
         if orders_offset_co < 0:
@@ -879,7 +880,7 @@ for fsim in ThAr_sim:
         pickle.dump( pdict, open(wavsol_pkl, 'w' ) )
 
     else:
-        print "\t\tUsing previously computed wavelength solution in file",wavsol_pkl
+        print("\t\tUsing previously computed wavelength solution in file",wavsol_pkl)
         pdict = pickle.load(open(wavsol_pkl,'r'))
 
 if len(ThAr_sim)>0:
@@ -912,7 +913,7 @@ else:
         rough_shift = dct['rough_shift']
 
 mjds_thar,shifts,shifts_co = [],[],[]
-print '\n\tDetermination of instrumental drift through the night...'
+print('\n\tDetermination of instrumental drift through the night...')
 for i in range(len(ThAr_sim)):
     hthar = pyfits.open( ThAr_sim[i] )
     mjd, mjd0 = fiesutils.mjd_fromheader2( hthar )
@@ -1032,15 +1033,15 @@ for fsim in new_list:
         know_moon = True
         here_moon = use_moon[I]
 
-    print '\n'
-    print "\t--> Working on image: ", fsim
+    print('\n')
+    print("\t--> Working on image: ", fsim)
     h             = pyfits.open(fsim)
     mjd,mjd0      = fiesutils.mjd_fromheader2(h)
     ronoise, gain = fiesutils.get_RONGAIN(h[1].header)
 
     # Object name
     obname    = h[0].header['OBJECT']
-    print "\t\tObject name:",obname
+    print("\t\tObject name:",obname)
 
     # Open file, trim, overscan subtract and MasterBias subtract
     data        = h[1].data
@@ -1090,7 +1091,7 @@ for fsim in new_list:
         ra = ra2
         dec = dec2
     else:
-        print '\t\tUsing the coordinates found in the image header.'
+        print('\t\tUsing the coordinates found in the image header.')
 
     iers                    = GLOBALutils.JPLiers( baryc_dir, mjd-999.0, mjd+999.0 )
     obsradius, R0           = GLOBALutils.JPLR0( latitude, altitude)
@@ -1100,7 +1101,7 @@ for fsim in new_list:
     res         = jplephem.doppler_fraction(float(ra/15.0), float(dec), long(mjd), float(mjd%1), 1, 0.0)
     lbary_ltopo = 1.0 + res['frac'][0]
     bcvel_baryc = ( lbary_ltopo - 1.0 ) * 2.99792458E5
-    print "\t\tBarycentric velocity:", bcvel_baryc
+    print("\t\tBarycentric velocity:", bcvel_baryc)
     res  = jplephem.pulse_delay(ra/15.0, dec, int(mjd), mjd%1, 1, 0.0)
     mbjd = mjd + res['delay'][0] / (3600.0 * 24.0)
 
@@ -1118,15 +1119,15 @@ for fsim in new_list:
     res  = jplephem.object_doppler("Moon", int(mjd), mjd%1, 1, 0.0)
     lunation,moon_state,moonsep,moonvel = GLOBALutils.get_lunar_props(ephem,gobs,Mcoo,Mp,Sp,res,ra,dec)
     refvel = bcvel_baryc + moonvel
-    print '\t\tRadial Velocity of sacttered moonlight:',refvel
+    print('\t\tRadial Velocity of sacttered moonlight:',refvel)
 
-    print '\t\tExtraction:'
+    print('\t\tExtraction:')
     sci_fits        = dirout + fsim.split('/')[-1][:-4]+'spec.fits.S'
     sci_fits_simple = dirout + fsim.split('/')[-1][:-4]+'spec.simple.fits.S'
     if ( os.access(sci_fits,os.F_OK) == False ) or ( os.access(sci_fits_simple,os.F_OK) == False ) or \
             ( force_sci_extract ):
 
-        print "\t\t\tNo previous extraction or extraction forced for science file", fsim, "extracting..."
+        print("\t\t\tNo previous extraction or extraction forced for science file", fsim, "extracting...")
         sci_Ss = GLOBALutils.simple_extraction(data,c_all,ext_aperture,\
                                           min_extract_col,max_extract_col,npools)
         sci_S  = GLOBALutils.optimal_extraction(data,P,c_all,ext_aperture,\
@@ -1154,7 +1155,7 @@ for fsim in new_list:
 
 
     else:
-        print '\t\t\t '+fsim+" has already been extracted, reading in product fits files..."
+        print('\t\t\t '+fsim+" has already been extracted, reading in product fits files...")
         sci_S  = pyfits.getdata( sci_fits )
         sci_Ss = pyfits.getdata( sci_fits_simple )
 
@@ -1164,7 +1165,7 @@ for fsim in new_list:
         if ( os.access(sci_co_fits,os.F_OK) == False ) or ( os.access(sci_co_simple_fits,os.F_OK) == False ) or \
                 ( force_sci_extract ):
 
-            print "\t\t\tNo previous extraction or extraction forced for comparison orders of science file", fsim, "extracting..."
+            print("\t\t\tNo previous extraction or extraction forced for comparison orders of science file", fsim, "extracting...")
             sci_co_Ss = GLOBALutils.simple_extraction(data,c_co,ext_aperture,\
                                               min_extract_col,max_extract_col,npools)
             sci_co_S  = GLOBALutils.optimal_extraction(data,P_co,c_co,ext_aperture,\
@@ -1192,7 +1193,7 @@ for fsim in new_list:
 
 
         else:
-            print '\t\t\t '+fsim+" has already been extracted, reading in product fits files..."
+            print('\t\t\t '+fsim+" has already been extracted, reading in product fits files...")
             sci_co_S  = pyfits.getdata( sci_co_fits )
             sci_co_Ss = pyfits.getdata( sci_co_simple_fits )
 
@@ -1228,7 +1229,7 @@ for fsim in new_list:
         hdu = GLOBALutils.update_header(hdu,'HIERARCH MOON VEL',refvel)
         hdu = GLOBALutils.update_header(hdu,'HIERARCH SIMULT',simult)
 
-    print '\t\tWavelength calibration:'
+    print('\t\tWavelength calibration:')
 
     if simult and (len(ThAr_co)>0 or len(ThAr_sim)>0):
         lines_thar  = sci_co_S[:,1,:].copy()
@@ -1306,7 +1307,7 @@ for fsim in new_list:
     if orderf + orders_offset >= n_useful:
         orderf = n_useful - orders_offset - 1
 
-    print "\t\t\tInstrumental drift:",(1e-6*p_shift)*299792458.0, 'm/s'
+    print("\t\t\tInstrumental drift:",(1e-6*p_shift)*299792458.0, 'm/s')
     # Apply new wavelength solution including barycentric correction
     equis = np.arange( data.shape[1] )
     order = orderi
@@ -1351,7 +1352,7 @@ for fsim in new_list:
     if (not JustExtract):
 
         if DoClass:
-            print '\t\tSpectral Analysis:'
+            print('\t\tSpectral Analysis:')
             # spectral analysis
             # First, query SIMBAD with the object name
             query_success = False
@@ -1360,14 +1361,14 @@ for fsim in new_list:
             # Now, query SIMBAD by coordinates if above not successful
             #if (not query_success):
             #       query_success,sp_type_query = GLOBALutils.simbad_query_coords('12:00:00','00:00:00')
-            print "\t\t\tSpectral type returned by SIMBAD query:",sp_type_query
+            print("\t\t\tSpectral type returned by SIMBAD query:",sp_type_query)
 
             hdu = GLOBALutils.update_header(hdu,'HIERARCH SIMBAD SPTYP', sp_type_query)
 
             pars_file = dirout + fsim.split('/')[-1][:-8]+'_stellar_pars.txt'
 
             if os.access(pars_file,os.F_OK) == False or force_stellar_pars:
-                print "\t\t\tEstimating atmospheric parameters:"
+                print("\t\t\tEstimating atmospheric parameters:")
                 spec2 = spec.copy()
                 if resol > 44000:
                     Rx = np.around(1./np.sqrt(1./40000.**2 - 1./resol**2))
@@ -1381,10 +1382,10 @@ for fsim in new_list:
                 f.close()
 
             else:
-                print "\t\t\tAtmospheric parameters loaded from file:"
+                print("\t\t\tAtmospheric parameters loaded from file:")
                 T_eff, logg, Z, vsini, vel0 = np.loadtxt(pars_file,unpack=True)
 
-            print "\t\t\t\tT_eff=",T_eff,"log(g)=",logg,"Z=",Z,"vsin(i)=",vsini,"vel0",vel0
+            print("\t\t\t\tT_eff=",T_eff,"log(g)=",logg,"Z=",Z,"vsin(i)=",vsini,"vel0",vel0)
 
         else:
             T_eff, logg, Z, vsini, vel0 = -999,-999,-999,-999,-999
@@ -1400,10 +1401,10 @@ for fsim in new_list:
         hdu = GLOBALutils.update_header(hdu,'HIERARCH VSINI', vsini)
         hdu = GLOBALutils.update_header(hdu,'HIERARCH VEL0', vel0)
 
-        print "\t\tRadial Velocity analysis:"
+        print("\t\tRadial Velocity analysis:")
         # assign mask
         sp_type, mask = GLOBALutils.get_mask_reffile(obname,reffile=reffile,base='../data/xc_masks/')
-        print "\t\t\tWill use",sp_type,"mask for CCF."
+        print("\t\t\tWill use",sp_type,"mask for CCF.")
 
         # Read in mask
         ml, mh, weight = np.loadtxt(mask,unpack=True)
@@ -1432,7 +1433,7 @@ for fsim in new_list:
         ml_v = av_m - mask_hw_wide
         mh_v = av_m + mask_hw_wide
 
-        print '\t\t\tComputing the CCF...'
+        print('\t\t\tComputing the CCF...')
         cond = True
 
         while (cond):
@@ -1568,8 +1569,8 @@ for fsim in new_list:
         RVerr2 = np.around(RVerr2,4)
         BSerr = np.around(BSerr,4)
 
-        print '\t\t\tRV = '+str(RV)+' +- '+str(RVerr2)
-        print '\t\t\tBS = '+str(BS)+' +- '+str(BSerr)
+        print('\t\t\tRV = '+str(RV)+' +- '+str(RVerr2))
+        print('\t\t\tBS = '+str(BS)+' +- '+str(BSerr))
 
         bjd_out = 2400000.5 + mbjd
         T_eff_err = 100
@@ -1606,7 +1607,7 @@ for fsim in new_list:
 
         hdu.writeto( dirout + fout )
     else:
-        print "Reading spectral file from", fout
+        print("Reading spectral file from", fout)
         spec = pyfits.getdata( fout )
 
 f_res.close()

@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 import matplotlib
 matplotlib.use("Agg")
@@ -90,7 +91,7 @@ def FileClassify(path,log):
         use = True
         for bf in bfiles:
             if arch == path + bf[:-1]:
-                print 'Dumped file', arch
+                print('Dumped file', arch)
                 use = False
                 break
         if use:

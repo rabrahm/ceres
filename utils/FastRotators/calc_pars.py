@@ -1,3 +1,4 @@
+from __future__ import print_function
 import pyfits
 import argparse
 import os
@@ -29,17 +30,17 @@ except:
     fits = glob.glob(dirin + '/*fits')
 
 os.system('mkdir '+dirin+'/FR')
-print '\n\n'
+print('\n\n')
 for fit in fits:
-    print 'Estimation of atmospheric parameters for ' + fit + '...'
+    print('Estimation of atmospheric parameters for ' + fit + '...')
 
     sc = pyfits.getdata(fit)
     hd = pyfits.getheader(fit)
     teff, logg, feh, vsini = spfr.get_pars_fr(sc[0],sc[5],model_patht=model_path,npools=npools,fixG=fixG)
-    print '\tTeff=', teff, 'K'
-    print '\tlog(g)=', logg, 'dex'
-    print '\t[Fe/H]=', feh, 'dex'
-    print '\tvsini=', vsini, 'km/s\n'
+    print('\tTeff=', teff, 'K')
+    print('\tlog(g)=', logg, 'dex')
+    print('\t[Fe/H]=', feh, 'dex')
+    print('\tvsini=', vsini, 'km/s\n')
 
 
     line_out = "%-15s %18.8f %5.2f %5.2f %5.1f %4.2f %s\n"%(hd['HIERARCH TARGET NAME'], 2400000.5 + float(hd['HIERARCH MBJD']), teff, logg, feh, vsini, fit)

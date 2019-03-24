@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 import matplotlib
 matplotlib.use("Agg")
@@ -136,18 +137,18 @@ n_useful = 66    # up to which order do we care?
 
 log = dirout+'night.log'
 
-print "\n\n\tPFS MAGELLAN6.5m  PIPELINE\n"
-print "\tRAW data is in ",dirin
-print "\tProducts of reduction will be in",dirout
-print "\tWill use only images with binning of", binning
-print '\n'
+print("\n\n\tPFS MAGELLAN6.5m  PIPELINE\n")
+print("\tRAW data is in ",dirin)
+print("\tProducts of reduction will be in",dirout)
+print("\tWill use only images with binning of", binning)
+print('\n')
 
 biases, quartz, iodines, science, thars, thar_dates, obnames, exptimes = pfsutils.FileClassify(dirin,log,binning)
 nightlog = open(log,'r')
 loglines = nightlog.readlines()
-print "\tThese are all the images to proccess:"
+print("\tThese are all the images to proccess:")
 for line in loglines:
-    print '\t'+line[:-1]
+    print('\t'+line[:-1])
 if stst == 'last':
     if os.access(dirout+'findstar.txt',os.F_OK):
         fst = open(dirout+'findstar.txt','r')
@@ -164,26 +165,26 @@ if (     (os.access(dirout+'Flat.fits',       os.F_OK) == False)    or \
          (os.access(dirout+'MasterBias.fits', os.F_OK) == False)    or \
          (os.access(dirout+'trace.pkl',       os.F_OK) == False)    or \
          (force_pre_process) ):
-    print "\tNo previous pre-processing files or found"
+    print("\tNo previous pre-processing files or found")
     pre_process = 1
 else:
-    print "\tPre-processing files found, going straight to extraction"
+    print("\tPre-processing files found, going straight to extraction")
     pre_process = 0
 
 if (pre_process == 1):
     # median combine Biases
-    print "\t\tGenerating Master calibration frames..."
+    print("\t\tGenerating Master calibration frames...")
 
     if len(biases)!=0:
         MasterBias, RO_bias, GA_bias = pfsutils.MedianCombine(biases, bias_section, over_section)
     else:
         MasterBias, RO_bias, GA_bias = np.zeros((max_extract_col,max_extract_col)),0,1
-        print "\t\tWarning: 0 biases"
+        print("\t\tWarning: 0 biases")
     hdu = pyfits.PrimaryHDU( MasterBias )
     if (os.access(dirout+'MasterBias.fits',os.F_OK)):
         os.remove(dirout+'MasterBias.fits')
     hdu.writeto(dirout+'MasterBias.fits')
-    print "\t\t-> Masterbias: done!"
+    print("\t\t-> Masterbias: done!")
     #MasterBias = pyfits.getdata(dirout+'MasterBias.fits')
     #RO_bias, GA_bias = 1.,1.
 
@@ -194,12 +195,12 @@ if (pre_process == 1):
     if (os.access(dirout+'Flat.fits',os.F_OK)):
         os.remove(dirout+'Flat.fits')
     hdu.writeto(dirout+'Flat.fits')
-    print "\t\t-> Masterflat: done!"
+    print("\t\t-> Masterflat: done!")
     #Flat = pyfits.getdata(dirout+'Flat.fits')
     #RO_flat, GA_flat = 1.,1.
 
     # Find orders & traces
-    print "\tTracing echelle orders..."
+    print("\tTracing echelle orders...")
     h = pyfits.open(dirin+stst)[0]
     hth = pyfits.getheader(dirin+stst)
     d = h.data
@@ -212,7 +213,7 @@ if (pre_process == 1):
 
 
 else:
-    print '\t\tLoading Masterbias, Masterflat and traces'
+    print('\t\tLoading Masterbias, Masterflat and traces')
     trace_dict = pickle.load( open( dirout+'trace.pkl', 'r' ) )
     c_all = trace_dict['c_all']
     nord = trace_dict['nord']
@@ -225,13 +226,13 @@ else:
     Flat = h[0].data
     h = pyfits.open(dirout+'MasterBias.fits')
     MasterBias = h[0].data
-print '\n'
+print('\n')
 
 # Make flat
 NorFlat_fits = dirout + 'NorFlat.fits'
 force_flat = False
 if ( os.access(NorFlat_fits,os.F_OK) == False ) or (force_flat):
-    print "\tNo previous Normalized Flat computed or determination forced, computing and saving..."
+    print("\tNo previous Normalized Flat computed or determination forced, computing and saving...")
     NorFlat = np.ones(Flat.shape)
     eje = np.arange(Flat.shape[1])
     medianFlat = scipy.signal.medfilt(Flat,[5,9])
@@ -266,14 +267,14 @@ if ( os.access(NorFlat_fits,os.F_OK) == False ) or (force_flat):
     hdu = pyfits.PrimaryHDU( NorFlat )
     hdu.writeto( NorFlat_fits )
 else:
-    print "\tNormalized Flat found, loading..."
+    print("\tNormalized Flat found, loading...")
     NorFlat = pyfits.getdata( NorFlat_fits )
 
 # Compute profile for optimal extraction
 P_fits = dirout + 'P.fits'
 
 if ( os.access(P_fits,os.F_OK) == False ) or (force_P_det):
-    print "\n\tNo previous P matrix determination or determination forced, computing and saving..."
+    print("\n\tNo previous P matrix determination or determination forced, computing and saving...")
 
     h = pyfits.open(dirin+stst)[0]
     hth = pyfits.getheader(dirin+stst)
@@ -312,15 +313,15 @@ if ( os.access(P_fits,os.F_OK) == False ) or (force_P_det):
     hdu.writeto( P_fits )
 
 else:
-    print "\n\tP matrix found, loading..."
+    print("\n\tP matrix found, loading...")
     P      = pyfits.getdata( P_fits )
 
 
 # Extract Flat
-print '\n\tExtraction of Flat calibration frames:'
+print('\n\tExtraction of Flat calibration frames:')
 Flat_spec_fits = dirout + 'Flat_spec.fits'
 if ( os.access(Flat_spec_fits,os.F_OK) == False ) or (force_flat_extract):
-    print "\t\tNo previous Flat extracted or extraction forced, extracting and saving..."
+    print("\t\tNo previous Flat extracted or extraction forced, extracting and saving...")
     flat_S  = np.zeros( (nord,3,Flat.shape[1]) )
     NFlat = Flat/NorFlat
     flat_S = GLOBALutils.simple_extraction(NFlat,c_all,ext_aperture,min_extract_col,max_extract_col,npools)
@@ -333,10 +334,10 @@ if ( os.access(Flat_spec_fits,os.F_OK) == False ) or (force_flat_extract):
     hdu = pyfits.PrimaryHDU( flat_S )
     hdu.writeto( Flat_spec_fits )
 else:
-    print "\t\tExtracted flat found, loading..."
+    print("\t\tExtracted flat found, loading...")
     flat_S = pyfits.getdata( Flat_spec_fits )
 
-print '\n\tExtraction of ThAr calibration frames:'
+print('\n\tExtraction of ThAr calibration frames:')
 # Extract all ThAr files
 for fsim in thars:
     hthar = pyfits.open( fsim )[0]
@@ -347,7 +348,7 @@ for fsim in thars:
     thar_fits_simple = dirout + 'PFS_' + hthar.header['UT-DATE'] + '_' + hthar.header['UT-TIME'] +'.ThAr.spec.simple.fits'
 
     if ( os.access(thar_fits,os.F_OK) == False ) or ( os.access(thar_fits_simple,os.F_OK) == False ) or (force_thar_extract):
-        print "\t\tNo previous extraction or extraction forced for ThAr file", fsim, "extracting..."
+        print("\t\tNo previous extraction or extraction forced for ThAr file", fsim, "extracting...")
 
         thar_Ss = GLOBALutils.simple_extraction(dthar,c_all,ext_aperture,min_extract_col,max_extract_col,npools)
         thar_S  = GLOBALutils.optimal_extraction(dthar,P,c_all,ext_aperture,hthar.header['ENOISE'],\
@@ -370,7 +371,7 @@ for fsim in thars:
         hdu.writeto( thar_fits_simple )
 
 
-print "\n\tWavelength solution of ThAr calibration spectra:"
+print("\n\tWavelength solution of ThAr calibration spectra:")
 # Compute wavelength calibration of ThAr
 sorted_thar_dates = np.argsort( thar_dates )
 p0_array = np.zeros( (5, npar_wsol) )
@@ -380,7 +381,7 @@ for i in range(len(thars)):
     hthar = pyfits.open( thars[index] )
     wavsol_pkl = dirout + 'PFS_' + hthar[0].header['UT-DATE'] + '_' + hthar[0].header['UT-TIME']+'.wavsolpars.pkl'
     if ( os.access(wavsol_pkl,os.F_OK) == False ) or (force_thar_wavcal):
-        print "\t\tWorking on initial ThAr file", thars[index]
+        print("\t\tWorking on initial ThAr file", thars[index])
 
         mjd, mjd0 = pfsutils.mjd_fromheader( hthar )
         thar_fits = dirout + 'PFS_' + hthar[0].header['UT-DATE'] + '_' + hthar[0].header['UT-TIME'] +'.ThAr.spec.fits'
@@ -467,7 +468,7 @@ for i in range(len(thars)):
         #print "\tMedian sigma:", np.median( All_Sigmas )
 
     else:
-        print "\t\tUsing previously computed wavelength solution in file",wavsol_pkl
+        print("\t\tUsing previously computed wavelength solution in file",wavsol_pkl)
         pdict           = pickle.load(open(wavsol_pkl,'r'))
 
 
@@ -528,7 +529,7 @@ if ( (os.access(xc_fout_f,os.F_OK) == False) or (force_tharxc)):
                 #xc_fout.flush()
     xc_fout.close()
 
-print '\n\tThe following targets will be processed:'
+print('\n\tThe following targets will be processed:')
 
 ### start of science frame reductions ###
 new_list = []
@@ -542,13 +543,13 @@ for i in range(len(science)):
         new_list.append(fsim)
         new_list_obnames.append( obname )
         new_list_texp.append( texp )
-        print '\t'+obname
+        print('\t'+obname)
     else:
         if (obname == object2do):
             new_list.append(fsim)
             new_list_obnames.append( obname )
             new_list_texp.append( texp )
-        print '\t'+obname
+        print('\t'+obname)
 
 # Does any image have a special requirement for dealing with the moonlight?
 if os.access(dirin + 'moon_corr.txt', os.F_OK):
@@ -575,9 +576,9 @@ for nlisti in range(len(new_list)):
     obname = new_list_obnames[ nlisti ]
     TEXP =  new_list_texp[ nlisti ]
 
-    print '\n'
-    print "\t--> Working on image: ", fsim
-    print "\t\tObject name:",obname
+    print('\n')
+    print("\t--> Working on image: ", fsim)
+    print("\t\tObject name:",obname)
     know_moon = False
     if fsim.split('/')[-1] in spec_moon:
         I = np.where(fsim.split('/')[-1] == spec_moon)[0]
@@ -593,7 +594,7 @@ for nlisti in range(len(new_list)):
     gain    = h[0].header['EGAIN']
     iodine  = h[0].header['IODINE']
 
-    print "\t\tWorking on an observation of object",obname
+    print("\t\tWorking on an observation of object",obname)
 
     # Find lambda_bary/lambda_topo using baryc
     altitude    = h[0].header['SITEALT']
@@ -608,7 +609,7 @@ for nlisti in range(len(new_list)):
         ra = ra2
         dec = dec2
     else:
-        print '\t\tUsing the coordinates found in the image header.'
+        print('\t\tUsing the coordinates found in the image header.')
 
     iers                    = GLOBALutils.JPLiers( baryc_dir, mjd-999.0, mjd+999.0 )
     obsradius, R0           = GLOBALutils.JPLR0( latitude, altitude)
@@ -621,7 +622,7 @@ for nlisti in range(len(new_list)):
     lbary_ltopo = 1.0 + res['frac'][0]
     bcvel_baryc = ( lbary_ltopo - 1.0 ) * 2.99792458E5
 
-    print "\t\tBarycentric velocity:", bcvel_baryc
+    print("\t\tBarycentric velocity:", bcvel_baryc)
 
     res = jplephem.pulse_delay(ra/15.0, dec, int(mjd), mjd%1, 1, 0.0)
     mbjd = mjd + res['delay'][0] / (3600.0 * 24.0)
@@ -645,7 +646,7 @@ for nlisti in range(len(new_list)):
     res = jplephem.object_doppler("Moon", int(mjd), mjd%1, 1, 0.0)
     lunation,moon_state,moonsep,moonvel = GLOBALutils.get_lunar_props(ephem,gobs,Mcoo,Mp,Sp,res,ra,dec)
     refvel = bcvel_baryc + moonvel
-    print '\t\tRadial Velocity of sacttered moonlight:',refvel
+    print('\t\tRadial Velocity of sacttered moonlight:',refvel)
 
     sorted_indices = np.argsort( np.abs( np.array(thar_dates) - mjd ) )
 
@@ -664,7 +665,7 @@ for nlisti in range(len(new_list)):
         data -= MasterBias
         data /= NorFlat
 
-        print '\t\t\tRecentering traces...'
+        print('\t\t\tRecentering traces...')
         c_alls, pshift = GLOBALutils.retrace( data, c_all )
 
         Centers = np.zeros((len(c_alls),data.shape[1]))
@@ -699,7 +700,7 @@ for nlisti in range(len(new_list)):
 
         if ( os.access(sci_fits,os.F_OK) == False ) or ( os.access(sci_fits_simple,os.F_OK) == False ) or (force_sci_extract):
 
-            print "\t\tNo previous extraction or extraction forced for science file", fsim, "extracting..."
+            print("\t\tNo previous extraction or extraction forced for science file", fsim, "extracting...")
             sci_Ss = GLOBALutils.simple_extraction(data,c_alls,ext_aperture,min_extract_col,max_extract_col,npools)
             sci_S  = GLOBALutils.optimal_extraction(data,P,c_alls,ext_aperture,ronoise,gain,S_Marsh,NCosmic_Marsh,\
          min_extract_col,max_extract_col,npools)
@@ -716,7 +717,7 @@ for nlisti in range(len(new_list)):
             hdu.writeto( sci_fits_simple )
 
         else:
-            print '\t\t'+fsim, "has already been extracted, reading in product fits files..."
+            print('\t\t'+fsim, "has already been extracted, reading in product fits files...")
             sci_S = pyfits.getdata( sci_fits )
             sci_Ss = pyfits.getdata( sci_fits_simple )
 
@@ -759,7 +760,7 @@ for nlisti in range(len(new_list)):
         hthar = pyfits.open(thars[indice])
         thar_fits_ob = dirout + 'PFS_' + hthar[0].header['UT-DATE'] + '_' + hthar[0].header['UT-TIME'] +'.ThAr.spec.fits'
         pkl_wsol = dirout + 'PFS_' + hthar[0].header['UT-DATE'] + '_' + hthar[0].header['UT-TIME'] +'.wavsolpars.pkl'
-        print "\t\tUnpickling wavelength solution from", pkl_wsol, " ..."
+        print("\t\tUnpickling wavelength solution from", pkl_wsol, " ...")
         wsol_dict = pickle.load(open(pkl_wsol,'r'))
 
         # Apply new wavelength solution including barycentric correction
@@ -803,24 +804,24 @@ for nlisti in range(len(new_list)):
             ref_RES = 54000
         elif h[0].header['SLITNAME'] == '0.3x2.5':
             ref_RES = 127000
-        print ref_RES
+        print(ref_RES)
         if DoClass:
             # spectral analysis
-            print "\t\tSpectral Analysis..."
+            print("\t\tSpectral Analysis...")
             query_success = False
             # First, query SIMBAD with the object name
             query_success,sp_type_query = GLOBALutils.simbad_query_obname(obname)
             # Now, query SIMBAD by coordinates if above not successful
             if (not query_success):
                 query_success,sp_type_query = GLOBALutils.simbad_query_coords('12:00:00','00:00:00')
-            print "\t\t\tSpectral type returned by SIMBAD query:",sp_type_query
+            print("\t\t\tSpectral type returned by SIMBAD query:",sp_type_query)
 
             hdu = GLOBALutils.update_header(hdu,'HIERARCH SIMBAD SPTYP', sp_type_query)
 
             pars_file = dirout + 'PFS_' + hthar[0].header['UT-DATE'] + '_' + hthar[0].header['UT-TIME'] +'_stellar_pars.txt'
 
             if os.access(pars_file,os.F_OK) == False or force_stellar_pars:
-                print "\t\t\tEstimating atmospheric parameters:"
+                print("\t\t\tEstimating atmospheric parameters:")
                 spec2 = spec.copy()
                 Rx = np.around(1./np.sqrt(1./40000.**2 - 1./ref_RES**2))
                 for i in range(spec.shape[1]):
@@ -833,10 +834,10 @@ for nlisti in range(len(new_list)):
                 f.close()
 
             else:
-                print "\t\t\tAtmospheric parameters loaded from file:"
+                print("\t\t\tAtmospheric parameters loaded from file:")
                 T_eff, logg, Z, vsini, vel0 = np.loadtxt(pars_file,unpack=True)
 
-            print "\t\t\t\tT_eff=",T_eff,"log(g)=",logg,"Z=",Z,"vsin(i)=",vsini,"vel0",vel0
+            print("\t\t\t\tT_eff=",T_eff,"log(g)=",logg,"Z=",Z,"vsin(i)=",vsini,"vel0",vel0)
 
         else:
             T_eff, logg, Z, vsini, vel0 = -999,-999,-999,-999,-999
@@ -853,10 +854,10 @@ for nlisti in range(len(new_list)):
         hdu = GLOBALutils.update_header(hdu,'HIERARCH VEL0', vel0)
 
 
-        print "\t\tRadial Velocity analysis:"
+        print("\t\tRadial Velocity analysis:")
         # assign mask
         sp_type, mask = GLOBALutils.get_mask_reffile(obname,reffile=reffile,base='../data/xc_masks/')
-        print "\t\t\tWill use",sp_type,"mask for CCF."
+        print("\t\t\tWill use",sp_type,"mask for CCF.")
 
         velw  = 300
         velsh = 3.
@@ -886,7 +887,7 @@ for nlisti in range(len(new_list)):
         ml_v = av_m - mask_hw_wide
         mh_v = av_m + mask_hw_wide
 
-        print '\t\t\tComputing the CCF...'
+        print('\t\t\tComputing the CCF...')
         cond = True
         while (cond):
             # first rough correlation to find the minimum
@@ -999,8 +1000,8 @@ for nlisti in range(len(new_list)):
         BS     = np.around(SP,4)
         RVerr2 = np.around(RVerr,4)
         BSerr  = np.around(BSerr,4)
-        print '\t\t\tRV = '+str(RV)+' +- '+str(RVerr2)
-        print '\t\t\tBS = '+str(BS)+' +- '+str(BSerr)
+        print('\t\t\tRV = '+str(RV)+' +- '+str(RVerr2))
+        print('\t\t\tBS = '+str(BS)+' +- '+str(BSerr))
 
         bjd_out = 2400000.5 + mbjd
         T_eff_err = 100

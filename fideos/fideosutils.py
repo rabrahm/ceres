@@ -1,3 +1,4 @@
+from __future__ import print_function
 import matplotlib
 matplotlib.use('Agg')
 from pylab import *
@@ -164,14 +165,14 @@ def clean_orders(c_all,data,exap=5):
     dist2 = ccens[-2]-ccens[-3]
 
     if dist1 < dist2:
-        print 'uno'
+        print('uno')
         i = nords - 1
     else:
-        print 'dos'
+        print('dos')
         i = nords - 2
     c_co, c_ob = [],[]
     while i > 0:
-        print i
+        print(i)
         if len(c_co) == 0:
             c_co = c_all[i]
             c_ob = c_all[i-1]
@@ -502,7 +503,7 @@ def fit2d(sc,trace,filename,spec,order,wei, porder=3, rmsmax=75, minlines=10, Fi
                 sampler.run_mcmc(pos, 500)
                 samples = sampler.chain[:, 50:, :].reshape((-1, ndim))
                 #print samples.shape
-                print np.median(samples,axis=0)
+                print(np.median(samples,axis=0))
                 if len(out) == 0:
                     out = np.median(samples,axis=0)
                 else:
@@ -716,8 +717,8 @@ def FitFideos2DProf(X, Y, F, x1, y1):
 
     p0 = np.array([x1,y1,np.max(F)])
     p1, success = scipy.optimize.leastsq(errfunc,p0, args=(X,Y,F))
-    print p0
-    print p1
+    print(p0)
+    print(p1)
     imshow(F)
     show()
     imshow(FideosCompProf(p1,X,Y))

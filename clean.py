@@ -1,3 +1,4 @@
+from __future__ import print_function
 ######################## Clean Script v.1.0. ###########################
 #                                                                      #
 # This script cleans all the subdirectories of the current directory   #
@@ -58,7 +59,7 @@ dirs1 = getDirs('.')
 #dirs2 = getDirs('utils')
 
 for directory in dirs1:
-    print directory
+    print(directory)
     # To each directory, we apply the SeeknDestroy function:
     SeeknDestroy(directory)
 #for directory in dirs2:

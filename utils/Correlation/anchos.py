@@ -1,3 +1,4 @@
+from __future__ import print_function
 import pyfits
 import numpy
 import scipy
@@ -81,4 +82,4 @@ for fits in non_rot:
                 devs = devs+str(0.0)+'\t'
         f.write(str(T)+'\t'+str(G)+'\t'+str(Z)+'\t'+devs+'\n')
 
-    print T,G,Z,devs
+    print(T,G,Z,devs)

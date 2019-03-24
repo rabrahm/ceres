@@ -1,3 +1,4 @@
+from __future__ import print_function
 from pylab import *
 import pyfits
 from PyAstronomy import pyasl
@@ -563,7 +564,7 @@ def get_pars_fr(wavst,flxst,model_patht='../../data/COELHO2014/',npools=4,fixG=1
     bt,bg,bz,br = best_vals[0],best_vals[1],best_vals[2],best_vals[3]
     #"""
     t1 = time.time()
-    print bt,bg,bz,br, (t1-t0)/60.,'mins'
+    print(bt,bg,bz,br, (t1-t0)/60.,'mins')
 
 
     #bt,bg,bz,br = 7000.,4.5, 0.2, 100.0
@@ -587,7 +588,7 @@ def get_pars_fr(wavst,flxst,model_patht='../../data/COELHO2014/',npools=4,fixG=1
     best_vals = tot[I]
     bt,bg,bz,br = best_vals[0],best_vals[1],best_vals[2],best_vals[3]
     t2 = time.time()
-    print bt,bg,bz,br, (t2-t1)/60.,'mins'
+    print(bt,bg,bz,br, (t2-t1)/60.,'mins')
     #np.savetxt('temp_grid.txt',vals)
 
 

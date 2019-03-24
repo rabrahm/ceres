@@ -1,10 +1,11 @@
+from __future__ import print_function
 import numpy
 
 #inp = 'B_order_00.dat'
 ii = 10
 while ii < 44:
     inp = 'B_order_'+str(ii)+'.dat'
-    print inp
+    print(inp)
     f = open(inp,'r')
     lines = f.readlines()
     f.close()

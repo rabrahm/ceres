@@ -1,3 +1,4 @@
+from __future__ import print_function
 import matplotlib
 matplotlib.use("Agg")
 from astropy.io import fits as pyfits
@@ -69,7 +70,7 @@ def FileClassify(diri, log,mode='so',amps='a'):
             h = pyfits.open(archivo)
             #print archivo, h[0].header['EXPTYPE'], h[0].header['INSTMODE']
             if md in h[0].header['INSTMODE'] and samps == h[0].header['AMPLIST']:
-                print archivo, h[0].header['EXPTYPE'], h[0].header['INSTMODE'], h[0].data.shape, h[0].header['AMPLIST']
+                print(archivo, h[0].header['EXPTYPE'], h[0].header['INSTMODE'], h[0].data.shape, h[0].header['AMPLIST'])
                 if h[0].header['EXPTYPE'] == 'OBJECT':
                     simThAr_sci.append(archivo)
                     obname = h[0].header['OBJNAME']

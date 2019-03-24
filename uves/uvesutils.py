@@ -1,3 +1,4 @@
+from __future__ import print_function
 import matplotlib
 matplotlib.use("Agg")
 import numpy as np
@@ -55,7 +56,7 @@ def FileClassify(diri, log):
                 break
         if dump == False:
             h = pyfits.open(archivo)
-            print archivo,  h[0].header['HIERARCH ESO DPR CATG'],h[0].header['HIERARCH ESO DPR TYPE']
+            print(archivo,  h[0].header['HIERARCH ESO DPR CATG'],h[0].header['HIERARCH ESO DPR TYPE'])
             if 'SCIENCE' in h[0].header['HIERARCH ESO DPR CATG']:
                 science.append(archivo)
                 obname = h[0].header['OBJECT']
@@ -128,7 +129,7 @@ def MedianCombine(ImgList, bias=0.):
     if n==0:
         raise ValueError("empty list provided!")
 
-    print 0, ImgList[0]
+    print(0, ImgList[0])
     h = pyfits.open(ImgList[0])
 
     d1 = h[1].data
@@ -145,7 +146,7 @@ def MedianCombine(ImgList, bias=0.):
     ron2 = factor * ron2 / np.sqrt(n)
     if n>1:
         for i in range(n-1):
-            print i,ImgList[i+1]
+            print(i,ImgList[i+1])
             td = pyfits.open(ImgList[i+1])
             td = np.dstack((td[1].data,td[2].data)) - bias
             d1 = np.dstack((d1,td[:,:,0]))
@@ -207,7 +208,7 @@ def bac_flat(flat,traces,ext):
     return bac
 
 def ccd_flat(flat,traces,ext):
-    print ext
+    print(ext)
     nflat = np.ones(flat.shape)
     ext = int(np.around(ext))
     ejex = np.arange(flat.shape[0])

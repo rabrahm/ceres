@@ -1,3 +1,4 @@
+from __future__ import print_function
 from pylab import *
 
 refo = 3
@@ -23,7 +24,7 @@ while refo < 23:
             #print npx[i],nwv[i]
             f.write('1\t'+str(npx[i])+'\t'+str(nwv[i])+'\tNN\n')
     f.close()
-    print p - np.polyval(c,w)
+    print(p - np.polyval(c,w))
     refo+=1
     #plot(w,p,'ro')
     #plot(nwv,npx,'b')

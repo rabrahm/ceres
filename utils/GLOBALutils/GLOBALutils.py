@@ -1,3 +1,4 @@
+from __future__ import print_function
 import matplotlib
 matplotlib.use('Agg')
 
@@ -130,7 +131,7 @@ def getcoords(obname,mjd,filen='/data/echelle/feros/coords.txt'):
                 DEC = DEC0 + (PMDEC/3600.)*(mjd-mjdJ2000)/365.
                 break
     except:
-        print '\t\tWarning! Problem with reference coordinates files.'
+        print('\t\tWarning! Problem with reference coordinates files.')
     return RA,DEC
 
 def get_them(sc,exap,ncoef,maxords=-1,startfrom=0,nsigmas=10.,mode=1,endat=-1,nc2=2):
@@ -581,12 +582,12 @@ def get_zero_order_number(ords,wavs):
         val = orders*wavs
         val2 = val/np.add.reduce(val)
         coef = np.polyfit(ords,val2,1)
-        print coef
+        print(coef)
         pends.append(coef[0])
         plot(ords,val2)
     pends = np.array(pends)
     I = np.argmin(pends**2)
-    print o0s[I]
+    print(o0s[I])
     xlabel('raw order number')
     ylabel(' $\lambda_c$*(order number + zero order)')
     subplot(212)
@@ -594,7 +595,7 @@ def get_zero_order_number(ords,wavs):
     xlabel('zero order')
     ylabel('slope')
     show()
-    print gfdsa
+    print(gfdsa)
 
 def Mesh(ycpoly_ob,ycpoly_co):
     """
@@ -1256,7 +1257,7 @@ def JPLiers(path, mjdini, mjdend):
             c3 = line[58:68]
             l  = ' '+mj+' '+c1+' '+c2+' '+c3+' '+'\n'
             output.write(l)
-            if mj == mjdini+999: print "estoy en el dia D"
+            if mj == mjdini+999: print("estoy en el dia D")
         if float(mj) > float(mjdend):
             break
     finaldata.close()
@@ -2260,7 +2261,7 @@ def Fit_Global_Wav_Solution(pix_centers, wavelengths, orders, Wgt, p0, minlines=
     if ( (len(L[0]) == 0) and (rms_ms < maxrms) ) or (N_l < minlines):
         cond=0
 
-    print "\t\t\tStart Global culling with ", N_l, " number of lines"
+    print("\t\t\tStart Global culling with ", N_l, " number of lines")
     bad_wavs, bad_ords = [],[]
     while (cond):
         index_worst = np.argmax( np.absolute(residuals) )
@@ -2300,9 +2301,9 @@ def Fit_Global_Wav_Solution(pix_centers, wavelengths, orders, Wgt, p0, minlines=
         for j in ist:
                 print tmpords[j],tmpwvs[j]
     """
-    print "\t\t\tFinal RMS is ", rms_ms
-    print "\t\t\tNumber of lines is ", N_l
-    print "\t\t\t--> Achievable RV precision is ", rms_ms/np.sqrt(N_l)
+    print("\t\t\tFinal RMS is ", rms_ms)
+    print("\t\t\tNumber of lines is ", N_l)
+    print("\t\t\t--> Achievable RV precision is ", rms_ms/np.sqrt(N_l))
 
     return p1, pix_centers[I], orders[I], wavelengths[I], I, rms_ms, residuals
 
@@ -2354,7 +2355,7 @@ def Global_Wav_Solution_vel_shift(pix_centers, wavelengths, orders, Wgt, p_ref, 
     #   plot(wavelengths[I][III],residuals[III],'.')
     #show()
 
-    print "\t\t\tStart Global culling with ", N_l, " number of lines"
+    print("\t\t\tStart Global culling with ", N_l, " number of lines")
     while (cond):
         index_worst = np.argmax( np.absolute(residuals) )
         I.pop( index_worst )
@@ -2376,10 +2377,10 @@ def Global_Wav_Solution_vel_shift(pix_centers, wavelengths, orders, Wgt, p_ref, 
         #print "Eliminated line ", index_worst, " at order ", orders[index_worst]
         #print "RMS is ", rms_ms, " after elimination", len(L[0]), rms_ms, maxrms, N_l
 
-    print "\t\t\tFinal RMS is ", rms_ms
-    print "\t\t\tNumber of lines is ", N_l
-    print "\t\t\t--> Achievable RV precision is ", rms_ms/np.sqrt(N_l)
-    print "\t\t\tVelocity of ThAr w/r to solution provided is ", (1e-6*p1)*299792458.0
+    print("\t\t\tFinal RMS is ", rms_ms)
+    print("\t\t\tNumber of lines is ", N_l)
+    print("\t\t\t--> Achievable RV precision is ", rms_ms/np.sqrt(N_l))
+    print("\t\t\tVelocity of ThAr w/r to solution provided is ", (1e-6*p1)*299792458.0)
 
     #for oo in np.unique(orders[I]):
     #   III = np.where(orders[I]==oo)[0]
@@ -2718,32 +2719,32 @@ def XC_Gau_Fit(X,Y,back_lag=5, usemin=1):
 def get_mask(sp_type_query,T_eff, query_success):
     if (query_success):
         if (sp_type_query.count('G') > 0):
-            print "Using G mask"
+            print("Using G mask")
             sp_type = 'G2'
         elif (sp_type_query.count('K') > 0):
-            print "Using K mask"
+            print("Using K mask")
             sp_type = 'K5'
         elif (sp_type_query.count('M') > 0):
-            print "Using M mask"
+            print("Using M mask")
             sp_type = 'K5'
         elif (sp_type_query.count('F') > 0) or (sp_type_query.count('A') > 0):
-            print "Rather hot star, using G mask but this target is probably earlier than that.."
+            print("Rather hot star, using G mask but this target is probably earlier than that..")
             sp_type = 'G2'
         else:
-            print "Probable problem, spectral type not in the books, using G-mask"
+            print("Probable problem, spectral type not in the books, using G-mask")
             sp_type = 'G2'
     else:
         if (T_eff >= 4300) and (T_eff < 5350):
-            print "Using K mask"
+            print("Using K mask")
             sp_type = 'K5'
         elif (T_eff >= 5350) and (T_eff < 6100):
-            print "Using G mask"
+            print("Using G mask")
             sp_type = 'G2'
         elif (T_eff >= 6100):
-            print "Rather hot star, using G mask but this target is probably earlier than that.."
+            print("Rather hot star, using G mask but this target is probably earlier than that..")
             sp_type = 'G2'
         else:
-            print "Using M mask"
+            print("Using M mask")
             sp_type = 'K5'
     return sp_type
 
@@ -3362,9 +3363,9 @@ def get_disp(obname,reffile='reffile.txt'):
                 found = True
                 break
         if not found:
-            print '\t\tWarning! There is no predefined dispersion of the CCF.'
+            print('\t\tWarning! There is no predefined dispersion of the CCF.')
     except:
-        print '\t\tWarning! There is no predefined dispersion of the CCF.'
+        print('\t\tWarning! There is no predefined dispersion of the CCF.')
 
     return disp
 
@@ -3388,9 +3389,9 @@ def get_mask_reffile(obname,reffile='reffile.txt',base='../../xc_masks/'):
                 found = True
                 break
         if not found:
-            print '\t\tWarning! Target not found in reference mask file. Using default mask (G2)'
+            print('\t\tWarning! Target not found in reference mask file. Using default mask (G2)')
     except:
-        print '\t\tWarning! Problem with reference mask file. Forcing to G2 mask'
+        print('\t\tWarning! Problem with reference mask file. Forcing to G2 mask')
 
     if sp_type == 'G2':
         xc_mask = xc_masks[0]
@@ -3407,23 +3408,23 @@ def get_mask_query(sp_type_query,base='../../xc_masks/'):
                 base+'M2.mas' ]
 
     if (sp_type_query.count('G') > 0):
-        print "Using G mask according to simbad"
+        print("Using G mask according to simbad")
         mask = xc_masks[0]
         sp_type = 'G2'
     elif (sp_type_query.count('K') > 0):
-        print "Using K mask according to simbad"
+        print("Using K mask according to simbad")
         mask = xc_masks[1]
         sp_type = 'K5'
     elif (sp_type_query.count('M') > 0):
-        print "Using M mask according to simbad"
+        print("Using M mask according to simbad")
         mask = xc_masks[2]
         sp_type = 'M5'
     elif (sp_type_query.count('F') > 0) or (sp_type_query.count('A') > 0):
-        print "Rather hot star according to simbad, using G mask but this target is probably earlier than that.."
+        print("Rather hot star according to simbad, using G mask but this target is probably earlier than that..")
         mask = xc_masks[0]
         sp_type = 'G2'
     else:
-        print "Probable problem, spectral type not in the books according to simbad, using G-mask"
+        print("Probable problem, spectral type not in the books according to simbad, using G-mask")
         mask = xc_masks[0]
         sp_type = 'G2'
     return sp_type, mask
@@ -3433,19 +3434,19 @@ def get_mask_teff(T_eff,base='../../xc_masks/'):
                 base+'K5.mas',\
                 base+'M2.mas' ]
     if (T_eff >= 4300) and (T_eff < 5350):
-        print "Using K mask according to T_eff"
+        print("Using K mask according to T_eff")
         mask = xc_masks[1]
         sp_type = 'K5'
     elif (T_eff >= 5350) and (T_eff < 6100):
-        print "Using G mask according to T_eff"
+        print("Using G mask according to T_eff")
         mask = xc_masks[0]
         sp_type = 'G2'
     elif (T_eff >= 6100):
-        print "Rather hot star according to T_eff, using G mask but this target is probably earlier than that.."
+        print("Rather hot star according to T_eff, using G mask but this target is probably earlier than that..")
         mask = xc_masks[0]
         sp_type = 'G2'
     else:
-        print "Using M mask according to T_eff"
+        print("Using M mask according to T_eff")
         mask = xc_masks[2]
         sp_type = 'M5'
     return sp_type, mask
@@ -3587,7 +3588,7 @@ def simbad_coords(obname,mjd):
                 i = 1
             else:
                 i=0
-            print 'Trying again to perform query to SIMBAD, changing to', paths[i]
+            print('Trying again to perform query to SIMBAD, changing to', paths[i])
 
         else:
             cond = False
@@ -3595,7 +3596,7 @@ def simbad_coords(obname,mjd):
     result = output.getvalue()
     lines = result.split('\n')
     info = lines[6].split('|')
-    print info
+    print(info)
     if 'Unrecogniezd' in info[0] or 'not' in info[0]:
         know = False
     else:
@@ -3786,11 +3787,11 @@ def new_ccf(data,model_path):
                     ccftot += ccf
                 #plot(ccv,ccf/np.sum(ccf))
                 #show()
-            print model, rot, ccftot.min()
+            print(model, rot, ccftot.min())
             if ccftot.min() < mini:
                 mini = ccftot.min()
                 modmin = par
                 rotmin = rot
             #plot(ccv,ccftot)
     #show()
-    print modmin,rotmin,mini
+    print(modmin,rotmin,mini)

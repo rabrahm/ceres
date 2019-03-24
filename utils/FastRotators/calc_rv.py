@@ -1,3 +1,4 @@
+from __future__ import print_function
 import pyfits
 import argparse
 import os
@@ -37,7 +38,7 @@ os.system('mkdir '+dirin+'/FR')
 
 
 for fit in fits:
-    print 'RV computation of file ' + fit + ' whith model:' + pars
+    print('RV computation of file ' + fit + ' whith model:' + pars)
 
     sc = pyfits.getdata(fit)
     hd = pyfits.getheader(fit)
@@ -74,7 +75,7 @@ for fit in fits:
     RVerr2 = np.around(RVerr2,4)
     BSerr  = np.around(BSerr,4)
 
-    print '\tRV = ',p1gau[1], '+/-', RVerr2, 'km/s'
+    print('\tRV = ',p1gau[1], '+/-', RVerr2, 'km/s')
 
     p1gau_m = p1gau
     XCmodel = XCmodelgau
@@ -85,7 +86,7 @@ for fit in fits:
     spfr.plot_CCF_FR(xc_dict,path=ccf_pdf)
     SP2 = spfr.calc_bss2(vels,xc_av,p1gau)
 
-    print '\tBS = ',SP2, '+/-', BSerr,'km/s'
+    print('\tBS = ',SP2, '+/-', BSerr,'km/s')
 
     line_out = "%-15s %18.8f %9.4f %7.4f %9.3f %5.3f   %s   ceres_FR   %8d %6d %5.2f %5.2f %5.1f %4.2f %5.2f %6.1f %4d %s\n"%\
            (hd['HIERARCH TARGET NAME'], 2400000.5 + float(hd['HIERARCH MBJD']), p1gau[1], RVerr2, SP2, BSerr, hd['INST'], int(hd['RESOL']), teff, logg, feh, vsini, xc_av.min(), p1gau[2],\
