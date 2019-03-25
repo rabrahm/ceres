@@ -1,3 +1,4 @@
+from __future__ import print_function
 import matplotlib
 matplotlib.use("Agg")
 from astropy.io import fits as pyfits
@@ -30,7 +31,7 @@ def MedianCombine(ImgList,ZF=0.):
     h = pyfits.open(ImgList[0])[0]
     d = h.data
     d = OverscanTrim(d) - ZF
-    
+
     factor = 1.25
     if (n < 3):
         factor = 1
@@ -85,17 +86,17 @@ def getObName(h):
         values = [
             ("scriptFIle", (pycurl.FORM_FILE, tfile))
             ]
-        output = StringIO.StringIO() 
+        output = StringIO()
         c = pycurl.Curl()
-        
+
         c.setopt(pycurl.URL, "http://simbad.harvard.edu/simbad/sim-script")
         c.setopt(c.HTTPPOST, values)
-        c.setopt(pycurl.WRITEFUNCTION, output.write) 
+        c.setopt(pycurl.WRITEFUNCTION, output.write)
         c.perform()
         c.close()
-        
-        result = output.getvalue() 
-        lines = result.split('\n') 
+
+        result = output.getvalue()
+        lines = result.split('\n')
         result = lines[len(lines)-3]
         if (result.count('No') > 0):
             # build alternate obname based on ra-dec
@@ -116,7 +117,7 @@ def getObName(h):
 
 def FileClassify(dir, log):
     """
-    
+
     Classifies all files in a directory and writes a night log of science images
 
     """
@@ -142,57 +143,57 @@ def FileClassify(dir, log):
 
     bad_files = []
     if os.access(dir+'bad_files.txt',os.F_OK):
-    	bf = open(dir+'bad_files.txt')
-	linesbf = bf.readlines()
-	for line in linesbf:
-		bad_files.append(dir+line[:-1])
-	bf.close()
-    
+        bf = open(dir+'bad_files.txt')
+        linesbf = bf.readlines()
+        for line in linesbf:
+            bad_files.append(dir+line[:-1])
+        bf.close()
+
     all_files = glob.glob(dir+"/CORALIE*fits")
     for archivo in all_files:
 
-	dump = False
-	for bf in bad_files:
-		if archivo == bf:
-			dump = True
-			break
-	if dump == False:
-		h = pyfits.open(archivo)
-		hd = pyfits.getheader(archivo)
-		if h[0].header['HIERARCH ESO TPL TYPE'] == 'OBTH' or h[0].header['HIERARCH ESO TPL TYPE'] == 'OBFP':
-		    obname = getObName(h)
-		    ra     = h[0].header['HIERARCH ESO OBS ALPHACAT']
-		    delta  = h[0].header['HIERARCH ESO OBS DELTACAT']
-		    airmass= h[0].header['HIERARCH ESO OBS TARG AIRMASS']
-		    texp   = h[0].header['HIERARCH ESO OBS TEXP']
-		    date   = h[0].header['HIERARCH ESO CORA SHUTTER START DATE']
-		    hour   = h[0].header['HIERARCH ESO CORA SHUTTER START HOUR'] 
-		    line = "%-15s %10s %10s %8.2f %4.2f %8s %7.4f %s\n" % (obname, ra, delta, texp, airmass, date, hour, archivo)
-		    f.write(line)
-		    simThAr_sci.append(archivo)
-		    obnames.append( obname )
-		    exptimes.append( texp )
-	 
-		elif h[0].header['HIERARCH ESO TPL TYPE'] == 'BIAS':
-		    biases.append(archivo)
-		elif h[0].header['HIERARCH ESO TPL TYPE'] == 'FFO':
-		    ob_flats.append(archivo)
-		elif h[0].header['HIERARCH ESO TPL TYPE'] == 'FFC':
-		    co_flats.append(archivo)
-		elif h[0].header['HIERARCH ESO TPL TYPE'] == 'FF2':
-		    flats.append(archivo)
-		elif h[0].header['HIERARCH ESO TPL TYPE'] == 'LOCO':
-		    ob_loc.append(archivo)
-		elif h[0].header['HIERARCH ESO TPL TYPE'] == 'LOCC':
-		    co_loc.append(archivo)
-		elif h[0].header['HIERARCH ESO TPL TYPE'] == 'THA2':
-		    ThAr_ref.append(archivo)
-		    mjd, mjd0 = mjd_fromheader(h)
-		    ThAr_ref_dates.append( mjd )
-		elif h[0].header['HIERARCH ESO TPL TYPE'] == 'THFP':
-		    FP_ref.append(archivo)
-		    mjd, mjd0 = mjd_fromheader(h)
-		    ThFP_ref_dates.append( mjd )
+        dump = False
+        for bf in bad_files:
+            if archivo == bf:
+                dump = True
+                break
+        if dump == False:
+            h = pyfits.open(archivo)
+            hd = pyfits.getheader(archivo)
+            if h[0].header['HIERARCH ESO TPL TYPE'] == 'OBTH' or h[0].header['HIERARCH ESO TPL TYPE'] == 'OBFP':
+                obname = getObName(h)
+                ra     = h[0].header['HIERARCH ESO OBS ALPHACAT']
+                delta  = h[0].header['HIERARCH ESO OBS DELTACAT']
+                airmass= h[0].header['HIERARCH ESO OBS TARG AIRMASS']
+                texp   = h[0].header['HIERARCH ESO OBS TEXP']
+                date   = h[0].header['HIERARCH ESO CORA SHUTTER START DATE']
+                hour   = h[0].header['HIERARCH ESO CORA SHUTTER START HOUR']
+                line = "%-15s %10s %10s %8.2f %4.2f %8s %7.4f %s\n" % (obname, ra, delta, texp, airmass, date, hour, archivo)
+                f.write(line)
+                simThAr_sci.append(archivo)
+                obnames.append( obname )
+                exptimes.append( texp )
+
+            elif h[0].header['HIERARCH ESO TPL TYPE'] == 'BIAS':
+                biases.append(archivo)
+            elif h[0].header['HIERARCH ESO TPL TYPE'] == 'FFO':
+                ob_flats.append(archivo)
+            elif h[0].header['HIERARCH ESO TPL TYPE'] == 'FFC':
+                co_flats.append(archivo)
+            elif h[0].header['HIERARCH ESO TPL TYPE'] == 'FF2':
+                flats.append(archivo)
+            elif h[0].header['HIERARCH ESO TPL TYPE'] == 'LOCO':
+                ob_loc.append(archivo)
+            elif h[0].header['HIERARCH ESO TPL TYPE'] == 'LOCC':
+                co_loc.append(archivo)
+            elif h[0].header['HIERARCH ESO TPL TYPE'] == 'THA2':
+                ThAr_ref.append(archivo)
+                mjd, mjd0 = mjd_fromheader(h)
+                ThAr_ref_dates.append( mjd )
+            elif h[0].header['HIERARCH ESO TPL TYPE'] == 'THFP':
+                FP_ref.append(archivo)
+                mjd, mjd0 = mjd_fromheader(h)
+                ThFP_ref_dates.append( mjd )
     f.close()
 
     return biases, ob_flats, co_flats, ob_loc, co_loc, ThAr_ref, FP_ref, simThAr_sci, simFP_sci, ThAr_ref_dates, ThFP_ref_dates, obnames, obnames_FP, exptimes, exptimes_FP,flats
@@ -201,8 +202,8 @@ def mjd_fromheader(h):
     """
     return modified Julian date from header
     """
-    
-    datetu = h[0].header['HIERARCH ESO CORA SHUTTER START DATE'] 
+
+    datetu = h[0].header['HIERARCH ESO CORA SHUTTER START DATE']
     ut     = h[0].header['HIERARCH ESO CORA SHUTTER START HOUR']
     mjd0,mjd,i = GLOBALutils.iau_cal2jd(int(datetu[0:4]),int(datetu[4:6]),int(datetu[6:8]))
 
@@ -224,50 +225,50 @@ def XC_Final_Fit_Rot( X, Y, ldc = 0.8, vsini = 10.0 ):
     """
     f0 = 0.1
     vel0 = X[len(X)/2]
-	 
+
     def conv(x,g,x1,r1):
-	xi = np.argmin(x1**2)
-	r1 = np.hstack((r1[xi:],r1[:xi]))
-	tg = np.zeros(len(g))
-	for i in range(len(x)):
-		tg[i] = np.add.reduce(g*r1)*(x[1]-x[0])
-		r1 = np.hstack((r1[-1:],r1[:-1]))
-	return tg
+        xi = np.argmin(x1**2)
+        r1 = np.hstack((r1[xi:],r1[:xi]))
+        tg = np.zeros(len(g))
+        for i in range(len(x)):
+            tg[i] = np.add.reduce(g*r1)*(x[1]-x[0])
+            r1 = np.hstack((r1[-1:],r1[:-1]))
+        return tg
 
     def fitfunc(p,x,e):
-	A    =  p[0]
-	rv   =  p[1]
-	vrot =  p[2]
-	s    =  p[3]
-	
-	g1 = np.exp(-0.5*((x-rv)/s)**2)/np.sqrt(2*np.pi*s*s)
-	d = x[1]-x[0]
-	x1 = np.arange(len(x))*d
-	x1 -= int(np.round(x1.mean()))
-	I = np.where(x1**2 < vrot**2)[0]
-	c1 = 2.*(1. - e) / (np.pi * vrot * (1. - e/3.))
-	c2 = .5 * e / (vrot * (1.-e/3.))
-	r1 = np.zeros(len(x1))
-	r1[I] = (c1*np.sqrt(1.-(x1[I]/vrot)**2) + c2*(1. - (x1[I]/vrot)**2))
+        A    =  p[0]
+        rv   =  p[1]
+        vrot =  p[2]
+        s    =  p[3]
 
-	prof = conv(x,g1,x1,r1)
+        g1 = np.exp(-0.5*((x-rv)/s)**2)/np.sqrt(2*np.pi*s*s)
+        d = x[1]-x[0]
+        x1 = np.arange(len(x))*d
+        x1 -= int(np.round(x1.mean()))
+        I = np.where(x1**2 < vrot**2)[0]
+        c1 = 2.*(1. - e) / (np.pi * vrot * (1. - e/3.))
+        c2 = .5 * e / (vrot * (1.-e/3.))
+        r1 = np.zeros(len(x1))
+        r1[I] = (c1*np.sqrt(1.-(x1[I]/vrot)**2) + c2*(1. - (x1[I]/vrot)**2))
 
-	ret = 1. - A*prof
-	return ret
-        
+        prof = conv(x,g1,x1,r1)
+
+        ret = 1. - A*prof
+        return ret
+
     def errfunc(p, x, y, ldc):
         clutch = 0.0
         mean = p[1]
         if (mean < np.min(x)):
             clutch = 1e10*(1.0 - np.exp(-np.abs(mean-np.min(x)) / 3) )
-        if (mean > np.max(x)): 
+        if (mean > np.max(x)):
             clutch = 1e10*(1.0 - np.exp(-np.abs(mean-np.max(x)) / 3) )
         return np.ravel( (fitfunc(p,x,ldc) - y) )  + clutch
 
 
     p0 = np.array( [1.,vel0,vsini,1.] )
 
-    
+
     p1, success = scipy.optimize.leastsq(errfunc,p0, args=(X,Y,ldc))
     #plt.plot(X,Y)
     #plt.plot(X, 1. - p1[0]*np.exp(-0.5*((X-p1[1])/p1[3])**2)/np.sqrt(2*np.pi*p1[3]*p1[3]))
@@ -279,11 +280,11 @@ def XC_Final_Fit_Rot( X, Y, ldc = 0.8, vsini = 10.0 ):
 
     #plt.plot(X, 1. - p1[0]*r1)
     #plt.show()
-        
+
     return p1, fitfunc(p1,X,ldc)
 
 def get_ldc(T,G,Z,M,ldfile = 'lin_coe_sloan2.dat'):
-	f = np.loadtxt(ldfile)
-	
-	I = np.argmin( np.sqrt((T - f[:,2])**2)/T + np.sqrt((G - f[:,1])**2)/G + np.sqrt((Z - f[:,3])**2)/np.sqrt(Z**2) )
-	return f[I][5]
+    f = np.loadtxt(ldfile)
+
+    I = np.argmin( np.sqrt((T - f[:,2])**2)/T + np.sqrt((G - f[:,1])**2)/G + np.sqrt((Z - f[:,3])**2)/np.sqrt(Z**2) )
+    return f[I][5]

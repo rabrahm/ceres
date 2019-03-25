@@ -15,18 +15,9 @@ April 13th, 2012 ---> Added special functions SObtainP and SObtainSpectrum. Thes
 ----------------------------------------------------------------------------------------------------
                                ~ HOW TO INSTALL THE MODULE ~
 ----------------------------------------------------------------------------------------------------
- 1.- On console, as root, do "python setup.py build".
+ 1.- On console, do "python setup.py install" for a system install.  Append "--user" for local install.
 
- 2.- A new folder is created called "build". Inside, you'll find another folder called 
-     lib.OS-MOD-PyVer, where OS is your operating system, MOD is the version and PyVer 
-     is your python version. In my case, it looks like this: 
-
-                                    /build/lib.linux-i686-2.6
-    
-     Inside that folder, a module called "Marsh.so" is created. Move that to the directory 
-     where you are going to perform the extraction (i.e. where your Python code is).
-
- 3.- That's it! Information on how to use it is given on the Test.py file attached to the package.
+ 2.- That's it! Information on how to use it is given on the Test.py file attached to the package.
 
 ----------------------------------------------------------------------------------------------------
                            ~ Frequented Asked Questions (FAQ) ~

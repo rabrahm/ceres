@@ -1,3 +1,4 @@
+from __future__ import print_function
 # -*- coding: utf-8 -*-
 import pyfits
 from pylab import *
@@ -7,11 +8,11 @@ import scipy
 
 def getSpectrum(filename,b,Aperture,minimum_column,maximum_column):
 
- hdulist = pyfits.open(filename)                  # Here we obtain the image...
- data=hdulist[0].data                             # ... and we obtain the image matrix.
- Result=Marsh.SimpleExtraction((data.flatten()).astype(double),scipy.polyval(b,numpy.arange(data.shape[1])).astype(double),data.shape[0],data.shape[1],data.shape[1],Aperture,minimum_column,maximum_column)
- FinalMatrix=asarray(Result)                      # After the function, we convert our list to a Numpy array.  
- return FinalMatrix
+    hdulist = pyfits.open(filename)                  # Here we obtain the image...
+    data=hdulist[0].data                             # ... and we obtain the image matrix.
+    Result=Marsh.SimpleExtraction((data.flatten()).astype(double),scipy.polyval(b,numpy.arange(data.shape[1])).astype(double),data.shape[0],data.shape[1],data.shape[1],Aperture,minimum_column,maximum_column)
+    FinalMatrix=asarray(Result)                      # After the function, we convert our list to a Numpy array.
+    return FinalMatrix
 
 # Main function:
 

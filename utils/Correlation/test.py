@@ -1,3 +1,4 @@
+from __future__ import print_function
 #!/usr/bin/python
 
 import numpy
@@ -17,15 +18,15 @@ Zv = numpy.zeros(cant,float)
 Vv = numpy.zeros(cant,float)
 """print spectra"""
 m=5
-print spectra
+print(spectra)
 while m<cant:
 
-	Tv[m],Gv[m],Zv[m],Vv[m] = correlation.CCF(path,spectra[m])
-	
-	m=m+1
+    Tv[m],Gv[m],Zv[m],Vv[m] = correlation.CCF(path,spectra[m])
+
+    m=m+1
 m=0
 while m<cant:
 
-	print spectra[m],Tv[m],Gv[m],Zv[m],Vv[m]
-	
-	m=m+1
+    print(spectra[m],Tv[m],Gv[m],Zv[m],Vv[m])
+
+    m=m+1
