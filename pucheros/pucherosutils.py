@@ -13,7 +13,11 @@ from astropy.io import fits as pyfits
 import os
 import glob
 import tempfile
-import StringIO
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
+
 import pycurl
 from pylab import *
 
@@ -364,7 +368,7 @@ def get_coords(obname,mjd):
     tf.write("query id %s\n" % ( obname ) )
     tf.close()
     values = [("scriptFIle", (pycurl.FORM_FILE, tfile))]
-    output = StringIO.StringIO()
+    output = StringIO()
     c = pycurl.Curl()
     c.setopt(pycurl.URL, "http://simbad.harvard.edu/simbad/sim-script")
     c.setopt(c.HTTPPOST, values)

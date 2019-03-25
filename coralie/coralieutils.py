@@ -86,7 +86,7 @@ def getObName(h):
         values = [
             ("scriptFIle", (pycurl.FORM_FILE, tfile))
             ]
-        output = StringIO.StringIO()
+        output = StringIO()
         c = pycurl.Curl()
 
         c.setopt(pycurl.URL, "http://simbad.harvard.edu/simbad/sim-script")

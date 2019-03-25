@@ -14,7 +14,10 @@ import os
 import matplotlib.pyplot as plt
 import sys
 import tempfile
-import StringIO
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
 import string
 import pycurl
 from multiprocessing import Pool
@@ -2549,7 +2552,7 @@ def simbad_query_obname(obname):
     values = [
         ("scriptFIle", (pycurl.FORM_FILE, tfile))
     ]
-    output = StringIO.StringIO()
+    output = StringIO()
     c = pycurl.Curl()
 
     c.setopt(pycurl.URL, "http://simbad.u-strasbg.fr/simbad/sim-script")
@@ -2593,7 +2596,7 @@ def simbad_query_coords(ra,dec):
     values = [
         ("scriptFIle", (pycurl.FORM_FILE, tfile))
     ]
-    output = StringIO.StringIO()
+    output = StringIO()
     c = pycurl.Curl()
 
     c.setopt(pycurl.URL, "http://simbad.u-strasbg.fr/simbad/sim-script")
@@ -3577,7 +3580,7 @@ def simbad_coords(obname,mjd):
             tf.write("query id %s\n" % ( obname ) )
             tf.close()
             values = [("scriptFIle", (pycurl.FORM_FILE, tfile))]
-            output = StringIO.StringIO()
+            output = StringIO()
             c = pycurl.Curl()
             c.setopt(pycurl.URL, paths[i])
             c.setopt(c.HTTPPOST, values)
