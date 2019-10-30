@@ -11,6 +11,7 @@ base = '../'
 sys.path.append(base+"utils/Correlation")
 sys.path.append(base+"utils/GLOBALutils")
 sys.path.append(base+"utils/OptExtract")
+sys.path.append(base+"coralie")
 
 baryc_dir= base+'utils/SSEphem/'
 sys.path.append(baryc_dir)
@@ -18,9 +19,11 @@ ephemeris='DEc403'
 
 # ceres modules
 import ferosutils
+import ferosutils_fp
 import correlation
 import GLOBALutils
 import Marsh
+import fabryperot
 
 # other useful modules
 import argparse
@@ -50,6 +53,7 @@ parser.add_argument('-npools', default=1)
 parser.add_argument('-o2do',default='all')
 parser.add_argument('-reffile',default='default')
 parser.add_argument('-lamp',default='LAMP3')
+parser.add_argument('-ref_thar',default=None)
 
 args   = parser.parse_args()
 dirin            = args.directorio
@@ -61,7 +65,7 @@ npools           = int(args.npools)
 object2do        = args.o2do
 reffile          = args.reffile
 lamp             = str(args.lamp)
-
+ref_thar          = args.ref_thar
 ####### GLOBAL VARIABLES #####
 ## perhaps put into options ##
 force_pre_process  = False
@@ -134,7 +138,9 @@ print "\tProducts of reduction will be in",dirout
 print '\n'
 
 biases, flats, ThArNe_ref, ThAr_Ne_ref, simThAr_sci, simSky_sci, ThAr_ref_dates, \
-        ThAr_Ne_ref_dates, darks, dark_times = ferosutils.FileClassify(dirin,log, lamp=lamp)
+        ThAr_Ne_ref_dates, darks, dark_times, simThAr_FP, simFP_FP, simFP_sci = ferosutils_fp.FileClassify(dirin,log, lamp=lamp)
+
+
 #ThAr_Ne_ref,ThAr_Ne_ref_dates = ThAr_Ne_ref[:8],ThAr_Ne_ref_dates[:8]
 if ( (os.access(dirout+'Flat.fits',os.F_OK) == False)        or \
      (os.access(dirout+'trace.pkl',os.F_OK) == False)        or \
@@ -313,6 +319,7 @@ S_flat_co_n, norms_co = GLOBALutils.FlatNormalize_single( S_flat_co, mid=int(.5*
 
 if nord_ob < n_useful:
 	n_useful = thar_S_ob.shape[0]
+
 print '\n\tExtraction of ThAr calibration frames:'
 # Extract all ThAr+Ne files
 for fsim in ThAr_Ne_ref:
@@ -598,88 +605,458 @@ p_mjds   = []
 refidx = 0
 fname = dirout +'thar_shifts.pdf'
 dct_shfts = {}
-        
-force_shift = False
-if os.access(dirout+'shifts.pkl',os.F_OK):
-    dct_shfts = pickle.load(open(dirout+'shifts.pkl','r'))
-    for fl in ThAr_Ne_ref:
-        if not fl in dct_shfts['names']:
-            force_shift = True
-            dct_shfts = {}
-            break
+print 'He', ref_thar
+if ref_thar != None:
+    print 'Ho'
+    pkl_wsol = ref_thar
+    wavsol_dict = pickle.load(open(pkl_wsol,'r'))
+
 else:
-    force_shift = True
-#"""
-print len(ThAr_all) 
-if force_shift and len(sorted_ThAr_Ne_dates)>6:
-    f, axarr = plt.subplots(len(sorted_ThAr_Ne_dates), sharex=True,figsize=(5, 30))
-    Thar_shifts_out = dirout + 'ThAr_Ne_shifts.dat'
-    difs = 0
-    mindif = 9999999999
-    j = 0
-    dct_shft = {}
-    vec_dif = []
-    vec_nam = []
-    while j < len(sorted_ThAr_Ne_dates):
-        fref   = ThAr_Ne_ref[sorted_ThAr_Ne_dates[j]]
-        vec_nam.append(fref)
-        refdct = pickle.load( open(dirout + fref.split('/')[-1][:-4]+'wavsolpars.pkl','r' ) )
-        p_shifts = []
-        p_shifts_ob = []
-        p_mjds   = []
-        i = 0
-        while i < len(sorted_ThAr_Ne_dates):
-            fsim  = ThAr_Ne_ref[sorted_ThAr_Ne_dates[i]]
-            pdict = pickle.load( open(dirout + fsim.split('/')[-1][:-4]+'wavsolpars.pkl','r' ) )
-            p_shift, pix_centers, orders, wavelengths, I, rms_ms, residuals  = \
+	force_shift = False
+	if os.access(dirout+'shifts.pkl',os.F_OK):
+	    dct_shfts = pickle.load(open(dirout+'shifts.pkl','r'))
+	    for fl in ThAr_Ne_ref:
+		if not fl in dct_shfts['names']:
+		    force_shift = True
+		    dct_shfts = {}
+		    break
+	else:
+	    force_shift = True
+	#"""
+	print len(ThAr_all) 
+	if force_shift and len(sorted_ThAr_Ne_dates)>6:
+	    f, axarr = plt.subplots(len(sorted_ThAr_Ne_dates), sharex=True,figsize=(5, 30))
+	    Thar_shifts_out = dirout + 'ThAr_Ne_shifts.dat'
+	    difs = 0
+	    mindif = 9999999999
+	    j = 0
+	    dct_shft = {}
+	    vec_dif = []
+	    vec_nam = []
+	    while j < len(sorted_ThAr_Ne_dates):
+		fref   = ThAr_Ne_ref[sorted_ThAr_Ne_dates[j]]
+		vec_nam.append(fref)
+		refdct = pickle.load( open(dirout + fref.split('/')[-1][:-4]+'wavsolpars.pkl','r' ) )
+		p_shifts = []
+		p_shifts_ob = []
+		p_mjds   = []
+		i = 0
+		while i < len(sorted_ThAr_Ne_dates):
+		    fsim  = ThAr_Ne_ref[sorted_ThAr_Ne_dates[i]]
+		    pdict = pickle.load( open(dirout + fsim.split('/')[-1][:-4]+'wavsolpars.pkl','r' ) )
+		    p_shift, pix_centers, orders, wavelengths, I, rms_ms, residuals  = \
+					    GLOBALutils.Global_Wav_Solution_vel_shift(pdict['All_Pixel_Centers_co'],\
+					    pdict['All_Wavelengths_co'], pdict['All_Orders_co'],\
+					    np.ones(len(pdict['All_Wavelengths_co'])), refdct['p1_co'],\
+					    minlines=1200, maxrms=MRMS,order0=OO0, ntotal=n_useful,\
+					    Cheby=use_cheby, Inv=Inverse_m, npix=Flat.shape[1],nx=ncoef_x,nm=ncoef_m)
+		    p_shifts.append(p_shift)
+		    p_mjds.append(pdict['mjd'])
+		    p_shift_ob, pix_centers_ob, orders_ob, wavelengths_ob, I_ob, rms_ms_ob, residuals_ob  = \
+				GLOBALutils.Global_Wav_Solution_vel_shift(pdict['All_Pixel_Centers'],\
+				pdict['All_Wavelengths'], pdict['All_Orders'],\
+				np.ones(len(pdict['All_Wavelengths'])), refdct['p1'],\
+				minlines=1200, maxrms=MRMS,order0=OO0, ntotal=n_useful,\
+				Cheby=use_cheby, Inv=Inverse_m, npix=Flat.shape[1],nx=ncoef_x,nm=ncoef_m)
+		    p_shifts_ob.append(p_shift_ob)
+		    i+=1
+		p_shifts = np.array(p_shifts)
+		p_shifts_ob = np.array(p_shifts_ob)
+		dif = np.absolute(np.mean(p_shifts-p_shifts_ob))
+		vec_dif.append(dif)        
+		axarr[j].plot(p_shifts-p_shifts_ob)
+		axarr[j].axhline(0)
+		axarr[j].set_title(fref.split('/')[-1]+'offset: '+str(np.around(dif,5)))
+		if dif < mindif:
+		    mindif = dif
+		    difs = j
+		print j, dif
+		j+=1
+	    dct_shfts['vals']=np.array(vec_dif)
+	    dct_shfts['names']=np.array(vec_nam)
+
+	    refidx = difs
+	    p_shifts = list(p_shifts)
+	    savefig(fname,format='pdf')
+
+	    pickle.dump(dct_shfts, open(dirout+'shifts.pkl','w'))
+
+	elif len(sorted_ThAr_Ne_dates)>6:
+	    dct_shfts = pickle.load(open(dirout+'shifts.pkl','r'))
+	    I = np.argmin(dct_shfts['vals'])
+	    goodname = dct_shfts['names'][I]
+	    j = 0
+	    while j < len(sorted_ThAr_Ne_dates):
+		if ThAr_Ne_ref[sorted_ThAr_Ne_dates[j]] == goodname:
+		    refidx = j
+		j+=1
+	else:
+	    refidx = 0
+
+	print 'This:',ThAr_Ne_ref[sorted_ThAr_Ne_dates[refidx]]
+	#print gfds
+	indice = sorted_ThAr_Ne_dates[refidx]	
+	pkl_wsol = dirout + ThAr_Ne_ref[indice].split('/')[-1][:-4]+'wavsolpars.pkl'
+	wavsol_dict = pickle.load(open(pkl_wsol,'r'))
+
+print '\n\tExtraction of FP calibration frames:'
+
+mjdsfp = []
+for fsim in simFP_FP:
+    hthar = pyfits.open( fsim )
+    mjd, mjd0    = ferosutils.mjd_fromheader( hthar )
+    mjdsfp.append(mjd)
+mjdsfp = np.array(mjdsfp)
+I = np.argsort(mjdsfp)
+simFP_FP = simFP_FP[I]
+mjdsfp = mjdsfp[I]
+#simFP_FP = simFP_FP[:3]
+for fsim in simFP_FP:
+    print "\t\tWorking on FP file ", fsim, "..."
+    hthar = pyfits.open( fsim )
+    mjd, mjd0    = ferosutils.mjd_fromheader( hthar )
+    dfp = ferosutils.OverscanTrim(pyfits.getdata(fsim))
+    dfp = dfp - MasterBias
+    dfp = dfp.T
+
+    RO_thar, GA_thar = ferosutils.get_RG(pyfits.getheader(fsim))
+
+    if bad_colummn:
+        dthar = ferosutils.b_col(dfp)
+
+    fp_pkl = dirout + fsim.split('/')[-1][:-4]+'fplines.pkl'
+    fp_fits_ob = dirout + fsim.split('/')[-1][:-4]+'spec.ob.fits.S'
+    fp_fits_co = dirout + fsim.split('/')[-1][:-4]+'spec.co.fits.S'
+    fp_fits_ob_simple = dirout + fsim.split('/')[-1][:-4]+'spec.simple.ob.fits.S'
+    fp_fits_co_simple = dirout + fsim.split('/')[-1][:-4]+'spec.simple.co.fits.S'
+  
+    if ( os.access(fp_fits_ob,os.F_OK) == False ) or \
+       ( os.access(fp_fits_co,os.F_OK) == False ) or \
+       ( os.access(fp_pkl,os.F_OK) == False ) or \
+       ( os.access(fp_fits_ob_simple,os.F_OK) == False ) or \
+       ( os.access(fp_fits_co_simple,os.F_OK) == False ) or \
+       (force_thar_extract):
+
+        print "\t\tNo previous extraction or extraction forced for FP file", fsim, "extracting..."
+
+	fp_Ss_ob = GLOBALutils.simple_extraction(dfp,c_ob,ext_aperture,min_extract_col,max_extract_col,npools)
+	fp_S_ob  = GLOBALutils.optimal_extraction(dfp,P_ob,c_ob,ext_aperture,RO_thar, GA_thar,S_Marsh,100.,min_extract_col,max_extract_col,npools)
+        fp_Ss_co = GLOBALutils.simple_extraction(dfp,c_co,ext_aperture,min_extract_col,max_extract_col,npools)
+	fp_S_co  = GLOBALutils.optimal_extraction(dfp,P_co,c_co,ext_aperture,RO_thar, GA_thar,S_Marsh,100.,min_extract_col,max_extract_col,npools)
+	
+        if (os.access(fp_fits_ob,os.F_OK)):
+            os.remove( fp_fits_ob )
+        if (os.access(fp_fits_co,os.F_OK)):
+            os.remove( fp_fits_co )
+        if (os.access(fp_fits_ob_simple,os.F_OK)):
+            os.remove( fp_fits_ob_simple )
+        if (os.access(fp_fits_co_simple,os.F_OK)):
+            os.remove( fp_fits_co_simple )
+            
+        hdu = pyfits.PrimaryHDU( fp_S_ob )
+        hdu.writeto( fp_fits_ob )
+        hdu = pyfits.PrimaryHDU( fp_S_co )
+        hdu.writeto( fp_fits_co )
+        hdu = pyfits.PrimaryHDU( fp_Ss_ob )
+        hdu.writeto( fp_fits_ob_simple )
+        hdu = pyfits.PrimaryHDU( fp_Ss_co )
+        hdu.writeto( fp_fits_co_simple )
+
+	if fsim == simFP_FP[0]:
+        	fp_lines_co1 = fabryperot.InitialGuess(fp_fits_co, lim1=200, lim2=-200,oi=11,of=25)
+		fp_lines_ob1 = fabryperot.InitialGuess(fp_fits_ob, lim1=200, lim2=-200,oi=11,of=25)
+	else:
+		fp_pklt = pickle.load(open(dirout + simFP_FP[0].split('/')[-1][:-4]+'fplines.pkl','r'))
+		fp_lines_co1 = fp_pklt['fplines_co']
+		fp_lines_ob1 = fp_pklt['fplines_ob']
+
+        fp_lines_co  = fabryperot.GetFPLines(fp_fits_co,fp_lines_co1,lim1=200,lim2=-200,npools=npools,oi=11,of=25)
+        fp_lines_ob  = fabryperot.GetFPLines(fp_fits_ob,fp_lines_ob1,lim1=200,lim2=-200,npools=npools,oi=11,of=25)
+
+        if fsim == simFP_FP[0]:
+            fp_lines_co  = fabryperot.GetFPLines(fp_fits_co,fp_lines_co,lim1=200,lim2=-200,npools=npools,oi=11,of=25)
+            fp_lines_ob  = fabryperot.GetFPLines(fp_fits_ob,fp_lines_ob,lim1=200,lim2=-200,npools=npools,oi=11,of=25)
+
+        pdict = {'mjd':mjd,'fplines_co':fp_lines_co, 'fplines_ob':fp_lines_ob}
+        pickle.dump( pdict, open( fp_pkl, 'w' ) )
+    else:
+        print "\t\FP file", fsim, "all ready extracted, loading..."
+
+#print fds
+"""
+mini   = -1
+minval = 0
+vecs   = []
+i=0
+for fsim in simFP_FP:
+    print S_flat_ob_n.shape[2],'\n'
+    fp_pkl = pickle.load(open(dirout + fsim.split('/')[-1][:-4]+'fplines.pkl','r'))
+    fp_fits_ob = pyfits.getdata(dirout + fsim.split('/')[-1][:-4]+'spec.ob.fits.S')
+    fp_fits_co = pyfits.getdata(dirout + fsim.split('/')[-1][:-4]+'spec.co.fits.S')
+    vec = []
+    ref_lines_co = fp_pkl['fplines_co']
+    ref_lines_ob = fp_pkl['fplines_ob']
+    for fsim2 in simFP_FP:
+	if fsim != fsim2:
+            fp_pkl = pickle.load(open(dirout + fsim2.split('/')[-1][:-4]+'fplines.pkl','r'))
+            lines_co = fp_pkl['fplines_co']
+            lines_ob = fp_pkl['fplines_ob']
+	    tdrifts_co, tdrifts_ob = np.array([]), np.array([])
+	    #tweights_co, tweights_ob = np.array([]), np.array([])
+            for order in range(11,25):
+	        oss = order - o0
+                m   = order + OO0
+	        chebs_co = GLOBALutils.Calculate_chebs(ref_lines_co['order_'+str(int(order))], m, order0=OO0,\
+		    ntotal=n_useful, npix=S_flat_ob_n.shape[2], Inverse=Inverse_m,nx=ncoef_x,nm=ncoef_m)
+	        chebs_ob = GLOBALutils.Calculate_chebs(ref_lines_ob['order_'+str(int(order))], m, order0=OO0,\
+		    ntotal=n_useful, npix=S_flat_ob_n.shape[2], Inverse=Inverse_m,nx=ncoef_x,nm=ncoef_m)
+	        WavSol_ob_ref = (1.0/float(m)) * GLOBALutils.Joint_Polynomial_Cheby(wavsol_dict['p1'],chebs_ob,ncoef_x,ncoef_m)
+	        WavSol_co_ref = (1.0/float(m)) * GLOBALutils.Joint_Polynomial_Cheby(wavsol_dict['p1_co'],chebs_co,ncoef_x,ncoef_m)
+
+		#chebs_co_tot = GLOBALutils.Calculate_chebs(np.arange(S_flat_ob_n.shape[2]), m, order0=OO0,\
+		#    ntotal=n_useful, npix=S_flat_ob_n.shape[2], Inverse=Inverse_m,nx=ncoef_x,nm=ncoef_m)
+	        #WavSol_co_tot = (1.0/float(m)) * GLOBALutils.Joint_Polynomial_Cheby(wavsol_dict['p1_co'],chebs_co_tot,ncoef_x,ncoef_m)
+
+	        chebs_co = GLOBALutils.Calculate_chebs(lines_co['order_'+str(int(order))], m, order0=OO0,\
+		    ntotal=n_useful, npix=S_flat_ob_n.shape[2], Inverse=Inverse_m,nx=ncoef_x,nm=ncoef_m)
+	        chebs_ob = GLOBALutils.Calculate_chebs(lines_ob['order_'+str(int(order))], m, order0=OO0,\
+		    ntotal=n_useful, npix=S_flat_ob_n.shape[2], Inverse=Inverse_m,nx=ncoef_x,nm=ncoef_m)
+	        WavSol_ob = (1.0/float(m)) * GLOBALutils.Joint_Polynomial_Cheby(wavsol_dict['p1'],chebs_ob,ncoef_x,ncoef_m)
+	        WavSol_co = (1.0/float(m)) * GLOBALutils.Joint_Polynomial_Cheby(wavsol_dict['p1_co'],chebs_co,ncoef_x,ncoef_m)
+
+	        Ico = np.where((lines_co['order_'+str(int(order))]!=-999) & (ref_lines_co['order_'+str(int(order))]!=-999))[0]
+	        drifts_co = 299792458.*(WavSol_co_ref[Ico] - WavSol_co[Ico]) / WavSol_co_ref[Ico]
+		#weight_co = lines_co['order_amps_'+str(int(order))]
+	        Iob = np.where((lines_ob['order_'+str(int(order))]!=-999) & (ref_lines_ob['order_'+str(int(order))]!=-999))[0]
+	        drifts_ob = 299792458.*(WavSol_ob_ref[Iob] - WavSol_ob[Iob]) / WavSol_ob_ref[Iob]
+		#weight_ob = lines_ob['order_amps_'+str(int(order))]
+
+		tempw = WavSol_co[Ico]
+
+		II = fabryperot.clipp(drifts_co,n=3)
+		#III = np.where(weight_co[II]>0)[0]
+	        tdrifts_co = np.hstack((tdrifts_co,drifts_co[II]))
+		#tweights_co = np.hstack((tweights_co,weight_co[II][III]))
+		#plot(tempw,drifts_co,'ro')
+		#plot(tempw[II],drifts_co[II],'o')
+
+		II = fabryperot.clipp(drifts_ob,n=3)
+		#III = np.where(weight_ob[II]>0)[0]
+	        tdrifts_ob = np.hstack((tdrifts_ob,drifts_ob[II]))
+		#tweights_ob = np.hstack((tweights_ob,weight_ob[II][III]))
+
+	    #show()
+	    #fp_shift_co = np.sum(tdrifts_co*tweights_co) / np.sum(tweights_co)
+	    #fp_error_co = np.sqrt(np.sum( tweights_co * (tdrifts_co - fp_shift_co)**2 ) / np.sum(tweights_co))
+	    #nlines_co = np.sum(tweights_co/np.max(tweights_co))
+	    #fp_error_co = fp_error_co / np.sqrt(nlines_co)
+
+	    #fp_shift_ob = np.sum(tdrifts_ob*tweights_ob) / np.sum(tweights_ob)
+	    #fp_error_ob = np.sqrt(np.sum( tweights_ob * (tdrifts_ob - fp_shift_ob)**2 ) / np.sum(tweights_ob))
+	    #nlines_ob = np.sum(tweights_ob/np.max(tweights_ob))
+	    #fp_error_ob = fp_error_ob / np.sqrt(nlines_ob)
+
+	    fp_shift_co = np.mean(tdrifts_co)
+	    fp_error_co = np.sqrt(np.var(tdrifts_co))/np.sqrt(float(len(tdrifts_co)))
+	    #fp_shift_ob = np.sum(tdrifts_ob*tweights_ob) / np.sum(tweights_ob)
+	    fp_shift_ob = np.mean(tdrifts_ob)
+	    fp_error_ob = np.sqrt(np.var(tdrifts_ob))/np.sqrt(float(len(tdrifts_ob)))
+	    print fsim2, fp_shift_co, fp_error_co, fp_shift_ob, fp_error_ob
+            vec.append(fp_shift_co - fp_shift_ob)
+    #plot(vec)
+    if len(vecs) == 0:
+	vecs = np.array(vec)
+    else:
+	vecs = np.vstack((vecs,np.array(vecs)))
+    val = np.mean(vec)
+    if mini == -1:
+	mini = i
+	minval = val
+    elif minval > val:
+	mini=i
+	minval = val
+    i+=1
+
+print 'ThisFP:',simFP_FP[mini]
+"""
+II=[]
+if len(simFP_FP)>0:
+  pkl_wsol = dirout + simFP_FP[0].split('/')[-1][:-4]+'fplines.pkl'
+  ref_fp_pkl   = pickle.load(open(pkl_wsol,'r'))
+  II = np.where((mjdsfp > np.min(ThAr_Ne_ref_dates)) & (mjdsfp < np.max(ThAr_Ne_ref_dates)))[0]
+
+  if len(II)==0:
+    fp_shift = 0
+    print '\n\tWARNING: ASSUMINH SHIFT OF INITIAL FP = 0...'
+    i = 0
+    thar_shifts,thar_errs,thar_mjds = [],[],[]
+    while i < len(sorted_ThAr_Ne_dates):
+        fsim  = ThAr_Ne_ref[sorted_ThAr_Ne_dates[i]]
+        pdict = pickle.load( open(dirout + fsim.split('/')[-1][:-4]+'wavsolpars.pkl','r' ) )
+        shift, pix_centers, orders, wavelengths, I, rms_ms, residuals  = \
 				    GLOBALutils.Global_Wav_Solution_vel_shift(pdict['All_Pixel_Centers_co'],\
 				    pdict['All_Wavelengths_co'], pdict['All_Orders_co'],\
-				    np.ones(len(pdict['All_Wavelengths_co'])), refdct['p1_co'],\
+				    np.ones(len(pdict['All_Wavelengths_co'])), wavsol_dict['p1_co'],\
 				    minlines=1200, maxrms=MRMS,order0=OO0, ntotal=n_useful,\
 				    Cheby=use_cheby, Inv=Inverse_m, npix=Flat.shape[1],nx=ncoef_x,nm=ncoef_m)
-            p_shifts.append(p_shift)
-            p_mjds.append(pdict['mjd'])
-            p_shift_ob, pix_centers_ob, orders_ob, wavelengths_ob, I_ob, rms_ms_ob, residuals_ob  = \
-		        GLOBALutils.Global_Wav_Solution_vel_shift(pdict['All_Pixel_Centers'],\
-		        pdict['All_Wavelengths'], pdict['All_Orders'],\
-		        np.ones(len(pdict['All_Wavelengths'])), refdct['p1'],\
-		        minlines=1200, maxrms=MRMS,order0=OO0, ntotal=n_useful,\
-		        Cheby=use_cheby, Inv=Inverse_m, npix=Flat.shape[1],nx=ncoef_x,nm=ncoef_m)
-            p_shifts_ob.append(p_shift_ob)
-            i+=1
-        p_shifts = np.array(p_shifts)
-        p_shifts_ob = np.array(p_shifts_ob)
-        dif = np.absolute(np.mean(p_shifts-p_shifts_ob))
-        vec_dif.append(dif)        
-        axarr[j].plot(p_shifts-p_shifts_ob)
-        axarr[j].axhline(0)
-        axarr[j].set_title(fref.split('/')[-1]+'offset: '+str(np.around(dif,5)))
-        if dif < mindif:
-            mindif = dif
-            difs = j
-        print j, dif
-        j+=1
-    dct_shfts['vals']=np.array(vec_dif)
-    dct_shfts['names']=np.array(vec_nam)
+        precision = rms_ms/np.sqrt(len(I))
+	thar_errs.append(precision)
+        thar_shifts.append(299792458.*shift[0]/1e6)
+        thar_mjds.append(pdict['mjd'])
+        i+=1
+    thar_errs   = np.array(thar_errs)
+    thar_shifts = np.array(thar_shifts)
+    thar_mjds   = np.array(thar_mjds)
 
-    refidx = difs
-    p_shifts = list(p_shifts)
-    savefig(fname,format='pdf')
+    fpi_shifts = np.array([])
+    fpi_errs = np.array([])
+    ref_lines_co = ref_fp_pkl['fplines_co']
+    fpi_mjds = []
+    for i in np.arange(len(simFP_FP)):
+        fsim2 = simFP_FP[i]
+	fpi_mjds.append(mjdsfp[i])
+        fp_pkl = pickle.load(open(dirout + fsim2.split('/')[-1][:-4]+'fplines.pkl','r'))
+        lines_co = fp_pkl['fplines_co']
+	drifts = np.array([])
+        for order in range(11,25):
+	    oss = order - o0
+            m   = order + OO0
+	    chebs_co = GLOBALutils.Calculate_chebs(ref_lines_co['order_'+str(int(order))], m, order0=OO0,\
+		    ntotal=n_useful, npix=S_flat_ob_n.shape[2], Inverse=Inverse_m,nx=ncoef_x,nm=ncoef_m)
+	    WavSol_co_ref = (1.0/float(m)) * GLOBALutils.Joint_Polynomial_Cheby(wavsol_dict['p1_co'],chebs_co,ncoef_x,ncoef_m)
 
-    pickle.dump(dct_shfts, open(dirout+'shifts.pkl','w'))
+            chebs_co = GLOBALutils.Calculate_chebs(lines_co['order_'+str(int(order))], m, order0=OO0,\
+		    ntotal=n_useful, npix=S_flat_ob_n.shape[2], Inverse=Inverse_m,nx=ncoef_x,nm=ncoef_m)
+	    WavSol_co = (1.0/float(m)) * GLOBALutils.Joint_Polynomial_Cheby(wavsol_dict['p1_co'],chebs_co,ncoef_x,ncoef_m)
 
-elif len(sorted_ThAr_Ne_dates)>6:
-    dct_shfts = pickle.load(open(dirout+'shifts.pkl','r'))
-    I = np.argmin(dct_shfts['vals'])
-    goodname = dct_shfts['names'][I]
-    j = 0
-    while j < len(sorted_ThAr_Ne_dates):
-        if ThAr_Ne_ref[sorted_ThAr_Ne_dates[j]] == goodname:
-            refidx = j
-        j+=1
-else:
-    refidx = 0
-print 'This:',ThAr_Ne_ref[sorted_ThAr_Ne_dates[refidx]]
+            Ico = np.where((lines_co['order_'+str(int(order))]!=-999) & (ref_lines_co['order_'+str(int(order))]!=-999))[0]
+	    drifts_co = 299792458.*(WavSol_co_ref[Ico] - WavSol_co[Ico]) / WavSol_co_ref[Ico]
+            tempw = WavSol_co[Ico]
+	    #plot(tempw,drifts_co,'o')
+            III = fabryperot.clipp(drifts_co,n=3)
+	    drifts = np.hstack((drifts,drifts_co[III]))
+	#show()
+        medv,sigv =  np.mean(drifts), np.sqrt(np.var(drifts))/np.sqrt(float(len(drifts)))
+	print fsim2, medv,sigv
+        fpi_shifts = np.hstack((fpi_shifts,medv))
+        fpi_errs = np.hstack((fpi_errs,sigv))
+    fpi_mjds = np.array(fpi_mjds)
+
+    plot(thar_mjds,thar_shifts)
+    print thar_mjds
+    print thar_shifts
+    print thar_errs
+    errorbar(thar_mjds,thar_shifts,yerr=thar_errs,fmt='bo')
+    plot(fpi_mjds,fpi_shifts,'k')
+    errorbar(fpi_mjds,fpi_shifts,yerr=fpi_errs,fmt='ro')
+    errorbar(fpi_mjds,fpi_shifts,yerr=fpi_errs,fmt='ko')
+    xlabel('MJD')
+    ylabel('RV drift [m/s]')
+    savefig(dirout+'/FPI-drifts.pdf')
+
+
+  else:
+
+    i = 0
+    thar_shifts,thar_errs,thar_mjds = [],[],[]
+    while i < len(sorted_ThAr_Ne_dates):
+        fsim  = ThAr_Ne_ref[sorted_ThAr_Ne_dates[i]]
+        pdict = pickle.load( open(dirout + fsim.split('/')[-1][:-4]+'wavsolpars.pkl','r' ) )
+        shift, pix_centers, orders, wavelengths, I, rms_ms, residuals  = \
+				    GLOBALutils.Global_Wav_Solution_vel_shift(pdict['All_Pixel_Centers_co'],\
+				    pdict['All_Wavelengths_co'], pdict['All_Orders_co'],\
+				    np.ones(len(pdict['All_Wavelengths_co'])), wavsol_dict['p1_co'],\
+				    minlines=1200, maxrms=MRMS,order0=OO0, ntotal=n_useful,\
+				    Cheby=use_cheby, Inv=Inverse_m, npix=Flat.shape[1],nx=ncoef_x,nm=ncoef_m)
+        precision = rms_ms/np.sqrt(len(I))
+	thar_errs.append(precision)
+        thar_shifts.append(299792458.*shift[0]/1e6)
+        thar_mjds.append(pdict['mjd'])
+        i+=1
+    thar_errs   = np.array(thar_errs)
+    thar_shifts = np.array(thar_shifts)
+    thar_mjds   = np.array(thar_mjds)
+
+    fpi_shifts = np.array([])
+    fpi_errs = np.array([])
+    ref_lines_co = ref_fp_pkl['fplines_co']
+    fpi_mjds = []
+    for i in II:
+        fsim2 = simFP_FP[i]
+	fpi_mjds.append(mjdsfp[i])
+        fp_pkl = pickle.load(open(dirout + fsim2.split('/')[-1][:-4]+'fplines.pkl','r'))
+        lines_co = fp_pkl['fplines_co']
+	drifts = np.array([])
+        for order in range(11,25):
+	    oss = order - o0
+            m   = order + OO0
+	    chebs_co = GLOBALutils.Calculate_chebs(ref_lines_co['order_'+str(int(order))], m, order0=OO0,\
+		    ntotal=n_useful, npix=S_flat_ob_n.shape[2], Inverse=Inverse_m,nx=ncoef_x,nm=ncoef_m)
+	    WavSol_co_ref = (1.0/float(m)) * GLOBALutils.Joint_Polynomial_Cheby(wavsol_dict['p1_co'],chebs_co,ncoef_x,ncoef_m)
+
+            chebs_co = GLOBALutils.Calculate_chebs(lines_co['order_'+str(int(order))], m, order0=OO0,\
+		    ntotal=n_useful, npix=S_flat_ob_n.shape[2], Inverse=Inverse_m,nx=ncoef_x,nm=ncoef_m)
+	    WavSol_co = (1.0/float(m)) * GLOBALutils.Joint_Polynomial_Cheby(wavsol_dict['p1_co'],chebs_co,ncoef_x,ncoef_m)
+
+            Ico = np.where((lines_co['order_'+str(int(order))]!=-999) & (ref_lines_co['order_'+str(int(order))]!=-999))[0]
+	    drifts_co = 299792458.*(WavSol_co_ref[Ico] - WavSol_co[Ico]) / WavSol_co_ref[Ico]
+            tempw = WavSol_co[Ico]
+	    #plot(tempw,drifts_co,'o')
+            III = fabryperot.clipp(drifts_co,n=3)
+	    drifts = np.hstack((drifts,drifts_co[III]))
+	#show()
+        medv,sigv =  np.mean(drifts), np.sqrt(np.var(drifts))/np.sqrt(float(len(drifts)))
+	print fsim2, medv,sigv
+        fpi_shifts = np.hstack((fpi_shifts,medv))
+        fpi_errs = np.hstack((fpi_errs,sigv))
+    fpi_mjds = np.array(fpi_mjds)
+
+
+    tck = interpolate.splrep(thar_mjds,thar_shifts,k=1)
+    vals = interpolate.splev(fpi_mjds,tck)
+
+    III = fabryperot.clipp(vals-fpi_shifts,n=3)
+    fp_shift = np.mean(vals[III]-fpi_shifts[III])
+    fp_shift_old = fp_shift
+    print 'FP_shift:', fp_shift, 'm/s'
+
+    
+
+    IV = np.argmin(np.absolute(vals[III] - fpi_shifts[III] - fp_shift))
+    print 'ThisFP:',simFP_FP[IV], vals[IV] - fpi_shifts[IV] - fp_shift
+    pkl_wsol = dirout + simFP_FP[IV].split('/')[-1][:-4]+'fplines.pkl'
+    ref_fp_pkl   = pickle.load(open(pkl_wsol,'r'))
+    fp_shift = vals[IV]
+    print 'TOT FP_shift:', fp_shift, 'm/s'
+
+
+    #errorbar(thar_mjds,thar_shifts,yerr=thar_errs,fmt='bo')
+    #errorbar(fpi_mjds,fpi_shifts + fp_shift_old,yerr=fpi_errs,fmt='ko')
+    #show()
+
+    #errorbar(fpi_mjds,vals - (fpi_shifts + fp_shift_old) ,yerr=fpi_errs,fmt='ko')
+    #show()
+
+    figure()
+    
+    #errorbar(fpi_mjds,vals-fpi_shifts,yerr=fpi_errs,fmt='ko')
+    #plot(fpi_mjds,vals-fpi_shifts)
+    #show()
+
+    #print len(thar_mjds), len(thar_shifts)
+    plot(thar_mjds,thar_shifts)
+    print thar_mjds
+    print thar_shifts
+    print thar_errs
+    axvline(fpi_mjds[IV])
+    errorbar(thar_mjds,thar_shifts,yerr=thar_errs,fmt='bo')
+    plot(fpi_mjds,fpi_shifts,'k')
+    errorbar(fpi_mjds,fpi_shifts,yerr=fpi_errs,fmt='ro')
+    errorbar(fpi_mjds[III],fpi_shifts[III],yerr=fpi_errs[III],fmt='ko')
+    xlabel('MJD')
+    ylabel('RV drift [m/s]')
+    savefig(dirout+'/FPI-drifts.pdf')
+#print fgds
 clf()
 #"""
 ### start of science frame reductions ###
@@ -947,11 +1324,58 @@ for fsim in comp_list:
         hdu = GLOBALutils.update_header(hdu,'HIERARCH THAR REF CO',ThAr_Ne_ref_m[indice].split('/')[-1][:-5]+'_sp_co.fits')
         thar_fits_ob = dirout + ThAr_Ne_ref_m[indice].split('/')[-1][:-4]+'spec.ob.fits.S'
         thar_fits_co = dirout + ThAr_Ne_ref_m[indice].split('/')[-1][:-4]+'spec.co.fits.S'
-        pkl_wsol = dirout + ThAr_Ne_ref_m[indice].split('/')[-1][:-4]+'wavsolpars.pkl'
-        print "\t\tUnpickling wavelength solution from", pkl_wsol, " ..."
-        wsol_dict = pickle.load(open(pkl_wsol,'r'))
 
-        if comp_type == 'WAVE':
+	if ref_thar != None:
+	    pkl_wsol = ref_thar
+	    wsol_dict = pickle.load(open(pkl_wsol,'r'))
+	else:
+            pkl_wsol = dirout + ThAr_Ne_ref_m[indice].split('/')[-1][:-4]+'wavsolpars.pkl'
+	    wsol_dict = pickle.load(open(pkl_wsol,'r'))
+        print "\t\tUnpickling wavelength solution from", pkl_wsol, " ..."
+	#print fdsa
+	if ferosutils_fp.hasFP(h):
+            fp_pkl = dirout + fsim.split('/')[-1][:-4]+'fplines.pkl'
+            fp_lines_co1 = ref_fp_pkl['fplines_co']
+
+	    if os.access(fp_pkl,os.F_OK)==False or force_thar_wavcal:
+                fp_lines_co  = fabryperot.GetFPLines(sci_fits_co,fp_lines_co1,lim1=20,lim2=-20,npools=npools,oi=11,of=25)
+                pdict = {'mjd':mjd,'fplines_co':fp_lines_co}
+                pickle.dump( pdict, open( fp_pkl, 'w' ) )
+	    else:
+		dct = pickle.load(open(fp_pkl,'r'))
+                fp_lines_co = dct['fplines_co']
+	        
+            tdrifts_co = np.array([])
+            for order in range(11,25):
+	        oss = order - o0
+                m   = order + OO0
+	        chebs_co = GLOBALutils.Calculate_chebs(fp_lines_co1['order_'+str(int(order))], m, order0=OO0,\
+		    ntotal=n_useful, npix=S_flat_ob_n.shape[2], Inverse=Inverse_m,nx=ncoef_x,nm=ncoef_m)
+	        WavSol_co_ref = (1.0/float(m)) * GLOBALutils.Joint_Polynomial_Cheby(wavsol_dict['p1_co'],chebs_co,ncoef_x,ncoef_m)
+
+	        chebs_co = GLOBALutils.Calculate_chebs(fp_lines_co['order_'+str(int(order))], m, order0=OO0,\
+		    ntotal=n_useful, npix=S_flat_ob_n.shape[2], Inverse=Inverse_m,nx=ncoef_x,nm=ncoef_m)
+	        WavSol_co = (1.0/float(m)) * GLOBALutils.Joint_Polynomial_Cheby(wavsol_dict['p1_co'],chebs_co,ncoef_x,ncoef_m)
+
+	        Ico = np.where((fp_lines_co['order_'+str(int(order))]!=-999) & (fp_lines_co1['order_'+str(int(order))]!=-999))[0]
+	        drifts_co = 299792458.*(WavSol_co_ref[Ico] - WavSol_co[Ico]) / WavSol_co_ref[Ico]
+
+		tempw = WavSol_co[Ico]
+		II = fabryperot.clipp(drifts_co,n=3)
+	        tdrifts_co = np.hstack((tdrifts_co,drifts_co[II]))
+		#plot(WavSol_co[Ico],drifts_co,'r.')
+		#plot(WavSol_co[Ico][II],drifts_co[II],'k.')
+	    #show()
+            fp_shift_co = np.mean(tdrifts_co) + fp_shift # check the sign of this eventually!!
+            fp_error_co = np.sqrt(np.var(tdrifts_co))/np.sqrt(float(len(tdrifts_co)))
+	    print '\t\t\tFP shift = ',fp_shift_co,'+-',fp_error_co,'m/s'
+            p_shift = 1e6*fp_shift_co/299792458.
+	    good_quality = True
+            if fp_error_co > 5:
+                good_quality = False
+		p_shift = 0.
+		
+        elif comp_type == 'WAVE':
             # Extract ThAr lines from comparison orders
             lines_thar_co  = sci_S_co[:,1,:]
             #lines_thar_co  = sci_Ss_co
@@ -1008,6 +1432,7 @@ for fsim in comp_list:
 			    minlines=1000, maxrms=MRMS,order0=OO0, ntotal=n_useful,\
 			    Cheby=use_cheby, Inv=Inverse_m, npix=len(thar_order),nx=ncoef_x,nm=ncoef_m)
 	    precision    = rms_ms/np.sqrt(len(I))
+	    p_shift = p_shift[0]
             good_quality = True
             if (precision > 5):
                 good_quality = False
@@ -1037,7 +1462,7 @@ for fsim in comp_list:
 
             hdu = GLOBALutils.update_header(hdu,'HIERARCH GOOD QUALITY WAVSOL', good_quality)
             hdu = GLOBALutils.update_header(hdu,'HIERARCH WAVSOL ERROR', precision, '[m/s]')
-
+	    hdu = GLOBALutils.update_header(hdu,'HIERARCH INSTRUMENTAL DRIFT',299792458.*p_shift/1e6)
         # Apply new wavelength solution including barycentric correction
         equis = np.arange( data.shape[1] )        
         order = o0
@@ -1307,7 +1732,8 @@ if (not JustExtract):
 
                 bspan = GLOBALutils.calc_bss(vels,xc_av)
                 SP = bspan[0]
-                SP2 = GLOBALutils.calc_bss2(vels,xc_av,p1gau)
+                SP2,FWHM2 = GLOBALutils.calc_bss2(vels,xc_av,p1gau,fw=True)
+		
                 #print p1gau[1]
                 if (not known_sigma):
                     disp = np.floor(p1gau[2])
@@ -1380,8 +1806,8 @@ if (not JustExtract):
             depth_fact = (1 - 0.6) / (1 - depth_fact)
             RVerr2 = RVerr * depth_fact
 
-        if (RVerr2 <= 0.007):
-            RVerr2 = 0.007	
+        if (RVerr2 <= 0.002):
+            RVerr2 = 0.002	
 
         RV     = np.around(p1gau_m[1],4)  
         BS     = np.around(SP,4) 
@@ -1408,6 +1834,7 @@ if (not JustExtract):
         hdu[0] = GLOBALutils.update_header(hdu[0],'RV_E', RVerr2)
         hdu[0] = GLOBALutils.update_header(hdu[0],'BS', BS)
         hdu[0] = GLOBALutils.update_header(hdu[0],'BS_E', BSerr)
+        hdu[0] = GLOBALutils.update_header(hdu[0],'FWHM', FWHM2)
         hdu[0] = GLOBALutils.update_header(hdu[0],'DISP', disp_epoch)
         hdu[0] = GLOBALutils.update_header(hdu[0],'SNR', SNR_5130)
         hdu[0] = GLOBALutils.update_header(hdu[0],'SNR_R', SNR_5130_R)
@@ -1417,9 +1844,8 @@ if (not JustExtract):
         hdu[0] = GLOBALutils.update_header(hdu[0],'XC_MIN', XC_min)
         hdu[0] = GLOBALutils.update_header(hdu[0],'BJD_OUT', bjd_out)
 
-        line_out = "%-15s %18.8f %9.4f %7.4f %9.3f %5.3f   feros   ceres   50000 %6d %5.2f %5.2f %5.1f %4.2f %5.2f %6.1f %4d %s\n"%\
-                      (obname, bjd_out, RV, RVerr2, BS2, BSerr, T_eff_epoch, logg_epoch, Z_epoch, vsini_epoch, XC_min, disp_epoch,\
-		       TEXP, SNR_5130_R, ccf_pdf)
+        line_out = "%-15s %18.8f %9.4f %7.4f %9.3f %5.3f %9.4f   feros   ceres   50000 %6d %5.2f %5.2f %5.1f %4.2f %5.2f %6.1f %4d %s\n"%\
+                      (obname, bjd_out, RV, RVerr2, BS2, BSerr, FWHM2, T_eff_epoch, logg_epoch, Z_epoch, vsini_epoch, XC_min, disp_epoch,TEXP, SNR_5130_R, ccf_pdf)
         f_res.write(line_out)
         hdu.close()
 

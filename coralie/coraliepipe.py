@@ -25,6 +25,7 @@ import continuum
 import correlation
 import GLOBALutils
 import Marsh
+import fabryperot
 
 # other useful modules
 import argparse
@@ -132,6 +133,7 @@ print '\n'
 biases, ob_flats, co_flats, ob_loc, co_loc, ThAr_ref, ThFP_ref,\
         simThAr_sci,sim_FP_sci,ThAr_ref_dates,ThFP_ref_dates,obnames,\
 	obnames_FP,exptimes, exptimes_FP, flats = coralieutils.FileClassify(dirin,log)
+
 
 # Pre-process
 if ( (( len(ob_flats) > 0) and (os.access(dirout+'FlatOb.fits',os.F_OK) == False)) or \
@@ -537,8 +539,10 @@ for fsim in ThFP_ref:
     thfp_fits_ob = dirout + fsim.split('/')[-1][:-8]+'spec.ob.fits.S'
     thfp_fits_co = dirout + fsim.split('/')[-1][:-8]+'spec.co.fits.S'
     wavsol_pkl_fp = dirout + fsim.split('/')[-1][:-8]+'wavsolpars.pkl'
-    if ( os.access(wavsol_pkl_fp,os.F_OK) == False ) or (force_thfp_wavcal):
+    fp_fits       = dirout + fsim.split('/')[-1][:-8]+'sp.fits'
+    if ( os.access(wavsol_pkl_fp,os.F_OK) == False ) or (force_thfp_wavcal):# or True:
             print '\t\tCalibrating', fsim,'...'
+	    fp_fp = pyfits.getdata(thfp_fits_co)[:,1,:]
 	    thar_fp = pyfits.getdata(thfp_fits_ob)
 	    lines_thar_ob  = thar_fp[:,1,:]
 	    iv_thar_ob     = thar_fp[:,2,:]
@@ -584,12 +588,28 @@ for fsim in ThFP_ref:
 		                                                   Cheby=True,Inv=True,maxrms=100,minlines=minlines_glob_ob,\
 								   order0=89,ntotal=n_useful,npix=len(thar_order),nx=ncoef_x,nm=ncoef_m)
 
+	    spec = np.zeros((2,fp_fp.shape[0],lines_thar_ob.shape[1]))
+	    equis = np.arange( lines_thar_ob.shape[1] )        
+
+	    for order in range(fp_fp.shape[0]):
+	        m = order + 89 + 22
+	        chebs = GLOBALutils.Calculate_chebs(equis, m, Inverse=Inverse_m,order0=89,ntotal=n_useful,npix=lines_thar_ob.shape[1],nx=ncoef_x,nm=ncoef_m)
+	        WavSol =  (1.0 + 1.0e-6*p_shift) * (1.0/m) * GLOBALutils.Joint_Polynomial_Cheby(wavsol_dict['p1_co'],chebs,ncoef_x,ncoef_m)
+	        spec[0,order,:] = WavSol
+	        spec[1,order,:] = fp_fp[order]
+	    
+	    if (os.access(fp_fits,os.F_OK)):
+	        os.remove( fp_fits )        
+	    hdu = pyfits.PrimaryHDU( spec )
+	    hdu.writeto( fp_fits )
+
+	    fp_lines1 = fabryperot.InitialGuess(thfp_fits_co, lim1=50, lim2=-50)
+	    fp_lines  = fabryperot.GetFPLines(thfp_fits_co,fp_lines1,lim1=50,lim2=-50,npools=npools)
 	    pdict = {'p1':p1,'p_shift':p_shift,'mjd':mjd, 'G_pix':G_pix, 'G_ord':G_ord, 'G_wav':G_wav, 'II':II, 'rms_ms':rms_ms,\
-		'G_res':G_res, 'All_Centroids':All_Centroids, 'All_Orders':All_Orders, 'All_Sigmas':All_Sigmas, 'p1_co':wavsol_dict['p1_co']}
+		'G_res':G_res, 'All_Centroids':All_Centroids, 'All_Orders':All_Orders, 'All_Sigmas':All_Sigmas, 'p1_co':wavsol_dict['p1_co'],'fplines':fp_lines}
 	    pickle.dump( pdict, open( wavsol_pkl_fp, 'w' ) )
     else:
 	print '\t\tFP spectrum', fsim, 'already calibrated, loading...'
-
 ### start of science frame reductions ###
 
 new_list = []
@@ -804,7 +824,7 @@ for nlisti in range(len(new_list)):
         sci_S_ob = pyfits.getdata( sci_fits_ob )
         sci_S_co = pyfits.getdata( sci_fits_co )
         sci_Ss_ob = pyfits.getdata( sci_fits_ob_simple )
-        sci_Ss_co = pyfits.getdata( sci_fits_ob_simple )
+        sci_Ss_co = pyfits.getdata( sci_fits_co_simple )
         sci_bac = pyfits.getdata( sci_fits_bac )
     
     fout = 'proc/'+ obname + '_' + \
@@ -903,8 +923,36 @@ for nlisti in range(len(new_list)):
             indice = sorted_indices_FP[0]
             thfp_fits_co = dirout + ThFP_ref[indice].split('/')[-1][:-8]+'spec.co.fits.S'
             pkl_wsol = dirout + ThFP_ref[indice].split('/')[-1][:-8]+'wavsolpars.pkl'
+	    wsol_dict = pickle.load(open(pkl_wsol,'r'))
             print "\t\t\tUnpickling reference wavelength solution from", pkl_wsol, " ..."
-            wsol_dict = pickle.load(open(pkl_wsol,'r'))
+	    fp_lines  = fabryperot.GetFPLines(sci_fits_co,wsol_dict['fplines'],lim1=50,lim2=-50,npools=npools)
+	    tdrifts = np.array([])
+	    for order in range(22,n_useful):
+                m = order + 89
+		ejx1 = fp_lines['order_'+str(int(order-22))]
+		ejxref = wsol_dict['fplines']['order_'+str(int(order-22))]
+                chebs1 = GLOBALutils.Calculate_chebs(ejx1, m, Inverse=Inverse_m,order0=89,ntotal=n_useful,npix=sci_S_co.shape[2],nx=ncoef_x,nm=ncoef_m)
+                WavSol1 = (1.0 + 1.0e-6*wsol_dict['p_shift']) * (1.0/m) * GLOBALutils.Joint_Polynomial_Cheby(wsol_dict['p1_co'],chebs1,ncoef_x,ncoef_m)
+
+                chebsref = GLOBALutils.Calculate_chebs(ejxref, m, Inverse=Inverse_m,order0=89,ntotal=n_useful,npix=sci_S_co.shape[2],nx=ncoef_x,nm=ncoef_m)
+                WavSolref = (1.0 + 1.0e-6*wsol_dict['p_shift']) * (1.0/m) * GLOBALutils.Joint_Polynomial_Cheby(wsol_dict['p1_co'],chebsref,ncoef_x,ncoef_m)
+
+		I = np.where((ejx1!=-999) & (ejxref!=-999))[0]
+		drifts = 299792458.*(WavSolref[I] - WavSol1[I]) / WavSolref[I]
+		tempw = WavSolref[I]
+		II = fabryperot.clipp(drifts,n=3)
+		#print II
+		#plot(WavSolref[I],drifts,'ro')
+		#plot(tempw[II],drifts[II],'ko')
+	        tdrifts = np.hstack((tdrifts,drifts[II]))
+	    fp_shift = np.mean(tdrifts)
+	    fp_error = np.sqrt(np.var(tdrifts))
+	    p_shift = 1e6*fp_shift/299792458.
+	    print '\t\t\tFP shift = ',fp_shift,'+-',fp_error/np.sqrt(float(len(tdrifts))),'m/s'
+	    good_quality = True
+		
+	    #show()
+	    """
             lines_thar_co = np.zeros(sci_Ss_co.shape)
             lines_thar_co_ref = np.zeros(sci_Ss_co.shape)
             for si in range(S_flat_co_n.shape[0]):
@@ -949,7 +997,7 @@ for nlisti in range(len(new_list)):
             p_shift = 1e6*fp_shift/299792458.
             print '\t\t\tFP shift = ',fp_shift[0],'+-',np.sqrt(np.var(rv_fps))/np.sqrt(float(len(rv_fps))),'m/s'
             good_quality = True
-
+	    """
         equis = np.arange( data.shape[1] )        
 
         for order in range(n_useful):
@@ -1217,8 +1265,8 @@ for nlisti in range(len(new_list)):
             else:
                 depth_fact = (1 - 0.59) / (1 - depth_fact)
             RVerr2 = RVerr * depth_fact
-            if (RVerr2 <= 0.009):
-                RVerr2 = 0.009
+            if (RVerr2 <= 0.001):
+                RVerr2 = 0.001
 
         if not good_quality:
             RVerr2 = np.sqrt(0.03**2 + RVerr2**2)

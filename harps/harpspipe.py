@@ -49,6 +49,7 @@ parser.add_argument('-npools', default=1)
 parser.add_argument('-o2do',default='all')
 parser.add_argument('-reffile',default='default')
 parser.add_argument('-mode', default='HARPS')
+parser.add_argument('-do_sim', action="store_true", default=False)
 
 args = parser.parse_args()
 dirin            = args.directorio
@@ -60,6 +61,7 @@ npools           = int(args.npools)
 object2do        = args.o2do
 reffile          = args.reffile
 mode	         = args.mode
+dosim	         = args.do_sim
 
 if dirin[-1] != '/':
     dirin = dirin + '/'
@@ -1249,7 +1251,7 @@ for nlisti in range(len(new_list)):
         print "\t\t\tUnpickling wavelength solution from", pkl_wsol, " ..."
         wsol_dict = pickle.load(open(pkl_wsol,'r'))
 
-	cotype = 'SKY'
+	#cotype = 'SKY'
 	if cotype == 'WAVE':
 		# Extract thAr lines from comparison orders
 		lines_thar_co_R  = sci_S_co_R[:,1,:]
@@ -1355,6 +1357,7 @@ for nlisti in range(len(new_list)):
         hdu = GLOBALutils.update_header(hdu,'HIERARCH THAR SHIFT_R',p_shift_co_R[0])
         hdu = GLOBALutils.update_header(hdu,'HIERARCH THAR SHIFT_B',p_shift_co_B[0])
 	hdu = GLOBALutils.update_header(hdu,'HIERARCH THAR SHIFT',shift)
+	hdu = GLOBALutils.update_header(hdu,'HIERARCH THAR SHIFT APPLIED',dosim)
         
         # Apply new wavelength solution including barycentric correction
         equis = np.arange( dataB.shape[1] )        
@@ -1362,7 +1365,10 @@ for nlisti in range(len(new_list)):
         for order in range(nord_ob2):
             m = order + or0_R
             chebs = GLOBALutils.Calculate_chebs(equis, m, Inverse=Inverse_m,order0=or0_R,ntotal=nord_ob2,npix=len(equis),nx=ncoef_x_R,nm=ncoef_m_R)
-	    WavSol = lbary_ltopo * (1.0 + 1.0e-6*shift) * (1.0/m) * GLOBALutils.Joint_Polynomial_Cheby(wsol_dict['p1_R'],chebs,ncoef_x_R,ncoef_m_R)
+	    if dosim:
+	        WavSol = lbary_ltopo * (1.0 + 1.0e-6*shift) * (1.0/m) * GLOBALutils.Joint_Polynomial_Cheby(wsol_dict['p1_R'],chebs,ncoef_x_R,ncoef_m_R)
+	    else:
+		 WavSol = lbary_ltopo * (1.0/m) * GLOBALutils.Joint_Polynomial_Cheby(wsol_dict['p1_R'],chebs,ncoef_x_R,ncoef_m_R)
             spec[0,order,:] = GLOBALutils.ToVacuum(WavSol)
 	    spec[1,order,:] = sci_S_ob_R[order,1, :]
             spec[2,order,:] = sci_S_ob_R[order,2, :]
@@ -1374,7 +1380,10 @@ for nlisti in range(len(new_list)):
         for order in range(nord_ob1):
             m = order + or0_B
             chebs = GLOBALutils.Calculate_chebs(equis, m, Inverse=Inverse_m,order0=or0_B,ntotal=nord_ob1,npix=len(equis),nx=ncoef_x_B,nm=ncoef_m_B)
-	    WavSol = lbary_ltopo * (1.0 + 1.0e-6*shift) * (1.0/m) * GLOBALutils.Joint_Polynomial_Cheby(wsol_dict['p1_B'],chebs,ncoef_x_B,ncoef_m_B)
+	    if dosim:
+	        WavSol = lbary_ltopo * (1.0 + 1.0e-6*shift) * (1.0/m) * GLOBALutils.Joint_Polynomial_Cheby(wsol_dict['p1_B'],chebs,ncoef_x_B,ncoef_m_B)
+	    else:
+	         WavSol = lbary_ltopo * (1.0/m) * GLOBALutils.Joint_Polynomial_Cheby(wsol_dict['p1_B'],chebs,ncoef_x_B,ncoef_m_B)
             spec[0,order + nord_ob2,:] = GLOBALutils.ToVacuum(WavSol)
 	    spec[1,order + nord_ob2,:] = sci_S_ob_B[order,1, :]
             spec[2,order + nord_ob2,:] = sci_S_ob_B[order,2, :]

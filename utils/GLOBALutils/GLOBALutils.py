@@ -3042,7 +3042,7 @@ def calc_bss(vels, xc_av, bot_i=0.1, bot_f=0.4, top_i=0.6, top_f=0.85):
 		slope = 0
 	return span,der_bottom,der_top, slope, stat
 
-def calc_bss2(vels,xc,coef, bot_i=0.15, bot_f=0.4, top_i=0.6, top_f=0.9, dt=0.01):
+def calc_bss2(vels,xc,coef, bot_i=0.15, bot_f=0.4, top_i=0.6, top_f=0.9, dt=0.01,fw=False):
 	try:
 		
 		I1 = np.where((vels>coef[1]-3*coef[2]) & (vels<coef[1]) )[0]
@@ -3094,9 +3094,25 @@ def calc_bss2(vels,xc,coef, bot_i=0.15, bot_f=0.4, top_i=0.6, top_f=0.9, dt=0.01
 			dp-=dt
 		vecb = np.array(vecb)
 
-		return np.median(vecb) - np.median(vect) 
+		if fw:
+			lb = np.where(x1>0.5)[0][0]
+			m = (v1[lb] - v1[lb-1])/(x1[lb]-x1[lb-1])
+			n = v1[lb] - m*x1[lb]
+			bs1 = m*0.5+n
+
+			lb = np.where(x2>0.5)[0][-1]
+			m = (v2[lb] - v2[lb+1])/(x2[lb]-x2[lb+1])
+			n = v2[lb] - m*x2[lb]
+			bs2 = m*0.5+n
+			fwhm = bs2 - bs1
+			return np.median(vecb) - np.median(vect), fwhm
+		else:
+			return np.median(vecb) - np.median(vect) 
 	except:
-		return -999.0
+		if fw:
+			return -999.0,-999.0
+		else:
+			return -999.0
 
 def gauss_samp(p,l,mu):
 	A,B,sig = p[0],p[1],p[2]

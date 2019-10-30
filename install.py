@@ -10,6 +10,7 @@
 
 p_name = "CERES"
 
+gsl_path = '/usr/local'
 
 import glob
 import sys
@@ -18,6 +19,10 @@ import shutil
 import subprocess
 sys.path.append("utils/SSEphem")
 import update_ssephem
+
+f = open('gsl.temp','w')
+f.write(gsl_path)
+f.close()
 
 def CheckLibraries():
     print "     ----------------------------------------------------------"
@@ -199,4 +204,4 @@ print "     ---------------------------------------------------------- \n \n"
 print "     Installation of "+p_name+" finished without problems! \n \n"
 print "     Please read the README file in order to learn how to "
 print "     use the routines. \n \n"
-
+os.system('rm  gsl.temp')

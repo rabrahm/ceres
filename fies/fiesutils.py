@@ -149,17 +149,18 @@ def FileClassify(diri, log,binning=1,mode='F1', dark_corr=False):
 				isdark=True
 
 		if dump == False and isdark == False:
-			print archivo
 			h = pyfits.open(archivo)
+			print archivo, h[0].header['OBJECT'], h[0].header['EXPTIME']
 			hd = pyfits.getheader(archivo)
+			print mode, h[0].header['FIFMSKNM'],
 			if int(h[0].header['DETXBIN']) == binning and int(h[0].header['DETYBIN']) == binning and (mode in h[0].header['FIFMSKNM']) and h[0].header['IMAGETYP'] != 'COUNTTEST':
 				print archivo, h[0].header['IMAGETYP'], h[0].header['SHSTAT'], h[0].header['EXPTIME'], h[0].header['OBJECT'], h[0].header['TCSTGT'], int(h[0].header['DETYBIN'])
 
-				if h[0].header['IMAGETYP'] == 'BIAS':
+				if h[0].header['IMAGETYP'] == 'BIAS' or 'bias' in h[0].header['OBJECT']:
 					biases.append(archivo)
 					mjd, mjd0 = mjd_fromheader2(h)
 					bias_ref_dates.append( mjd )
-				elif h[0].header['IMAGETYP'] == 'FLAT':
+				elif h[0].header['IMAGETYP'] == 'FLAT' or 'flat' in h[0].header['OBJECT']:
 					flats.append(archivo)
 					mjd, mjd0 = mjd_fromheader2(h)
 					flat_ref_dates.append( mjd )
@@ -173,7 +174,8 @@ def FileClassify(diri, log,binning=1,mode='F1', dark_corr=False):
 						flat_ref_dates.append( mjd )
 						sc = pyfits.getdata(archivo)
 						#plot(sc[1000])
-				elif h[0].header['IMAGETYP'] == 'WAVE':
+
+				elif h[0].header['IMAGETYP'] == 'WAVE' or h[0].header['IMAGETYP'] == 'WAVE,LAMP':
 					ThAr_ref.append(archivo)
 					mjd, mjd0 = mjd_fromheader2(h)
 					ThAr_ref_dates.append( mjd )
@@ -196,7 +198,7 @@ def FileClassify(diri, log,binning=1,mode='F1', dark_corr=False):
 					ThAr_sim_dates.append( mjd )
 
 				elif (mode=='F3' and h[0].header['FICARMID'] == 2) or (mode == 'F1' and h[0].header['FICARMID'] == 5)\
-				   or (mode=='F4' and (h[0].header['FICARMID'] == 5 or h[0].header['FICARMID'] == 4)):
+				   or (mode=='F4' and (h[0].header['FICARMID'] == 5 or h[0].header['FICARMID'] == 4 or h[0].header['FICARMID'] == 20 ) ):
 					sim_sci.append(archivo)
 					obname = h[0].header['OBJECT']
 					obnames.append( obname )

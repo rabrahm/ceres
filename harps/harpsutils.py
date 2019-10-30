@@ -51,7 +51,7 @@ def FileClassify(diri, log, mode='HARPS'):
     
     all_files = glob.glob(diri+"/HARPS*fits")
     for archivo in all_files:
-	#print archivo
+	print archivo
 	dump = False
 	for bf in bad_files:
 		if archivo == bf:

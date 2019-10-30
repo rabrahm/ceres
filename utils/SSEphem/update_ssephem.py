@@ -2,7 +2,8 @@ import os
 import numpy as np
 
 def LeapSecUpdate():
-	os.system('wget http://maia.usno.navy.mil/ser7/leapsec.dat')
+	os.system('wget --no-proxy ftp://cddis.gsfc.nasa.gov/pub/products/iers/leapsec.dat')
+	#os.system('wget --no-proxy http://maia.usno.navy.mil/ser7/leapsec.dat')
 	if os.access('leapsec.tab', os.F_OK):
 		os.system('mv leapsec.tab leapsec_old.tab')
 	try:
@@ -52,7 +53,8 @@ def SSEphemDownload():
 def IersUpdate():
 	if os.access('finals2000A.data',os.F_OK):
 		os.system('mv finals2000A.data finals2000A_old.data')
-	os.system('wget http://maia.usno.navy.mil/ser7/finals2000A.data')
+	os.system('wget --no-proxy ftp://cddis.gsfc.nasa.gov/pub/products/iers/finals2000A.data')
+	#os.system('wget --no-proxy http://maia.usno.navy.mil/ser7/finals2000A.data')
 	if os.access('finals2000A.data',os.F_OK) == False:
 		print 'one'
 		print 'No Luck...'

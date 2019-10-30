@@ -360,7 +360,7 @@ def CCF(spec, model_path='/dummy/path/',doplot = False, plot_dir = '/home/rabrah
 	A = numpy.max(ccf)-B
 	med = vv[numpy.where(ccf == numpy.max(ccf))[0]]
 	sig = 20.0
-	guess1 = [B,A,med,sig]
+	guess1 = numpy.array([B,A,med,sig],dtype='float64')
 	ajustep=optimize.leastsq(res_gauss1,guess1,args=(ccf,vv))
 	velo = ajustep[0][2]
 
@@ -548,7 +548,7 @@ def CCF(spec, model_path='/dummy/path/',doplot = False, plot_dir = '/home/rabrah
 			A = numpy.max(ccf)-B
 			med = vv[numpy.where(ccf == numpy.max(ccf))[0]]
 			sig = 20.0
-			guess1 = [B,A,med,sig]
+			guess1 = np.array([B,A,med,sig],dtype='float64')
 			ajustep=optimize.leastsq(res_gauss1,guess1,args=(ccf,vv))
 			velo2 = ajustep[0][2]	
 			sig2 = ajustep[0][3]

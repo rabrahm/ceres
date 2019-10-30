@@ -77,7 +77,7 @@ def MedianCombine(ImgList, zero_bo=False, zero='MasterBias.fits'):
         return d, ronoise, gain
     else:
         for i in range(n-1):
-            #print ImgList[i+1] 
+            #print i   
             h = pyfits.open(ImgList[i+1])[0]
             ot = OverscanTrim(h.data)
 	    ot = b_col(ot)
@@ -151,6 +151,14 @@ def gauss(params,x):
 def res_gauss(params,g,x):
 	return g-gauss(params,x)
 
+def hasFP(h):
+    mjd,mjd0 = mjd_fromheader(h)
+    if h[0].header['HIERARCH ESO DPR TYPE'] == 'WAVE' or h[0].header['HIERARCH ESO DPR TYPE'] == 'OBJECT,WAVE':
+        if mjd > 58448:
+            if h[0].header['HIERARCH ESO INS CALMIRR2 ID'] == 'LAMP1' and 'ESO INS LAMP1 SWSIM' in h[0].header.keys():
+	        return True
+    return False
+
 def FileClassify(diri, log, lamp='LAMP3'):
 	"""
 	Classifies all files in a directory and writes a night log of science images
@@ -169,6 +177,9 @@ def FileClassify(diri, log, lamp='LAMP3'):
 	ThAr_Ne_ref_dates = []
 	darks       = []
 	dark_times  = []
+	ThAr_FP     = []
+	FP_FP       = []
+	FP_sci      = []
 
 	f = open(log,'w')
 	bad_files = []
@@ -183,7 +194,7 @@ def FileClassify(diri, log, lamp='LAMP3'):
     
 	jj = 0
 	for archivo in all_files:
-
+		
 		jj+=1
 		dump = False
 		for bf in bad_files:
@@ -193,10 +204,17 @@ def FileClassify(diri, log, lamp='LAMP3'):
 
 		if not dump:
 			h = pyfits.open(archivo)
-			print archivo, h[0].header['HIERARCH ESO DPR TYPE']
 
+			print archivo, h[0].header['HIERARCH ESO DPR TYPE']
+			mjd,mjd0 = mjd_fromheader(h)
 			if h[0].header['HIERARCH ESO DPR TYPE'] == 'OBJECT,WAVE' or h[0].header['HIERARCH ESO DPR TYPE'] == 'VELOC,WAVE':
-				simThAr_sci.append(archivo)
+				if mjd < 58448:
+					simThAr_sci.append(archivo)
+				else:
+					#if h[0].header['HIERARCH ESO INS CALMIRR2 ID'] == 'LAMP1' and 'ESO INS LAMP1 SWSIM' in h[0].header.keys():
+					 #   FP_sci.append(archivo)
+					#elif h[0].header['HIERARCH ESO INS CALMIRR2 ID'] == 'LAMP3':
+					simThAr_sci.append(archivo)
 				obname = h[0].header['OBJECT']
 				ra     = h[0].header['HIERARCH ESO INS ADC1 RA']
 				delta  = h[0].header['HIERARCH ESO INS ADC1 DEC']
@@ -204,10 +222,10 @@ def FileClassify(diri, log, lamp='LAMP3'):
 					airmass= h[0].header['HIERARCH ESO TEL AIRM START']
 				except:
 					airmass = -999.
-					texp   = h[0].header['EXPTIME']
-					date   = h[0].header['DATE-OBS']
-					line = "%-15s %10s %10s %8.2f %4.2f %s %8s %s\n" % (obname, ra, delta, texp, airmass, h[0].header['HIERARCH ESO DPR TYPE'], date, archivo)
-					f.write(line)
+				texp   = h[0].header['EXPTIME']
+				date   = h[0].header['DATE-OBS']
+				line = "%-15s %10s %10s %8.2f %4.2f %s %8s %s\n" % (obname, ra, delta, texp, airmass, h[0].header['HIERARCH ESO DPR TYPE'], date, archivo)
+				f.write(line)
 			elif h[0].header['HIERARCH ESO DPR TYPE'] == 'OBJECT,SKY' or h[0].header['HIERARCH ESO DPR TYPE'] == 'VELOC,SKY':
 				simSky_sci.append(archivo)
 				obname = h[0].header['OBJECT']
@@ -217,31 +235,35 @@ def FileClassify(diri, log, lamp='LAMP3'):
 					airmass= h[0].header['HIERARCH ESO TEL AIRM START']
 				except:
 					airmass = -999.
-					texp   = h[0].header['EXPTIME']
-					date   = h[0].header['DATE-OBS']
-					line = "%-15s %10s %10s %8.2f %4.2f %s %8s %s\n" % (obname, ra, delta, texp, airmass, h[0].header['HIERARCH ESO DPR TYPE'], date, archivo)
-					f.write(line)
+				texp   = h[0].header['EXPTIME']
+				date   = h[0].header['DATE-OBS']
+				line = "%-15s %10s %10s %8.2f %4.2f %s %8s %s\n" % (obname, ra, delta, texp, airmass, h[0].header['HIERARCH ESO DPR TYPE'], date, archivo)
+				f.write(line)
 
 			elif h[0].header['HIERARCH ESO DPR TYPE'] == 'BIAS':
 				biases.append(archivo)
-				mjd,mjd0 = mjd_fromheader(h)
 				bias_dates.append(mjd)
 
 			elif h[0].header['HIERARCH ESO DPR TYPE'] == 'FLAT':
 				flats.append(archivo)
-				mjd,mjd0 = mjd_fromheader(h)
 				flat_dates.append(mjd)
 
 			elif h[0].header['HIERARCH ESO DPR TYPE'] == 'WAVE':
-				div = archivo.split('_')
-				if h[0].header['HIERARCH ESO INS CALMIRR2 ID'] == lamp:
-					ThArNe_ref.append(archivo)
-					mjd, mjd0 = mjd_fromheader(h)
-					ThArNe_ref_dates.append( mjd )
-				if h[0].header['HIERARCH ESO INS CALMIRR2 ID'] == lamp:
-					
+				if mjd > 58448:
+				    if h[0].header['HIERARCH ESO INS CALMIRR2 ID'] == 'LAMP1' and 'ESO INS LAMP1 SWSIM' in h[0].header.keys():
+				        FP_FP.append(archivo)
+				    elif h[0].header['HIERARCH ESO INS CALMIRR2 ID'] == 'LAMP1':
+					ThAr_FP.append(archivo)
+				    elif h[0].header['HIERARCH ESO INS CALMIRR2 ID'] == 'LAMP3':
 					ThAr_Ne_ref.append(archivo)
-					mjd, mjd0 = mjd_fromheader(h)
+					ThAr_Ne_ref_dates.append( mjd )
+				else:
+				    if h[0].header['HIERARCH ESO INS CALMIRR2 ID'] == lamp:
+					ThArNe_ref.append(archivo)
+					ThArNe_ref_dates.append( mjd )
+
+				    if h[0].header['HIERARCH ESO INS CALMIRR2 ID'] == lamp:	
+					ThAr_Ne_ref.append(archivo)
 					ThAr_Ne_ref_dates.append( mjd )
 
 			elif h[0].header['HIERARCH ESO DPR TYPE'] == 'DARK':
@@ -252,12 +274,13 @@ def FileClassify(diri, log, lamp='LAMP3'):
 	biases, bias_dates = np.array(biases), np.array(bias_dates)
 	flats, flat_dates  = np.array(flats), np.array(flat_dates)
 	darks, dark_times  = np.array(darks), np.array(dark_times)
+	FP_FP, ThAr_FP, FP_sci = np.array(FP_FP), np.array(ThAr_FP), np.array(FP_sci)
 	IS = np.argsort(bias_dates)
 	biases, bias_dates = biases[IS], bias_dates[IS]
 	IS = np.argsort(flat_dates)
 	flats, flat_dates = flats[IS], flat_dates[IS]   
 
-	return biases, flats, ThArNe_ref, ThAr_Ne_ref, simThAr_sci, simSky_sci, ThArNe_ref_dates, ThAr_Ne_ref_dates, darks, dark_times
+	return biases, flats, ThArNe_ref, ThAr_Ne_ref, simThAr_sci, simSky_sci, ThArNe_ref_dates, ThAr_Ne_ref_dates, darks, dark_times, ThAr_FP, FP_FP, FP_sci
 
 def mjd_fromheader(h):
     """
