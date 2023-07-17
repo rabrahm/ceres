@@ -162,5 +162,5 @@ In order to use the automated spectral classification routines (-do_class option
 
     mkdir ceres/data/COELHO_MODELS
     cd ceres/data/COELHO_MODELS
-    wget http://www.astro.puc.cl/~rbrahm/coelho_05_red4_R40.tar.gz
+    wget -c "https://alumnosuaicl-my.sharepoint.com/:u:/g/personal/rafael_brahm_uai_cl/EXPAbTi90qhOslwJeLQdbUQBykVnr7PEYKixtlKl8Tetjg?e=QjTF2e&download=1" -O R_40000b.zip
     tar -xf coelho_05_red4_R40.tar.gz
